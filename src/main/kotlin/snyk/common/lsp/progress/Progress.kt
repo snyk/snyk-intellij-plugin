@@ -44,12 +44,19 @@ internal class Progress(val token: String, val project: Project) {
 
     fun cancel() {
         this.cancelled = true
-        val workDoneProgressCancelParams = WorkDoneProgressCancelParams()
-        workDoneProgressCancelParams.setToken(token)
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        if (languageServerWrapper.isInitialized) {
-            val languageServer = languageServerWrapper.languageServer
-            languageServer.cancelProgress(workDoneProgressCancelParams)
+        // Run async to avoid blocking when cancelling progress
+        org.jetbrains.concurrency.runAsync {
+            try {
+                val workDoneProgressCancelParams = WorkDoneProgressCancelParams()
+                workDoneProgressCancelParams.setToken(token)
+                val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+                if (languageServerWrapper.isInitialized && !project.isDisposed) {
+                    val languageServer = languageServerWrapper.languageServer
+                    languageServer.cancelProgress(workDoneProgressCancelParams)
+                }
+            } catch (ignored: Exception) {
+                // Ignore errors during cancel - the progress is being cancelled anyway
+            }
         }
     }
 }

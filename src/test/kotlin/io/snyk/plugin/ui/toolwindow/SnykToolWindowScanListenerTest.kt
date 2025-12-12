@@ -161,6 +161,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
                 references = emptyList(),
                 customUIContent = "",
                 key = "",
+                riskScore = 0,
             ),
             isIgnored = isIgnored,
             ignoreDetails = null,

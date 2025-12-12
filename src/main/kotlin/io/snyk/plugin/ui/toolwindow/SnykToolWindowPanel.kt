@@ -1,5 +1,7 @@
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.codeInsight.codeVision.CodeVisionHost
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
@@ -10,10 +12,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.TreeUIHelper
 import com.intellij.ui.treeStructure.Tree
+import com.intellij.util.Alarm
 import com.intellij.util.containers.Convertor
 import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.SnykFile
@@ -37,7 +42,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.ReferenceChooserDialog
-import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.nodes.DescriptionHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.ErrorHolderTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
@@ -117,6 +121,46 @@ class SnykToolWindowPanel(
 
     var triggerSelectionListeners = true
 
+    // Debouncing for tree reload operations - coalesces rapid updates
+    private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+    private var pendingReloadNode: DefaultMutableTreeNode? = null
+
+    // Debouncing for annotation refresh - coalesces per-file diagnostic updates
+    private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
+    private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    // Tree node expander for progressive, non-blocking expansion
+    private val treeNodeExpander by lazy {
+        TreeNodeExpander(vulnerabilitiesTree) { isDisposed }
+    }
+
+    companion object {
+        // Debounce delay in milliseconds - coalesces rapid scan updates
+        private const val RELOAD_DEBOUNCE_MS = 100
+        // Debounce delay for annotation refresh - allows collecting multiple files
+        private const val ANNOTATION_REFRESH_DEBOUNCE_MS = 150
+        // Max files to refresh individually before falling back to global refresh
+        private const val MAX_INDIVIDUAL_ANNOTATION_REFRESH = 20
+
+        val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
+        val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
+        val IAC_ROOT_TEXT = " " + ProductType.IAC.treeName
+
+        const val SELECT_ISSUE_TEXT = "Select an issue and start improving your project."
+        const val SCAN_PROJECT_TEXT = "Scan your project for security vulnerabilities and code issues."
+        const val SCANNING_TEXT = "Scanning project for vulnerabilities..."
+        const val AUTH_FAILED_TEXT = "Authentication failed. Please check the API token on "
+        const val NO_ISSUES_FOUND_TEXT = " - No issues found"
+        const val NO_OSS_FILES = "Could not detect supported target files in"
+        const val NO_IAC_FILES = "Could not find any valid IaC files"
+        const val NO_SUPPORTED_IAC_FILES_FOUND = " - No supported IaC files found"
+        const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
+        private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
+        private const val TOOL_TREE_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_TREE_SPLITTER_PROPORTION"
+        internal const val NODE_INITIAL_STATE = -1
+        const val NODE_NOT_SUPPORTED_STATE = -2
+    }
+
     private val treeNodeStub =
         object : RootTreeNodeBase("", project) {
             override fun getSnykError(): SnykError? = null
@@ -190,6 +234,8 @@ class SnykToolWindowPanel(
                                 LsProduct.Unknown -> Unit
                             }
                         }
+                        // Schedule debounced annotation refresh - coalesces rapid per-file updates
+                        scheduleAnnotationRefresh(snykFile.virtualFile)
                         // Refresh the tree view on receiving new diags from the Language Server. This must be done on
                         // the Event Dispatch Thread (EDT).
                         invokeLater {
@@ -339,7 +385,6 @@ class SnykToolWindowPanel(
                             BorderLayout.CENTER,
                         )
                     }
-
                 }
 
                 is ErrorHolderTreeNode -> {
@@ -367,6 +412,58 @@ class SnykToolWindowPanel(
 
     override fun dispose() {
         isDisposed = true
+    }
+
+    /**
+     * Schedules a debounced annotation refresh for the given file.
+     * Collects files over a short window and then refreshes them in batch.
+     */
+    private fun scheduleAnnotationRefresh(virtualFile: VirtualFile) {
+        pendingAnnotationRefreshFiles.add(virtualFile)
+        annotationRefreshAlarm.cancelAllRequests()
+        annotationRefreshAlarm.addRequest({
+            flushPendingAnnotationRefreshes()
+        }, ANNOTATION_REFRESH_DEBOUNCE_MS)
+    }
+
+    /**
+     * Flushes all pending annotation refreshes, either individually or as a global refresh.
+     */
+    private fun flushPendingAnnotationRefreshes() {
+        if (isDisposed || project.isDisposed) return
+
+        val filesToRefresh = pendingAnnotationRefreshFiles.toList().also {
+            pendingAnnotationRefreshFiles.clear()
+        }
+
+        if (filesToRefresh.isEmpty()) return
+
+        // Invalidate code vision for all affected files
+        invokeLater {
+            if (!project.isDisposed) {
+                project.service<CodeVisionHost>().invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+            }
+        }
+
+        // Batch all refreshes into a single invokeLater to avoid EDT queue flooding
+        invokeLater {
+            if (isDisposed || project.isDisposed) return@invokeLater
+            val analyzer = DaemonCodeAnalyzer.getInstance(project)
+
+            if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
+                // Too many files - do a global refresh
+                analyzer.restart()
+            } else {
+                // Refresh each file individually within same EDT task
+                filesToRefresh.forEach { file ->
+                    if (file.isValid) {
+                        PsiManager.getInstance(project).findFile(file)?.let { psiFile ->
+                            analyzer.restart(psiFile)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun cleanUiAndCaches() {
@@ -414,17 +511,22 @@ class SnykToolWindowPanel(
             settings.token.isNullOrEmpty() -> displayAuthPanel()
             settings.pluginFirstRun -> {
                 pluginSettings().pluginFirstRun = false
-                try {
-                    enableCodeScanAccordingToServerSetting()
-                    displayEmptyDescription()
-                } catch (e: Exception) {
-                    displaySnykError(
-                        SnykError(
-                            e.message ?: "Exception while initializing plugin {${e.message}",
-                            ""
-                        )
-                    )
-                    logger.error("Failed to apply Snyk settings", e)
+                displayEmptyDescription()
+                // Run on background thread to avoid blocking EDT during LS initialization
+                runAsync {
+                    try {
+                        enableCodeScanAccordingToServerSetting()
+                    } catch (e: Exception) {
+                        invokeLater {
+                            displaySnykError(
+                                SnykError(
+                                    e.message ?: "Exception while initializing plugin {${e.message}",
+                                    ""
+                                )
+                            )
+                        }
+                        logger.error("Failed to apply Snyk settings", e)
+                    }
                 }
             }
 
@@ -593,7 +695,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentOssError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentOssError?.treeNodeSuffix
             "$OSS_ROOT_TEXT $errorSuffix"
         }
         isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
@@ -703,38 +805,66 @@ class SnykToolWindowPanel(
     /**
      * Re-expand previously expanded children (if `null` then expand All children)
      * Keep selection in the Tree (if any)
+     * Uses debouncing to coalesce rapid updates and chunked expansion to avoid blocking EDT.
      */
-    internal fun smartReloadRootNode(
-        nodeToReload: DefaultMutableTreeNode,
-        userObjectsForExpandedChildren: List<Any>?,
-        selectedNodeUserObject: Any?,
-    ) {
-        val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
-        if (selectedNode is InfoTreeNode) return
-
-        displayEmptyDescription()
-
-        ApplicationManager.getApplication().invokeAndWait {
-            (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
+    internal fun smartReloadRootNode(nodeToReload: DefaultMutableTreeNode) {
+        // Only show empty description if no issue is currently selected
+        // This preserves the issue details panel when new scan results arrive
+        val currentlySelectedIssue = (vulnerabilitiesTree.selectionPath?.lastPathComponent as? SuggestionTreeNode)?.issue
+        if (currentlySelectedIssue == null) {
+            displayEmptyDescription()
         }
 
-        userObjectsForExpandedChildren?.let {
-            it.forEach { userObject ->
-                val pathToNewNode = TreeUtil.findNodeWithObject(nodeToReload, userObject)?.path
-                if (pathToNewNode != null) {
-                    invokeLater {
-                        vulnerabilitiesTree.expandPath(TreePath(pathToNewNode))
-                    }
-                }
-            }
-        } ?: expandTreeNodeRecursively(vulnerabilitiesTree, nodeToReload)
+        // Debounce: cancel pending reload and schedule new one
+        pendingReloadNode = nodeToReload
+        reloadAlarm.cancelAllRequests()
+        reloadAlarm.addRequest({
+            pendingReloadNode?.let { doSmartReload(it) }
+            pendingReloadNode = null
+        }, RELOAD_DEBOUNCE_MS)
+    }
+
+    /**
+     * Performs the actual tree reload with chunked expansion to minimize EDT blocking.
+     */
+    private fun doSmartReload(nodeToReload: DefaultMutableTreeNode) {
+        if (isDisposed) return
+
+        // Gather current tree state on EDT (must be done before reload)
+        val userObjectsForExpandedChildren = userObjectsForExpandedNodes(nodeToReload)
+
+        // Save the currently selected issue ID (if any) to restore after reload
+        val selectedPath = vulnerabilitiesTree.selectionPath
+        val selectedIssueId = (selectedPath?.lastPathComponent as? SuggestionTreeNode)?.issue?.id
+
+        // Check if selection is an InfoTreeNode - if so, don't interfere
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(selectedPath, Any::class.java)
+        if (TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject) is InfoTreeNode) return
+
+        // Reload the tree model (fast operation)
+        (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
+
+        // Expand nodes progressively to keep UI responsive
+        treeNodeExpander.expandProgressively(nodeToReload, userObjectsForExpandedChildren) {
+            // After expansion completes, restore selection by finding node with same issue ID
+            restoreSelectionByIssueId(selectedIssueId)
+        }
+    }
+
+    /**
+     * Restores tree selection after reload/expansion by finding node with matching issue ID.
+     * This handles the case where node objects are recreated during tree reload.
+     */
+    private fun restoreSelectionByIssueId(issueId: String?) {
+        if (issueId == null) return
 
         smartReloadMode = true
         try {
-            selectedNode?.let {
-                invokeLater {
-                    TreeUtil.selectNode(vulnerabilitiesTree, it)
-                }
+            val nodeToSelect = TreeUtil.findNode(rootTreeNode) { node ->
+                (node as? SuggestionTreeNode)?.issue?.id == issueId
+            }
+            nodeToSelect?.let {
+                TreeUtil.selectNode(vulnerabilitiesTree, it)
             }
         } finally {
             smartReloadMode = false
@@ -774,9 +904,6 @@ class SnykToolWindowPanel(
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
 
-    @TestOnly
-    fun getRootSecurityIssuesTreeNode() = rootSecurityIssuesTreeNode
-
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly
@@ -784,24 +911,4 @@ class SnykToolWindowPanel(
 
     @TestOnly
     fun getDescriptionPanel() = descriptionPanel
-
-    companion object {
-        val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
-        val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
-        val IAC_ROOT_TEXT = " " + ProductType.IAC.treeName
-
-        const val SELECT_ISSUE_TEXT = "Select an issue and start improving your project."
-        const val SCAN_PROJECT_TEXT = "Scan your project for security vulnerabilities and code issues."
-        const val SCANNING_TEXT = "Scanning project for vulnerabilities..."
-        const val AUTH_FAILED_TEXT = "Authentication failed. Please check the API token on "
-        const val NO_ISSUES_FOUND_TEXT = " - No issues found"
-        const val NO_OSS_FILES = "Could not detect supported target files in"
-        const val NO_IAC_FILES = "Could not find any valid IaC files"
-        const val NO_SUPPORTED_IAC_FILES_FOUND = " - No supported IaC files found"
-        const val NO_SUPPORTED_PACKAGE_MANAGER_FOUND = " - No supported package manager found"
-        private const val TOOL_WINDOW_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_WINDOW_SPLITTER_PROPORTION"
-        private const val TOOL_TREE_SPLITTER_PROPORTION_KEY = "SNYK_TOOL_TREE_SPLITTER_PROPORTION"
-        internal const val NODE_INITIAL_STATE = -1
-        const val NODE_NOT_SUPPORTED_STATE = -2
-    }
 }

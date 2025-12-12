@@ -60,6 +60,7 @@ import snyk.common.lsp.commands.COMMAND_LOGIN
 import snyk.common.lsp.commands.COMMAND_LOGOUT
 import snyk.common.lsp.commands.COMMAND_REPORT_ANALYTICS
 import snyk.common.lsp.commands.COMMAND_SUBMIT_IGNORE_REQUEST
+import snyk.common.lsp.commands.COMMAND_WORKSPACE_CONFIGURATION
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
@@ -101,7 +102,7 @@ class LanguageServerWrapper(
     private var loginFuture: CompletableFuture<Any>? = null
 
     // internal for test set up
-    internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = Collections.synchronizedSet(mutableSetOf())
+    internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> = ConcurrentHashMap.newKeySet()
     private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
     private var disposed = false
         get() {
@@ -598,7 +599,12 @@ class LanguageServerWrapper(
         if (key.isBlank()) throw RuntimeException("Issue ID is required")
         val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
         return try {
-            executeCommand(generateIssueCommand, Long.MAX_VALUE).toString()
+            val result = executeCommand(generateIssueCommand, Long.MAX_VALUE)
+            when (result) {
+                is String -> result
+                is com.google.gson.JsonPrimitive -> result.asString
+                else -> result?.toString()
+            }
         } catch (e: TimeoutException) {
             val exceptionMessage = "generate issue description failed"
             logger.warn(exceptionMessage, e)
@@ -756,6 +762,20 @@ class LanguageServerWrapper(
             return response["stdOut"] as String
         }
         return ""
+    }
+
+    fun getConfigHtml(): String? {
+        if (!ensureLanguageServerInitialized()) return null
+        try {
+            val executeCommandParams = ExecuteCommandParams(COMMAND_WORKSPACE_CONFIGURATION, emptyList())
+            val response = executeCommand(executeCommandParams, 10000)
+            return response as? String
+        } catch (e: TimeoutException) {
+            logger.warn("Timeout getting configuration HTML", e)
+        } catch (e: Exception) {
+            logger.warn("Error getting configuration HTML", e)
+        }
+        return null
     }
 
     override fun dispose() {

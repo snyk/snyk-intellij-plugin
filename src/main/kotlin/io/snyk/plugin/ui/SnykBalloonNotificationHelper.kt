@@ -55,7 +55,7 @@ object SnykBalloonNotificationHelper {
             }
         }
 
-        notification.setIcon(SnykIcons.TOOL_WINDOW)
+        notification.icon = SnykIcons.TOOL_WINDOW
         // workaround for https://youtrack.jetbrains.com/issue/IDEA-220408/notifications-with-project=null-is-not-shown-anymore
         if (project != null) {
             notification.notify(project)

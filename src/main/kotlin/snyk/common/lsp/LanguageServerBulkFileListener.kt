@@ -9,7 +9,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.readText
 import com.intellij.util.TestRuntimeUtil
-import com.intellij.util.application
 import io.snyk.plugin.SnykBulkFileListener
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
@@ -78,25 +77,21 @@ class LanguageServerBulkFileListener(project: Project) : SnykBulkFileListener(pr
         setOf(".idea", ".git", ".hg", ".svn")
 
     private fun shouldProcess(file: VirtualFile, project: Project): Boolean {
-        var shouldProcess = false
         if (project.isDisposed) return false
-        if (DumbService.getInstance(project).isDumb) shouldProcess = false
+        if (DumbService.getInstance(project).isDumb) return false
 
-        application.runReadAction {
-            val inCache = debounceFileCache.getIfPresent(file.path)
-            if (inCache != null) {
-                shouldProcess = false
-            } else {
-                debounceFileCache.put(file.path, true)
-                if (file.isInContent(project) && !isInBlacklistedParentDir(file)) {
-                    shouldProcess = true
-                } else {
-                    shouldProcess = false
-                    return@runReadAction
-                }
-            }
+        // Check debounce cache first (no read action needed)
+        val inCache = debounceFileCache.getIfPresent(file.path)
+        if (inCache != null) {
+            return false
         }
-        return shouldProcess
+        debounceFileCache.put(file.path, true)
+
+        // Check if file is in content (isInContent handles its own read action)
+        if (!file.isInContent(project)) return false
+        if (isInBlacklistedParentDir(file)) return false
+
+        return true
     }
 
     private fun isInBlacklistedParentDir(file: VirtualFile): Boolean {
@@ -119,7 +114,11 @@ class LanguageServerBulkFileListener(project: Project) : SnykBulkFileListener(pr
             iacCache.remove(it)
         }
 
-        VirtualFileManager.getInstance().asyncRefresh()
+        try {
+            VirtualFileManager.getInstance().asyncRefresh()
+        } catch (e: Exception) {
+            // VFS refresh can fail on edge cases (remote files, deleted files, etc.)
+        }
         invokeLater {
             if (project.isDisposed || SnykPluginDisposable.getInstance(project).isDisposed()) return@invokeLater
             DaemonCodeAnalyzer.getInstance(project).restart()

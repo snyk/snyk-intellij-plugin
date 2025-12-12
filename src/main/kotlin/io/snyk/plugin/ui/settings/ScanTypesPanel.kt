@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.settings
 
 import com.intellij.icons.AllIcons
-import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.Panel
@@ -18,7 +17,6 @@ import java.awt.event.MouseEvent
 import javax.swing.JLabel
 
 class ScanTypesPanel(
-    private val project: Project,
     cliScanComments: String? = null,
 ) {
     private val settings

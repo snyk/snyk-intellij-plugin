@@ -193,18 +193,21 @@ data class ScanIssue(
     }
 
     fun priority(): Int {
-        return when (this.filterableIssueType) {
-            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> {
-                return when (this.getSeverityAsEnum()) {
-                    Severity.CRITICAL -> 4
-                    Severity.HIGH -> 3
-                    Severity.MEDIUM -> 2
-                    Severity.LOW -> 1
-                    Severity.UNKNOWN -> 0
-                }
-            }
+        // Severity is the primary sort key (multiplied by 1_000_000 to guarantee it dominates)
+        val severityPriority = when (this.getSeverityAsEnum()) {
+            Severity.CRITICAL -> 4_000_000
+            Severity.HIGH -> 3_000_000
+            Severity.MEDIUM -> 2_000_000
+            Severity.LOW -> 1_000_000
+            Severity.UNKNOWN -> 0
+        }
 
-            CODE_SECURITY -> this.additionalData.priorityScore
+        return when (this.filterableIssueType) {
+            // For OSS and IAC: severity first, then riskScore as tiebreaker
+            OPEN_SOURCE, INFRASTRUCTURE_AS_CODE -> severityPriority + this.additionalData.riskScore
+
+            // For CODE_SECURITY: severity first, then priorityScore as tiebreaker
+            CODE_SECURITY -> severityPriority + this.additionalData.priorityScore
             else -> TODO()
         }
     }
@@ -294,7 +297,7 @@ data class ScanIssue(
         return if (details.isNullOrEmpty() && this.id.isNotBlank()) {
             LanguageServerWrapper.getInstance(project).generateIssueDescription(this) ?: ""
         } else {
-            ""
+            details ?: ""
         }
     }
 
@@ -501,6 +504,7 @@ data class IssueData(
     @SerializedName("key") val key: String,
     @SerializedName("ruleId") val ruleId: String,
     @SerializedName("details") val details: String?,
+    @SerializedName("riskScore") val riskScore: Int,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

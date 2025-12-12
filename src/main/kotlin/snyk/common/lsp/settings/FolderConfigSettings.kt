@@ -7,7 +7,6 @@ import io.snyk.plugin.getContentRootPaths
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
-import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Collectors

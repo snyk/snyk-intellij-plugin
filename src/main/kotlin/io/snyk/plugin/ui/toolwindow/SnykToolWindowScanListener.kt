@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.util.ui.tree.TreeUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
@@ -71,38 +70,52 @@ class SnykToolWindowSnykScanListener(
 
     override fun scanningStarted(snykScan: SnykScanParams) {
         if (disposed) return
-
-        this.snykToolWindowPanel.cleanUiAndCaches()
-        this.snykToolWindowPanel.updateTreeRootNodesPresentation()
-        this.snykToolWindowPanel.displayScanningMessage()
+        invokeLater {
+            if (disposed || project.isDisposed) return@invokeLater
+            this.snykToolWindowPanel.cleanUiAndCaches()
+            this.snykToolWindowPanel.updateTreeRootNodesPresentation()
+            this.snykToolWindowPanel.displayScanningMessage()
+        }
     }
 
     override fun scanningSnykCodeFinished() {
         if (disposed) return
-        this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
-        this.snykToolWindowPanel.triggerSelectionListeners = false
         val snykCachedResults = getSnykCachedResults(project)
-        displaySnykCodeResults(snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap())
-        this.snykToolWindowPanel.triggerSelectionListeners = true
+        val results = snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap()
+        invokeLater {
+            if (disposed || project.isDisposed) return@invokeLater
+            this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
+            this.snykToolWindowPanel.triggerSelectionListeners = false
+            displaySnykCodeResults(results)
+            this.snykToolWindowPanel.triggerSelectionListeners = true
+        }
         refreshAnnotationsForOpenFiles(project)
     }
 
     override fun scanningOssFinished() {
         if (disposed) return
-        this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
-        this.snykToolWindowPanel.triggerSelectionListeners = false
         val snykCachedResults = getSnykCachedResults(project)
-        displayOssResults(snykCachedResults?.currentOSSResultsLS ?: emptyMap())
-        this.snykToolWindowPanel.triggerSelectionListeners = true
+        val results = snykCachedResults?.currentOSSResultsLS ?: emptyMap()
+        invokeLater {
+            if (disposed || project.isDisposed) return@invokeLater
+            this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
+            this.snykToolWindowPanel.triggerSelectionListeners = false
+            displayOssResults(results)
+            this.snykToolWindowPanel.triggerSelectionListeners = true
+        }
     }
 
     override fun scanningIacFinished() {
         if (disposed) return
-        this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
-        this.snykToolWindowPanel.triggerSelectionListeners = false
         val snykCachedResults = getSnykCachedResults(project)
-        displayIacResults(snykCachedResults?.currentIacResultsLS ?: emptyMap())
-        this.snykToolWindowPanel.triggerSelectionListeners = true
+        val results = snykCachedResults?.currentIacResultsLS ?: emptyMap()
+        invokeLater {
+            if (disposed || project.isDisposed) return@invokeLater
+            this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
+            this.snykToolWindowPanel.triggerSelectionListeners = false
+            displayIacResults(results)
+            this.snykToolWindowPanel.triggerSelectionListeners = true
+        }
         refreshAnnotationsForOpenFiles(project)
     }
 
@@ -246,14 +259,6 @@ class SnykToolWindowSnykScanListener(
             return
         }
 
-        var userObjectsForExpandedChildren: List<Any>? = emptyList()
-        var selectedNodeUserObject: Any? = Object()
-        ApplicationManager.getApplication().invokeAndWait {
-            userObjectsForExpandedChildren =
-                snykToolWindowPanel.userObjectsForExpandedNodes(rootNode)
-            selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-        }
-
         rootNode.removeAllChildren()
 
         var rootNodePostFix = ""
@@ -296,11 +301,7 @@ class SnykToolWindowSnykScanListener(
             addHMLPostfix = rootNodePostFix,
         )
 
-        snykToolWindowPanel.smartReloadRootNode(
-            rootNode,
-            userObjectsForExpandedChildren,
-            selectedNodeUserObject,
-        )
+        snykToolWindowPanel.smartReloadRootNode(rootNode)
     }
 
     private fun getIssueFoundText(issuesCount: Int): String {

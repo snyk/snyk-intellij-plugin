@@ -38,6 +38,11 @@
                  description="Show Snyk issue details additionally as documentation popup (hover)"
                  restartRequired="false"
     />
+    <registryKey key="snyk.useNewConfigDialog"
+                 defaultValue="false"
+                 description="Use new HTML based config dialog served by language server"
+                 restartRequired="false"
+    />
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 

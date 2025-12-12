@@ -6,84 +6,188 @@ import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import java.awt.Color
+import javax.swing.UIManager
 
-fun Color.toHex() = ThemeBasedStylingGenerator.toCssHex(this)
-
+/**
+ * Centralized theme styling generator for JCEF HTML panels.
+ * Replaces CSS variable placeholders with actual IDE theme values.
+ */
 class ThemeBasedStylingGenerator {
     companion object {
-        fun toCssHex(color: Color): String {
-            return "#%02x%02x%02x".format(color.red, color.green, color.blue)
+        /**
+         * Replaces var(--xxx) or var(--xxx, fallback) with the replacement value.
+         */
+        private fun replaceVar(html: String, varName: String, replacement: String): String {
+            // Match var(--varName) or var(--varName, anything)
+            val pattern = Regex("""var\(--$varName(?:,[^)]*)??\)""")
+            return html.replace(pattern, replacement)
         }
+
+        /**
+         * Lighten or darken a hex color.
+         *
+         * @param hex    "#RRGGBB"
+         * @param factor -1.0 .. 1.0
+         *               > 0 = lighten, < 0 = darken
+         */
+        fun adjustHexBrightness(hex: String, factor: Double): String {
+            require(factor in -1.0..1.0) { "factor must be between -1.0 and 1.0" }
+
+            val clean = hex.removePrefix("#")
+            require(clean.length == 6) { "Expected 6-char hex like #RRGGBB" }
+
+            fun adjust(comp: String): Int {
+                val c = comp.toInt(16)
+                val result = if (factor >= 0) {
+                    // move toward 255
+                    c + (255 - c) * factor
+                } else {
+                    // move toward 0
+                    c + c * factor
+                }
+                return result.toInt().coerceIn(0, 255)
+            }
+
+            val r = adjust(clean.take(2))
+            val g = adjust(clean.substring(2, 4))
+            val b = adjust(clean.substring(4, 6))
+
+            return "#%02X%02X%02X".format(r, g, b)
+        }
+
+
+        /**
+         * Replaces var(--xxx) placeholders in HTML with actual theme values and adds theme classes to body.
+         * Supports both VS Code-style (--vscode-xxx) and legacy (--text-color) variables.
+         */
         fun replaceWithCustomStyles(htmlToReplace: String): String {
             var html = htmlToReplace
             val editorColorsManager = EditorColorsManager.getInstance()
-            val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
-            val textColor = UIUtil.getLabelForeground().toHex()
+            val isDarkTheme = editorColorsManager.isDarkEditor
+            val darkenOrLightenFactor: Double = if (isDarkTheme) 1.0 else -1.0
+
+            // All values computed fresh to support theme changes
+            val bgColor = UIUtil.getPanelBackground().toHex()
+            val fgColor = UIUtil.getLabelForeground().toHex()
+            val dimmedFgColor = UIUtil.getLabelDisabledForeground().toHex()
             val borderColor = JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground().toHex()
-            val editorBackground =
-                editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex() ?: editorUiTheme.defaultBackground.toHex()
-            val globalScheme = EditorColorsManager.getInstance().globalScheme
-            val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR")) //TODO Replace with JBUI.CurrentTheme colors
-            val isDarkTheme = EditorColorsManager.getInstance().isDarkEditor
-            val isHighContrast =
-                EditorColorsManager.getInstance().globalScheme.name.contains("High contrast", ignoreCase = true)
-            html = html.replace("--default-font: ", "--default-font: \"${JBUI.Fonts.label().asPlain().family}\", ")
-            html = html.replace("var(--main-font-size)", getRelativeFontSize(JBFont.regular().size))
-            html = html.replace("var(--text-color)", textColor)
-            html = html.replace("var(--dimmed-text-color)", UIUtil.getLabelDisabledForeground().toHex())
-            html = html.replace("var(--background-color)", UIUtil.getPanelBackground().toHex())
-            html = html.replace("var(--ide-background-color)", UIUtil.getPanelBackground().toHex())
-            html = html.replace("var(--border-color)", borderColor)
-            html = html.replace("var(--horizontal-border-color)", borderColor)
-            html = html.replace("var(--link-color)", JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex())
-            html = html.replace("var(--example-line-added-color)", toCssHex(JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR))
-            html = html.replace("var(--example-line-removed-color)", toCssHex(JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR))
-            html = html.replace("var(--link-color)",toCssHex(JBUI.CurrentTheme.Link.Foreground.ENABLED))
-            html = html.replace("var(--data-flow-body-color)", toCssHex(JBUI.CurrentTheme.Tree.BACKGROUND))
-            html = html.replace("var(--tab-item-github-icon-color)",toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
-            html = html.replace("var(--scrollbar-thumb-color)", "${tearLineColor?.let { toCssHex(it)}}")
-            html = html.replace("var(--tab-item-github-icon-color)", toCssHex(JBUI.CurrentTheme.Tree.FOREGROUND))
-            html = html.replace("var(--tab-item-hover-color)", toCssHex(JBUI.CurrentTheme.DefaultTabs.underlineColor()))
-            html = html.replace("var(--tabs-bottom-color)", toCssHex(JBUI.CurrentTheme.DefaultTabs.background()))
-            html = html.replace("var(--border-color)", borderColor)
-            html = html.replace("var(--editor-color)", toCssHex(UIUtil.getTextFieldBackground()))
-            html = html.replace("var(--label-color)", toCssHex(JBUI.CurrentTheme.Label.foreground()))
-            html = html.replace("var(--container-background-color)", toCssHex(UIUtil.getTextFieldBackground()))
-            html = html.replace("var(--button-background-color)", toCssHex(JBUI.CurrentTheme.Button.defaultButtonColorStart()))
-            html = html.replace("var(--button-text-color)", textColor /* TODO - Pick a better colour */)
-            html = html.replace("var(--input-border)", borderColor)
-            html = html.replace("var(--disabled-background-color)", borderColor)
-            html = html.replace("var(--warning-background)", toCssHex(JBUI.CurrentTheme.IconBadge.WARNING))
-            html = html.replace("var(--warning-text)", UIUtil.getLabelBackground().toHex())
-            html = html.replace("var(--code-background-color)", editorBackground)
-            html = html.replace("var(--container-background-color)", editorBackground)
-            html = html.replace("var(--editor-color)", editorBackground)
-            html = html.replace("var(--circle-color)", borderColor)
+            val inputBgColor = UIUtil.getTextFieldBackground().toHex()
+            val inputFgColor = UIUtil.getTextFieldForeground().toHex()
+            val buttonBgColor = JBUI.CurrentTheme.Button.defaultButtonColorStart().toHex()
+            val buttonFgColor = UIManager.getColor("Button.default.foreground")?.toHex()
+                ?: UIManager.getColor("Button.foreground")?.toHex()
+                ?: "#ffffff"
+            val linkColor = JBUI.CurrentTheme.Link.Foreground.ENABLED.toHex()
+            val fontFamily = JBUI.Fonts.label().asPlain().family
+            val fontSize = JBFont.regular().size
+            val scrollbarColor = UIManager.getColor("ScrollBar.thumbColor")?.toHex() ?: "#424242"
+            val focusBorderColor = UIManager.getColor("Component.focusColor")?.toHex() ?: "#007acc"
+            val infoBgColor = JBUI.CurrentTheme.Banner.INFO_BACKGROUND.toHex()
+            val infoBorderColor = JBUI.CurrentTheme.Banner.INFO_BORDER_COLOR.toHex()
+            val sectionBackground =
+                adjustHexBrightness(UIUtil.getListBackground().toHex(), 0.05 * darkenOrLightenFactor)
+            val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
+            val editorBackground = editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex()
+                ?: editorUiTheme.defaultBackground.toHex()
+            val globalScheme = editorColorsManager.globalScheme
+            val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR"))?.toHex() ?: scrollbarColor
+            val isHighContrast = globalScheme.name.contains("High contrast", ignoreCase = true)
+            val successColor = JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR.toHex()
+            val errorColor = JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR.toHex()
+            val warningColor = JBUI.CurrentTheme.IconBadge.WARNING.toHex()
+            val treeBackground = JBUI.CurrentTheme.Tree.BACKGROUND.toHex()
+            val treeForeground = JBUI.CurrentTheme.Tree.FOREGROUND.toHex()
+            val tabUnderline = JBUI.CurrentTheme.DefaultTabs.underlineColor().toHex()
+            val tabBackground = JBUI.CurrentTheme.DefaultTabs.background().toHex()
+            val labelColor = JBUI.CurrentTheme.Label.foreground().toHex()
+            val labelBgColor = UIUtil.getLabelBackground().toHex()
+
+            // VS Code style variables (settings panel)
+            html = replaceVar(html, "vscode-font-family", "'$fontFamily', system-ui, -apple-system, sans-serif")
+            html = replaceVar(html, "vscode-font-size", "${fontSize}px")
+            html = replaceVar(html, "vscode-editor-background", bgColor)
+            html = replaceVar(html, "vscode-foreground", fgColor)
+            html = replaceVar(html, "vscode-editor-foreground", fgColor)
+            html = replaceVar(html, "vscode-input-background", inputBgColor)
+            html = replaceVar(html, "vscode-input-foreground", inputFgColor)
+            html = replaceVar(html, "vscode-input-border", borderColor)
+            html = replaceVar(html, "vscode-button-background", buttonBgColor)
+            html = replaceVar(html, "vscode-button-foreground", buttonFgColor)
+            html = replaceVar(html, "vscode-focusBorder", focusBorderColor)
+            val checkboxBgColor = UIManager.getColor("CheckBox.background")?.toHex() ?: inputBgColor
+            val checkboxFgColor = UIManager.getColor("CheckBox.foreground")?.toHex() ?: fgColor
+            val checkboxSelectColor = UIManager.getColor("CheckBox.select")?.toHex() ?: buttonBgColor
+            html = replaceVar(html, "vscode-checkbox-background", checkboxBgColor)
+            html = replaceVar(html, "vscode-checkbox-foreground", checkboxFgColor)
+            html = replaceVar(html, "vscode-checkbox-selectBackground", checkboxSelectColor)
+            html = replaceVar(html, "vscode-checkbox-border", borderColor)
+            html = replaceVar(html, "vscode-scrollbarSlider-background", scrollbarColor)
+            html = replaceVar(html, "vscode-scrollbarSlider-hoverBackground", scrollbarColor)
+            html = replaceVar(html, "vscode-scrollbarSlider-activeBackground", scrollbarColor)
+            html = replaceVar(html, "vscode-panel-border", borderColor)
+            html = replaceVar(html, "vscode-editor-inactiveSelectionBackground", sectionBackground)
+            html = replaceVar(html, "vscode-inputValidation-infoBackground", infoBgColor)
+            html = replaceVar(html, "vscode-inputValidation-infoForeground", fgColor)
+            html = replaceVar(html, "vscode-inputValidation-infoBorder", infoBorderColor)
+            html = replaceVar(html, "vscode-textBlockQuote-background", infoBgColor)
+            html = replaceVar(html, "vscode-textBlockQuote-border", infoBorderColor)
+            html = replaceVar(html, "vscode-descriptionForeground", dimmedFgColor)
+            html = replaceVar(html, "vscode-inputValidation-errorBackground", errorColor)
+            html = replaceVar(html, "vscode-inputValidation-errorBorder", errorColor)
+
+            html = html.replace("--default-font: ", "--default-font: \"$fontFamily\", ")
+            html = replaceVar(html, "main-font-size", getRelativeFontSize(fontSize))
+            html = replaceVar(html, "text-color", fgColor)
+            html = replaceVar(html, "dimmed-text-color", dimmedFgColor)
+            html = replaceVar(html, "background-color", bgColor)
+            html = replaceVar(html, "ide-background-color", bgColor)
+            html = replaceVar(html, "border-color", borderColor)
+            html = replaceVar(html, "horizontal-border-color", borderColor)
+            html = replaceVar(html, "link-color", linkColor)
+            html = replaceVar(html, "example-line-added-color", successColor)
+            html = replaceVar(html, "example-line-removed-color", errorColor)
+            html = replaceVar(html, "data-flow-body-color", treeBackground)
+            html = replaceVar(html, "tab-item-github-icon-color", treeForeground)
+            html = replaceVar(html, "scrollbar-thumb-color", tearLineColor)
+            html = replaceVar(html, "tab-item-hover-color", tabUnderline)
+            html = replaceVar(html, "tabs-bottom-color", tabBackground)
+            html = replaceVar(html, "editor-color", inputBgColor)
+            html = replaceVar(html, "label-color", labelColor)
+            html = replaceVar(html, "container-background-color", editorBackground)
+            html = replaceVar(html, "button-background-color", buttonBgColor)
+            html = replaceVar(html, "button-text-color", fgColor)
+            html = replaceVar(html, "input-border", borderColor)
+            html = replaceVar(html, "disabled-background-color", borderColor)
+            html = replaceVar(html, "warning-background", warningColor)
+            html = replaceVar(html, "warning-text", labelBgColor)
+            html = replaceVar(html, "code-background-color", editorBackground)
+            html = replaceVar(html, "circle-color", borderColor)
+
+            // Theme classes on body
             val contrast = if (isHighContrast) "high-contrast" else ""
             val theme = if (isDarkTheme) "dark" else "light"
             val lineWithBody = html.lines().find { it.contains("<body") }
-            if(lineWithBody != null) {
-                    val modifiedLineWithBody =  if(lineWithBody.contains("class")) lineWithBody.replace("class", "class=\"$contrast $theme ") else lineWithBody.replace("<body", "<body class=\"$contrast $theme \"")
-                    html = html.replace(lineWithBody, modifiedLineWithBody)
+            if (lineWithBody != null) {
+                val modifiedLineWithBody = if (lineWithBody.contains("class")) {
+                    lineWithBody.replace("class", "class=\"$contrast $theme ")
+                } else {
+                    lineWithBody.replace("<body", "<body class=\"$contrast $theme \"")
+                }
+                html = html.replace(lineWithBody, modifiedLineWithBody)
             }
             return html
         }
 
-        // Utility function to scale JBFonts appropriately for use in HTML elements that have been designed with px
-        // values in mind. JBFont defaults will be environment specific - see
-        // https://plugins.jetbrains.com/docs/intellij/typography.html#ide-font
+        /**
+         * Utility function to scale JBFonts appropriately for use in HTML elements.
+         * JBFont defaults will be environment specific.
+         * @see https://plugins.jetbrains.com/docs/intellij/typography.html#ide-font
+         */
         internal fun getRelativeFontSize(inputFontSizePt: Int): String {
-            // Target size is the base size for which the HTML element was designed.
             val targetSizePx = 10
             val startingFontSizePt = if (inputFontSizePt > 0) inputFontSizePt else JBFont.regular().size
-
-            // JBFont uses pt sizes, not px, so we convert here, using standard web values from
-            // https://www.w3.org/TR/css3-values/#absolute-lengths
             val pxToPtMultiplier = 72.0 / 96.0
             val targetSizePt = targetSizePx * pxToPtMultiplier
-
-            // CSS allows 3 decimal places of precision for calculations.
             return String.format("%.3frem", targetSizePt / startingFontSizePt)
         }
     }

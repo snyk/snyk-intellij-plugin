@@ -20,7 +20,7 @@ class CliAdapterTest : LightPlatformTestCase() {
         }
     }
 
-    inner class DummyResults : CliResult<Unit>(null, emptyList()) {
+    class DummyResults : CliResult<Unit>(null, emptyList()) {
         override val issuesCount: Int? = null
         override fun countBySeverity(severity: Severity): Int? = null
     }

@@ -26,13 +26,12 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     // events
     var pluginInstalledSent: Boolean = false
 
-    val requiredLsProtocolVersion = 21
+    val requiredLsProtocolVersion = 22
 
     @Deprecated("left for old users migration only")
     var useTokenAuthentication = false
     var authenticationType = AuthenticationType.OAUTH2
     var currentLSProtocolVersion: Int? = 0
-    var autofixEnabled: Boolean? = false
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://downloads.snyk.io"
     var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName

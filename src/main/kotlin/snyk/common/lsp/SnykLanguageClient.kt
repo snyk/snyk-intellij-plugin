@@ -84,6 +84,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         progressManager.notifyProgress(params)
     }
 
+    @JsonNotification("$/snyk.publishDiagnostics316")
+    fun publishDiagnostics316(diagnosticsParams: PublishDiagnosticsParams?) = Unit
+
     override fun publishDiagnostics(diagnosticsParams: PublishDiagnosticsParams?) {
         if (diagnosticsParams == null) {
             return
@@ -177,10 +180,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     private fun refreshUI(): CompletableFuture<Void> {
         val completedFuture: CompletableFuture<Void> = CompletableFuture.completedFuture(null)
         if (disposed) return completedFuture
-        runAsync {
-            ReadAction.run<RuntimeException> {
-                if (!project.isDisposed) refreshAnnotationsForOpenFiles(project)
-            }
+        // No need for ReadAction wrapper - refreshAnnotationsForOpenFiles handles its own threading
+        if (!project.isDisposed) {
+            refreshAnnotationsForOpenFiles(project)
         }
         return completedFuture
     }
