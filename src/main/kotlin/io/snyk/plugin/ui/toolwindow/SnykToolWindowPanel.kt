@@ -809,7 +809,12 @@ class SnykToolWindowPanel(
      * Uses debouncing to coalesce rapid updates and chunked expansion to avoid blocking EDT.
      */
     internal fun smartReloadRootNode(nodeToReload: DefaultMutableTreeNode) {
-        displayEmptyDescription()
+        // Only show empty description if no issue is currently selected
+        // This preserves the issue details panel when new scan results arrive
+        val currentlySelectedIssue = (vulnerabilitiesTree.selectionPath?.lastPathComponent as? SuggestionTreeNode)?.issue
+        if (currentlySelectedIssue == null) {
+            displayEmptyDescription()
+        }
 
         // Debounce: cancel pending reload and schedule new one
         pendingReloadNode = nodeToReload
@@ -828,28 +833,38 @@ class SnykToolWindowPanel(
 
         // Gather current tree state on EDT (must be done before reload)
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(nodeToReload)
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(vulnerabilitiesTree.selectionPath, Any::class.java)
-        val selectedNode = TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject)
+        
+        // Save the currently selected issue ID (if any) to restore after reload
+        val selectedPath = vulnerabilitiesTree.selectionPath
+        val selectedIssueId = (selectedPath?.lastPathComponent as? SuggestionTreeNode)?.issue?.id
 
-        if (selectedNode is InfoTreeNode) return
+        // Check if selection is an InfoTreeNode - if so, don't interfere
+        val selectedNodeUserObject = TreeUtil.findObjectInPath(selectedPath, Any::class.java)
+        if (TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject) is InfoTreeNode) return
 
         // Reload the tree model (fast operation)
         (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)
 
         // Expand nodes progressively to keep UI responsive
         treeNodeExpander.expandProgressively(nodeToReload, userObjectsForExpandedChildren) {
-            // After expansion completes, restore selection
-            restoreSelection(selectedNode)
+            // After expansion completes, restore selection by finding node with same issue ID
+            restoreSelectionByIssueId(selectedIssueId)
         }
     }
 
     /**
-     * Restores tree selection after reload/expansion.
+     * Restores tree selection after reload/expansion by finding node with matching issue ID.
+     * This handles the case where node objects are recreated during tree reload.
      */
-    private fun restoreSelection(selectedNode: DefaultMutableTreeNode?) {
+    private fun restoreSelectionByIssueId(issueId: String?) {
+        if (issueId == null) return
+        
         smartReloadMode = true
         try {
-            selectedNode?.let {
+            val nodeToSelect = TreeUtil.findNode(rootTreeNode) { node ->
+                (node as? SuggestionTreeNode)?.issue?.id == issueId
+            }
+            nodeToSelect?.let {
                 TreeUtil.selectNode(vulnerabilitiesTree, it)
             }
         } finally {
