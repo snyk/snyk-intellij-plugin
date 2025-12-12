@@ -1,14 +1,21 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
+import io.mockk.verifyOrder
+import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykCliAuthenticationService
+import snyk.common.lsp.LanguageServerWrapper
 
 class SaveConfigHandlerTest : BasePlatformTestCase() {
     private lateinit var settings: SnykApplicationSettingsStateService
@@ -331,6 +338,44 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         invokeParseAndSaveConfig(jsonConfig)
 
         assertFalse(realSettings.ignoreUnknownCA)
+    }
+
+    fun `test handleLogin calls updateConfiguration before authenticate`() {
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+        val authServiceMock = mockk<SnykCliAuthenticationService>(relaxed = true)
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(project) } returns lsWrapperMock
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { getSnykCliAuthenticationService(project) } returns authServiceMock
+
+        cut.handleLogin()
+
+        // Verify both methods are called
+        verify { lsWrapperMock.updateConfiguration(false) }
+        verify { authServiceMock.authenticate() }
+
+        // Verify updateConfiguration is called before authenticate
+        verifyOrder {
+            lsWrapperMock.updateConfiguration(false)
+            authServiceMock.authenticate()
+        }
+    }
+
+    fun `test handleLogin updates configuration even if auth service is null`() {
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(project) } returns lsWrapperMock
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { getSnykCliAuthenticationService(project) } returns null
+
+        cut.handleLogin()
+
+        // updateConfiguration should still be called
+        verify { lsWrapperMock.updateConfiguration(false) }
     }
 
     private fun invokeParseAndSaveConfig(jsonString: String) {
