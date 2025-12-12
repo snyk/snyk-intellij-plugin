@@ -24,11 +24,47 @@ class ThemeBasedStylingGenerator {
         }
 
         /**
+         * Lighten or darken a hex color.
+         *
+         * @param hex    "#RRGGBB"
+         * @param factor -1.0 .. 1.0
+         *               > 0 = lighten, < 0 = darken
+         */
+        fun adjustHexBrightness(hex: String, factor: Double): String {
+            require(factor in -1.0..1.0) { "factor must be between -1.0 and 1.0" }
+
+            val clean = hex.removePrefix("#")
+            require(clean.length == 6) { "Expected 6-char hex like #RRGGBB" }
+
+            fun adjust(comp: String): Int {
+                val c = comp.toInt(16)
+                val result = if (factor >= 0) {
+                    // move toward 255
+                    c + (255 - c) * factor
+                } else {
+                    // move toward 0
+                    c + c * factor
+                }
+                return result.toInt().coerceIn(0, 255)
+            }
+
+            val r = adjust(clean.take(2))
+            val g = adjust(clean.substring(2, 4))
+            val b = adjust(clean.substring(4, 6))
+
+            return "#%02X%02X%02X".format(r, g, b)
+        }
+
+
+        /**
          * Replaces var(--xxx) placeholders in HTML with actual theme values and adds theme classes to body.
          * Supports both VS Code-style (--vscode-xxx) and legacy (--text-color) variables.
          */
         fun replaceWithCustomStyles(htmlToReplace: String): String {
             var html = htmlToReplace
+            val editorColorsManager = EditorColorsManager.getInstance()
+            val isDarkTheme = editorColorsManager.isDarkEditor
+            val darkenOrLightenFactor: Double = if (isDarkTheme) 1.0 else -1.0
 
             // All values computed fresh to support theme changes
             val bgColor = UIUtil.getPanelBackground().toHex()
@@ -48,14 +84,13 @@ class ThemeBasedStylingGenerator {
             val focusBorderColor = UIManager.getColor("Component.focusColor")?.toHex() ?: "#007acc"
             val infoBgColor = JBUI.CurrentTheme.Banner.INFO_BACKGROUND.toHex()
             val infoBorderColor = JBUI.CurrentTheme.Banner.INFO_BORDER_COLOR.toHex()
-            val sectionBackground = JBUI.CurrentTheme.DefaultTabs.hoverBackground().toHex()
-            val editorColorsManager = EditorColorsManager.getInstance()
+            val sectionBackground =
+                adjustHexBrightness(UIUtil.getListBackground().toHex(), 0.05 * darkenOrLightenFactor)
             val editorUiTheme = editorColorsManager.schemeForCurrentUITheme
             val editorBackground = editorUiTheme.getColor(EditorColors.GUTTER_BACKGROUND)?.toHex()
                 ?: editorUiTheme.defaultBackground.toHex()
             val globalScheme = editorColorsManager.globalScheme
             val tearLineColor = globalScheme.getColor(ColorKey.find("TEARLINE_COLOR"))?.toHex() ?: scrollbarColor
-            val isDarkTheme = editorColorsManager.isDarkEditor
             val isHighContrast = globalScheme.name.contains("High contrast", ignoreCase = true)
             val successColor = JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR.toHex()
             val errorColor = JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR.toHex()

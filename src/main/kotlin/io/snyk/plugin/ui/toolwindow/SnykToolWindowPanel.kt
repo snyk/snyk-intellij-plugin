@@ -39,7 +39,6 @@ import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.ReferenceChooserDialog
@@ -696,7 +695,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentOssError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentOssError?.treeNodeSuffix
             "$OSS_ROOT_TEXT $errorSuffix"
         }
         isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
@@ -833,7 +832,7 @@ class SnykToolWindowPanel(
 
         // Gather current tree state on EDT (must be done before reload)
         val userObjectsForExpandedChildren = userObjectsForExpandedNodes(nodeToReload)
-        
+
         // Save the currently selected issue ID (if any) to restore after reload
         val selectedPath = vulnerabilitiesTree.selectionPath
         val selectedIssueId = (selectedPath?.lastPathComponent as? SuggestionTreeNode)?.issue?.id
@@ -858,7 +857,7 @@ class SnykToolWindowPanel(
      */
     private fun restoreSelectionByIssueId(issueId: String?) {
         if (issueId == null) return
-        
+
         smartReloadMode = true
         try {
             val nodeToSelect = TreeUtil.findNode(rootTreeNode) { node ->

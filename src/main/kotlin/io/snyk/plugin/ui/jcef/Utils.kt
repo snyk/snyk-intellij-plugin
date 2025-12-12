@@ -41,9 +41,9 @@ object JCEFUtils {
     /**
      * Creates a new JCEF browser with standard configuration.
      * The caller is responsible for disposing the browser.
-     * @param offScreenRendering Use off-screen rendering (default: false). Set to true for lightweight rendering without native window.
+     * @param offScreenRendering Use off-screen rendering (default: true). Set to true for lightweight rendering without native window.
      */
-    fun createBrowser(offScreenRendering: Boolean = false): Pair<JBCefClient, JBCefBrowser> {
+    fun createBrowser(offScreenRendering: Boolean = true): Pair<JBCefClient, JBCefBrowser> {
         val cefClient = JBCefApp.getInstance().createClient()
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
 
