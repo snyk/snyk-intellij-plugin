@@ -14,24 +14,42 @@ import javax.swing.UIManager
  */
 class ThemeBasedStylingGenerator {
     companion object {
-        // Regex to match var(--varName) or var(--varName, fallback)
-        // Group 1: variable name, Group 2: optional fallback (including comma)
-        private val CSS_VAR_PATTERN = Regex("""var\(--([a-zA-Z0-9_-]+)(,[^)]*)?\)""")
+        // Combined regex to match:
+        // 1. var(--varName) or var(--varName, fallback) - CSS variable usage
+        // 2. --varName: value - CSS variable declaration (to prepend font family)
+        // Groups: 1=var usage varName, 2=var fallback, 3=declaration varName
+        private val CSS_PATTERN = Regex("""var\(--([a-zA-Z0-9_-]+)(,[^)]*)?\)|--([a-zA-Z0-9_-]+):\s""")
 
         /**
-         * Replace all CSS var() references in a single pass using a lookup map.
-         * Falls back to the CSS fallback value if variable is not in the map.
+         * Replace all CSS var() references and variable declarations in a single pass.
+         * @param varMap Map of variable names to replacement values for var() usage
+         * @param declMap Map of variable names to prefix values for declarations (e.g., --default-font: -> --default-font: "Font",)
          */
-        private fun replaceAllVars(html: String, varMap: Map<String, String>): String {
-            return CSS_VAR_PATTERN.replace(html) { matchResult ->
-                val varName = matchResult.groupValues[1]
-                val fallback = matchResult.groupValues[2]
-                varMap[varName] ?: if (fallback.isNotEmpty()) {
-                    // Keep original var() with fallback - browser will use fallback
-                    matchResult.value
-                } else {
-                    // No replacement and no fallback - keep original
-                    matchResult.value
+        private fun replaceAllCssVars(
+            html: String,
+            varMap: Map<String, String>,
+            declPrefixMap: Map<String, String>
+        ): String {
+            return CSS_PATTERN.replace(html) { matchResult ->
+                val varUsageName = matchResult.groupValues[1]
+                val varFallback = matchResult.groupValues[2]
+                val declName = matchResult.groupValues[3]
+
+                when {
+                    // var(--xxx) usage
+                    varUsageName.isNotEmpty() -> {
+                        varMap[varUsageName] ?: matchResult.value
+                    }
+                    // --xxx: declaration
+                    declName.isNotEmpty() -> {
+                        val prefix = declPrefixMap[declName]
+                        if (prefix != null) {
+                            "--$declName: $prefix"
+                        } else {
+                            matchResult.value
+                        }
+                    }
+                    else -> matchResult.value
                 }
             }
         }
@@ -183,11 +201,13 @@ class ThemeBasedStylingGenerator {
                 "focus-color" to focusBorderColor
             )
 
-            // Single-pass replacement of all CSS variables
-            html = replaceAllVars(html, varMap)
+            // Declaration prefix map for CSS variable declarations (e.g., --default-font: sans-serif -> --default-font: "Font", sans-serif)
+            val declPrefixMap = mapOf(
+                "default-font" to "\"$fontFamily\", "
+            )
 
-            // Special handling for --default-font CSS property declaration
-            html = html.replace("--default-font: ", "--default-font: \"$fontFamily\", ")
+            // Single-pass replacement of all CSS variables and declarations
+            html = replaceAllCssVars(html, varMap, declPrefixMap)
 
             // Theme classes on body
             val contrast = if (isHighContrast) "high-contrast" else ""
