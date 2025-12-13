@@ -10,17 +10,30 @@ import javax.swing.UIManager
 
 /**
  * Centralized theme styling generator for JCEF HTML panels.
- * Replaces CSS variable placeholders with actual IDE theme values.
+ * Replaces CSS variable placeholders with actual IDE theme values in a single pass.
  */
 class ThemeBasedStylingGenerator {
     companion object {
+        // Regex to match var(--varName) or var(--varName, fallback)
+        // Group 1: variable name, Group 2: optional fallback (including comma)
+        private val CSS_VAR_PATTERN = Regex("""var\(--([a-zA-Z0-9_-]+)(,[^)]*)?\)""")
+
         /**
-         * Replaces var(--xxx) or var(--xxx, fallback) with the replacement value.
+         * Replace all CSS var() references in a single pass using a lookup map.
+         * Falls back to the CSS fallback value if variable is not in the map.
          */
-        private fun replaceVar(html: String, varName: String, replacement: String): String {
-            // Match var(--varName) or var(--varName, anything)
-            val pattern = Regex("""var\(--$varName(?:,[^)]*)??\)""")
-            return html.replace(pattern, replacement)
+        private fun replaceAllVars(html: String, varMap: Map<String, String>): String {
+            return CSS_VAR_PATTERN.replace(html) { matchResult ->
+                val varName = matchResult.groupValues[1]
+                val fallback = matchResult.groupValues[2]
+                varMap[varName] ?: if (fallback.isNotEmpty()) {
+                    // Keep original var() with fallback - browser will use fallback
+                    matchResult.value
+                } else {
+                    // No replacement and no fallback - keep original
+                    matchResult.value
+                }
+            }
         }
 
         /**
@@ -101,74 +114,80 @@ class ThemeBasedStylingGenerator {
             val tabBackground = JBUI.CurrentTheme.DefaultTabs.background().toHex()
             val labelColor = JBUI.CurrentTheme.Label.foreground().toHex()
             val labelBgColor = UIUtil.getLabelBackground().toHex()
-
-            // VS Code style variables (settings panel)
-            html = replaceVar(html, "vscode-font-family", "'$fontFamily', system-ui, -apple-system, sans-serif")
-            html = replaceVar(html, "vscode-font-size", "${fontSize}px")
-            html = replaceVar(html, "vscode-editor-background", bgColor)
-            html = replaceVar(html, "vscode-foreground", fgColor)
-            html = replaceVar(html, "vscode-editor-foreground", fgColor)
-            html = replaceVar(html, "vscode-input-background", inputBgColor)
-            html = replaceVar(html, "vscode-input-foreground", inputFgColor)
-            html = replaceVar(html, "vscode-input-border", borderColor)
-            html = replaceVar(html, "vscode-button-background", buttonBgColor)
-            html = replaceVar(html, "vscode-button-foreground", buttonFgColor)
-            html = replaceVar(html, "vscode-focusBorder", focusBorderColor)
             val checkboxBgColor = UIManager.getColor("CheckBox.background")?.toHex() ?: inputBgColor
             val checkboxFgColor = UIManager.getColor("CheckBox.foreground")?.toHex() ?: fgColor
             val checkboxSelectColor = UIManager.getColor("CheckBox.select")?.toHex() ?: buttonBgColor
-            html = replaceVar(html, "vscode-checkbox-background", checkboxBgColor)
-            html = replaceVar(html, "vscode-checkbox-foreground", checkboxFgColor)
-            html = replaceVar(html, "vscode-checkbox-selectBackground", checkboxSelectColor)
-            html = replaceVar(html, "vscode-checkbox-border", borderColor)
-            html = replaceVar(html, "vscode-scrollbarSlider-background", scrollbarColor)
-            html = replaceVar(html, "vscode-scrollbarSlider-hoverBackground", scrollbarColor)
-            html = replaceVar(html, "vscode-scrollbarSlider-activeBackground", scrollbarColor)
-            html = replaceVar(html, "vscode-panel-border", borderColor)
-            html = replaceVar(html, "vscode-editor-inactiveSelectionBackground", sectionBackground)
-            html = replaceVar(html, "vscode-inputValidation-infoBackground", infoBgColor)
-            html = replaceVar(html, "vscode-inputValidation-infoForeground", fgColor)
-            html = replaceVar(html, "vscode-inputValidation-infoBorder", infoBorderColor)
-            html = replaceVar(html, "vscode-textBlockQuote-background", infoBgColor)
-            html = replaceVar(html, "vscode-textBlockQuote-border", infoBorderColor)
-            html = replaceVar(html, "vscode-descriptionForeground", dimmedFgColor)
-            html = replaceVar(html, "vscode-inputValidation-errorBackground", errorColor)
-            html = replaceVar(html, "vscode-inputValidation-errorBorder", errorColor)
 
+            // Build variable map for single-pass replacement
+            val varMap = mapOf(
+                // VS Code style variables (settings panel)
+                "vscode-font-family" to "'$fontFamily', system-ui, -apple-system, sans-serif",
+                "vscode-font-size" to "${fontSize}px",
+                "vscode-editor-background" to bgColor,
+                "vscode-foreground" to fgColor,
+                "vscode-editor-foreground" to fgColor,
+                "vscode-input-background" to inputBgColor,
+                "vscode-input-foreground" to inputFgColor,
+                "vscode-input-border" to borderColor,
+                "vscode-button-background" to buttonBgColor,
+                "vscode-button-foreground" to buttonFgColor,
+                "vscode-focusBorder" to focusBorderColor,
+                "vscode-checkbox-background" to checkboxBgColor,
+                "vscode-checkbox-foreground" to checkboxFgColor,
+                "vscode-checkbox-selectBackground" to checkboxSelectColor,
+                "vscode-checkbox-border" to borderColor,
+                "vscode-scrollbarSlider-background" to scrollbarColor,
+                "vscode-scrollbarSlider-hoverBackground" to scrollbarColor,
+                "vscode-scrollbarSlider-activeBackground" to scrollbarColor,
+                "vscode-panel-border" to borderColor,
+                "vscode-editor-inactiveSelectionBackground" to sectionBackground,
+                "vscode-inputValidation-infoBackground" to infoBgColor,
+                "vscode-inputValidation-infoForeground" to fgColor,
+                "vscode-inputValidation-infoBorder" to infoBorderColor,
+                "vscode-textBlockQuote-background" to infoBgColor,
+                "vscode-textBlockQuote-border" to infoBorderColor,
+                "vscode-descriptionForeground" to dimmedFgColor,
+                "vscode-inputValidation-errorBackground" to errorColor,
+                "vscode-inputValidation-errorBorder" to errorColor,
+                // Legacy variables
+                "main-font-size" to getRelativeFontSize(fontSize),
+                "text-color" to fgColor,
+                "dimmed-text-color" to dimmedFgColor,
+                "background-color" to bgColor,
+                "ide-background-color" to bgColor,
+                "border-color" to borderColor,
+                "horizontal-border-color" to borderColor,
+                "link-color" to linkColor,
+                "example-line-added-color" to successColor,
+                "example-line-removed-color" to errorColor,
+                "data-flow-body-color" to treeBackground,
+                "tab-item-github-icon-color" to treeForeground,
+                "scrollbar-thumb-color" to tearLineColor,
+                "tab-item-hover-color" to tabUnderline,
+                "tabs-bottom-color" to tabBackground,
+                "editor-color" to inputBgColor,
+                "label-color" to labelColor,
+                "container-background-color" to editorBackground,
+                "button-background-color" to buttonBgColor,
+                "button-text-color" to fgColor,
+                "input-border" to borderColor,
+                "disabled-background-color" to borderColor,
+                "warning-background" to warningColor,
+                "warning-text" to labelBgColor,
+                "code-background-color" to editorBackground,
+                "circle-color" to linkColor,
+                // Fallback HTML variables
+                "default-font" to "'$fontFamily', system-ui, -apple-system, sans-serif",
+                "section-background-color" to sectionBackground,
+                "input-background-color" to inputBgColor,
+                "focus-color" to focusBorderColor
+            )
+
+            // Single-pass replacement of all CSS variables
+            html = replaceAllVars(html, varMap)
+
+            // Special handling for --default-font CSS property declaration
             html = html.replace("--default-font: ", "--default-font: \"$fontFamily\", ")
-            // Support var(--default-font) usage (fallback HTML uses this)
-            html = replaceVar(html, "default-font", "'$fontFamily', system-ui, -apple-system, sans-serif")
-            html = replaceVar(html, "main-font-size", getRelativeFontSize(fontSize))
-            html = replaceVar(html, "text-color", fgColor)
-            html = replaceVar(html, "dimmed-text-color", dimmedFgColor)
-            html = replaceVar(html, "background-color", bgColor)
-            html = replaceVar(html, "ide-background-color", bgColor)
-            html = replaceVar(html, "border-color", borderColor)
-            html = replaceVar(html, "horizontal-border-color", borderColor)
-            html = replaceVar(html, "link-color", linkColor)
-            html = replaceVar(html, "example-line-added-color", successColor)
-            html = replaceVar(html, "example-line-removed-color", errorColor)
-            html = replaceVar(html, "data-flow-body-color", treeBackground)
-            html = replaceVar(html, "tab-item-github-icon-color", treeForeground)
-            html = replaceVar(html, "scrollbar-thumb-color", tearLineColor)
-            html = replaceVar(html, "tab-item-hover-color", tabUnderline)
-            html = replaceVar(html, "tabs-bottom-color", tabBackground)
-            html = replaceVar(html, "editor-color", inputBgColor)
-            html = replaceVar(html, "label-color", labelColor)
-            html = replaceVar(html, "container-background-color", editorBackground)
-            html = replaceVar(html, "button-background-color", buttonBgColor)
-            html = replaceVar(html, "button-text-color", fgColor)
-            html = replaceVar(html, "input-border", borderColor)
-            html = replaceVar(html, "disabled-background-color", borderColor)
-            html = replaceVar(html, "warning-background", warningColor)
-            html = replaceVar(html, "warning-text", labelBgColor)
-            html = replaceVar(html, "code-background-color", editorBackground)
-            html = replaceVar(html, "circle-color", borderColor)
-
-            // Additional variables for fallback HTML compatibility
-            html = replaceVar(html, "section-background-color", sectionBackground)
-            html = replaceVar(html, "input-background-color", inputBgColor)
-            html = replaceVar(html, "focus-color", focusBorderColor)
 
             // Theme classes on body
             val contrast = if (isHighContrast) "high-contrast" else ""

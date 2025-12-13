@@ -33,16 +33,6 @@ class SaveConfigHandler(
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = Gson()
 
-    /**
-     * Handles the login request from the HTML panel.
-     * LS calls getAndSaveIdeConfig() before __ideLogin__(), so config is already saved.
-     * This method updates LS with new settings (e.g., auth method) before authenticating.
-     */
-    internal fun handleLogin() {
-        LanguageServerWrapper.getInstance(project).updateConfiguration(false)
-        getSnykCliAuthenticationService(project)?.authenticate()
-    }
-
     fun generateSaveConfigHandler(
         jbCefBrowser: JBCefBrowserBase,
         getThemeCss: (() -> String)? = null,
@@ -88,7 +78,8 @@ class SaveConfigHandler(
         }
 
         loginQuery.addHandler {
-            handleLogin()
+            // Don't use runInBackground - authenticate() handles its own threading
+            getSnykCliAuthenticationService(project)?.authenticate()
             JBCefJSQuery.Response("success")
         }
 
