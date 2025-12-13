@@ -23,9 +23,9 @@ class ThemeBasedStylingGenerator {
         /**
          * Replace all CSS var() references and variable declarations in a single pass.
          * @param varMap Map of variable names to replacement values for var() usage
-         * @param declMap Map of variable names to prefix values for declarations (e.g., --default-font: -> --default-font: "Font",)
+         * @param declPrefixMap Map of variable names to prefix values for declarations (e.g., --default-font: -> --default-font: "Font",)
          */
-        private fun replaceAllCssVars(
+        internal fun replaceAllCssVars(
             html: String,
             varMap: Map<String, String>,
             declPrefixMap: Map<String, String>
