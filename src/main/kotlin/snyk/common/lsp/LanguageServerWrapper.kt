@@ -497,6 +497,9 @@ class LanguageServerWrapper(
             }
             .toList()
 
+        val trustService = service<WorkspaceTrustService>()
+        val trustedFolders = trustService.settings.getTrustedPaths()
+
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
@@ -525,6 +528,7 @@ class LanguageServerWrapper(
             authenticationMethod = ps.authenticationType.languageServerSettingsName,
             enableSnykOSSQuickFixCodeActions = "true",
             folderConfigs = folderConfigs,
+            trustedFolders = trustedFolders,
         )
     }
 

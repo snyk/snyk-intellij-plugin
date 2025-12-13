@@ -120,4 +120,112 @@ class ThemeBasedStylingGeneratorTest: BasePlatformTestCase() {
         assertTrue(result.contains("Some content with no variables"))
         assertTrue(result.contains("class=\"test\""))
     }
+
+    // Direct tests for replaceAllCssVars
+
+    fun `test replaceAllCssVars replaces var usage from map`() {
+        val html = """color: var(--text-color);"""
+        val varMap = mapOf("text-color" to "#ffffff")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
+        
+        assertEquals("color: #ffffff;", result)
+    }
+
+    fun `test replaceAllCssVars replaces var usage with fallback`() {
+        val html = """color: var(--text-color, #000000);"""
+        val varMap = mapOf("text-color" to "#ffffff")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
+        
+        // Should replace entire var() including fallback
+        assertEquals("color: #ffffff;", result)
+    }
+
+    fun `test replaceAllCssVars preserves var with fallback when not in map`() {
+        val html = """color: var(--unknown-var, #000000);"""
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, emptyMap(), emptyMap())
+        
+        // Should keep original var() with fallback
+        assertEquals("""color: var(--unknown-var, #000000);""", result)
+    }
+
+    fun `test replaceAllCssVars preserves var without fallback when not in map`() {
+        val html = """color: var(--unknown-var);"""
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, emptyMap(), emptyMap())
+        
+        // Should keep original var()
+        assertEquals("""color: var(--unknown-var);""", result)
+    }
+
+    fun `test replaceAllCssVars replaces css declaration with prefix`() {
+        val html = """--default-font: sans-serif;"""
+        val declPrefixMap = mapOf("default-font" to "\"Arial\", ")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, emptyMap(), declPrefixMap)
+        
+        assertEquals("""--default-font: "Arial", sans-serif;""", result)
+    }
+
+    fun `test replaceAllCssVars handles multiple variables in single pass`() {
+        val html = """
+            .test {
+                color: var(--text-color);
+                background: var(--bg-color);
+                border: 1px solid var(--border-color, #ccc);
+            }
+        """.trimIndent()
+        val varMap = mapOf(
+            "text-color" to "#111",
+            "bg-color" to "#222",
+            "border-color" to "#333"
+        )
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
+        
+        assertTrue(result.contains("#111"))
+        assertTrue(result.contains("#222"))
+        assertTrue(result.contains("#333"))
+        assertFalse(result.contains("var(--"))
+    }
+
+    fun `test replaceAllCssVars handles both var usage and declaration in same html`() {
+        val html = """
+            :root { --default-font: sans-serif; }
+            body { font-family: var(--default-font); color: var(--text-color); }
+        """.trimIndent()
+        val varMap = mapOf(
+            "default-font" to "'Arial', sans-serif",
+            "text-color" to "#000"
+        )
+        val declPrefixMap = mapOf("default-font" to "\"Segoe UI\", ")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, declPrefixMap)
+        
+        // Declaration should have prefix
+        assertTrue(result.contains("--default-font: \"Segoe UI\", sans-serif"))
+        // var() usages should be replaced
+        assertTrue(result.contains("font-family: 'Arial', sans-serif"))
+        assertTrue(result.contains("color: #000"))
+    }
+
+    fun `test replaceAllCssVars handles hyphenated variable names`() {
+        val html = """color: var(--vscode-editor-foreground);"""
+        val varMap = mapOf("vscode-editor-foreground" to "#abcdef")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
+        
+        assertEquals("color: #abcdef;", result)
+    }
+
+    fun `test replaceAllCssVars handles underscored variable names`() {
+        val html = """color: var(--my_custom_var);"""
+        val varMap = mapOf("my_custom_var" to "#123456")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
+        
+        assertEquals("color: #123456;", result)
+    }
+
+    fun `test replaceAllCssVars handles nested fallback syntax`() {
+        val html = """color: var(--primary, var(--fallback, #000));"""
+        val varMap = mapOf("primary" to "#fff")
+        val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
+        
+        // Should replace outer var, inner var remains but parsing stops at first )
+        assertTrue(result.contains("#fff"))
+    }
 }
