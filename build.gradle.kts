@@ -17,7 +17,7 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.5.0"
     id("org.jetbrains.kotlin.jvm") version "2.1.21"
     id("io.gitlab.arturbosch.detekt") version ("1.23.6")
-    id("pl.allegro.tech.build.axion-release") version "1.17.0"
+    id("pl.allegro.tech.build.axion-release") version "1.21.1"
 }
 
 version = scmVersion.version
