@@ -14,7 +14,7 @@ fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
     id("org.jetbrains.changelog") version "2.2.0"
-    id("org.jetbrains.intellij.platform") version "2.10.5"
+    id("org.jetbrains.intellij.platform") version "2.5.0"
     id("org.jetbrains.kotlin.jvm") version "2.1.21"
     id("io.gitlab.arturbosch.detekt") version ("1.23.6")
     id("pl.allegro.tech.build.axion-release") version "1.17.0"
@@ -73,7 +73,8 @@ dependencies {
         exclude(group = "org.hamcrest")
     }
     testImplementation("org.hamcrest:hamcrest:2.2")
-    testImplementation("io.mockk:mockk:1.14.2")
+    testImplementation("org.opentest4j:opentest4j:1.3.0")
+    testImplementation("io.mockk:mockk:1.14.7")
     testImplementation("org.awaitility:awaitility:4.2.0")
 
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
