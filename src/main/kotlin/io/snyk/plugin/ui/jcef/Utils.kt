@@ -49,7 +49,7 @@ object JCEFUtils {
 
         val jbCefBrowser = JBCefBrowserBuilder()
             .setClient(cefClient)
-            .setEnableOpenDevToolsMenuItem(true)
+            .setEnableOpenDevToolsMenuItem(false)
             .setMouseWheelEventEnable(true)
             .setOffScreenRendering(offScreenRendering)
             .setUrl("about:blank")

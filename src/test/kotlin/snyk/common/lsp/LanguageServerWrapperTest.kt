@@ -430,6 +430,8 @@ class LanguageServerWrapperTest {
         settings.ignoreUnknownCA = true
         settings.cliPath = "testCliPath"
         settings.organization = "org"
+        val expectedTrustedFolders = listOf("/path/to/trusted1", "/path/to/trusted2")
+        every { trustServiceMock.settings.getTrustedPaths() } returns expectedTrustedFolders
 
         val actual = cut.getSettings()
 
@@ -441,6 +443,7 @@ class LanguageServerWrapperTest {
         assertEquals(getCliFile().absolutePath, actual.cliPath)
         assertEquals(settings.organization, actual.organization)
         assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
+        assertEquals(expectedTrustedFolders, actual.trustedFolders)
     }
 
     private fun simulateRunningLS() {
