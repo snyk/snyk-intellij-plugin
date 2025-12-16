@@ -21,6 +21,7 @@ import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
+import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
 import java.util.concurrent.CountDownLatch
@@ -38,11 +39,14 @@ class HTMLSettingsPanel(
     private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
     private var jbCefClient: JBCefClient? = null
     private var jbCefBrowser: JBCefBrowser? = null
-    @Volatile private var isUsingFallback = false
-    @Volatile private var isDisposed = false
+    @Volatile
+    private var isUsingFallback = false
+    @Volatile
+    private var isDisposed = false
     private val modified = AtomicBoolean(false)
     private var currentNonce: String = JCEFUtils.generateNonce()
-    @Volatile private var lastLsError: String? = null
+    @Volatile
+    private var lastLsError: String? = null
     private val applySaveLatch = AtomicReference<CountDownLatch?>(null)
 
     init {
@@ -143,7 +147,10 @@ class HTMLSettingsPanel(
                 .replace("{{CLI_PATH}}", settings.cliPath)
                 .replace("{{CHANNEL_STABLE_SELECTED}}", if (settings.cliReleaseChannel == "stable") "selected" else "")
                 .replace("{{CHANNEL_RC_SELECTED}}", if (settings.cliReleaseChannel == "rc") "selected" else "")
-                .replace("{{CHANNEL_PREVIEW_SELECTED}}", if (settings.cliReleaseChannel == "preview") "selected" else "")
+                .replace(
+                    "{{CHANNEL_PREVIEW_SELECTED}}",
+                    if (settings.cliReleaseChannel == "preview") "selected" else ""
+                )
         } catch (e: Exception) {
             logger.warn("Failed to load fallback HTML", e)
             null
@@ -177,7 +184,7 @@ class HTMLSettingsPanel(
                 applySaveLatch.get()?.countDown()
             }
         )
-        val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!, null, currentNonce)
+        val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!, currentNonce)
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
 
         // Add browser to panel first (it already has IDE background from createBrowser)
@@ -278,40 +285,53 @@ class HTMLSettingsPanel(
             0
         )
 
-        // Wait for save to complete (with timeout to avoid blocking forever)
-        try {
-            if (!latch.await(5, TimeUnit.SECONDS)) {
-                logger.warn("Timeout waiting for settings save to complete, running post-apply anyway")
-                runPostApplySettings()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            var shouldRunPostApply = false
+            try {
+                if (!latch.await(5, TimeUnit.SECONDS)) {
+                    logger.warn("Timeout waiting for settings save to complete, running post-apply anyway")
+                    shouldRunPostApply = true
+                }
+            } catch (e: InterruptedException) {
+                logger.warn("Interrupted while waiting for settings save", e)
+                Thread.currentThread().interrupt()
+                shouldRunPostApply = true
+            } finally {
+                applySaveLatch.set(null)
             }
-        } catch (e: InterruptedException) {
-            logger.warn("Interrupted while waiting for settings save", e)
-            Thread.currentThread().interrupt()
-        } finally {
-            applySaveLatch.set(null)
-        }
 
-        modified.set(false)
+            ApplicationManager.getApplication().invokeLater({
+                if (isDisposed) return@invokeLater
+                if (shouldRunPostApply) {
+                    runPostApplySettings()
+                }
+                modified.set(false)
+            }, ModalityState.any())
+        }
     }
 
     // Stored for change detection across async save - initialized with current values
-    @Volatile private var previousReleaseChannel: String = pluginSettings().cliReleaseChannel
-    @Volatile private var previousDeltaEnabled: Boolean = pluginSettings().isDeltaFindingsEnabled()
+    @Volatile
+    private var previousReleaseChannel: String = pluginSettings().cliReleaseChannel
+    @Volatile
+    private var previousDeltaEnabled: Boolean = pluginSettings().isDeltaFindingsEnabled()
 
     private fun runPostApplySettings() {
         val settings = pluginSettings()
-        runInBackground("Snyk: applying settings") {
-            // Handle release channel change - prompt to download new CLI
-            if (settings.cliReleaseChannel != previousReleaseChannel) {
-                handleReleaseChannelChange(project)
-            }
+        runAsync {
+            runInBackground("Snyk: applying settings") {
+                // Handle release channel change - prompt to download new CLI
+                if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
+                    handleReleaseChannelChange(project)
+                }
 
-            // Handle delta findings change - clear caches
-            if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
-                handleDeltaFindingsChange(project)
-            }
+                // Handle delta findings change - clear caches
+                if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
+                    handleDeltaFindingsChange(project)
+                }
 
-            executePostApplySettings(project)
+                executePostApplySettings(project)
+            }
         }
     }
 
