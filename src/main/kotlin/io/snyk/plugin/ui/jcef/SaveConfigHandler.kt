@@ -35,7 +35,6 @@ class SaveConfigHandler(
 
     fun generateSaveConfigHandler(
         jbCefBrowser: JBCefBrowserBase,
-        getThemeCss: (() -> String)? = null,
         nonce: String? = null
     ): CefLoadHandlerAdapter {
         val saveConfigQuery = JBCefJSQuery.create(jbCefBrowser)
@@ -110,30 +109,6 @@ class SaveConfigHandler(
         return object : CefLoadHandlerAdapter() {
             override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
                 if (frame.isMain) {
-                    // Inject IDE theme CSS variables
-                    val themeCss = try {
-                        getThemeCss?.invoke()
-                    } catch (e: Exception) {
-                        logger.warn("Error getting theme CSS", e)
-                        null
-                    }
-                    if (!themeCss.isNullOrBlank()) {
-                        logger.debug("Injecting theme CSS (${themeCss.length} chars), nonce: ${nonce?.take(8)}...")
-                        val nonceAttr = if (!nonce.isNullOrBlank()) "style.setAttribute('nonce', ${gson.toJson(nonce)});" else ""
-                        val cssScript = """
-                        (function() {
-                            var style = document.createElement('style');
-                            $nonceAttr
-                            style.textContent = ${gson.toJson(themeCss)};
-                            document.head.appendChild(style);
-                            console.log('IDE theme CSS injected');
-                        })();
-                        """
-                        browser.executeJavaScript(cssScript, browser.url, 0)
-                    } else {
-                        logger.warn("Theme CSS is null or blank, skipping injection")
-                    }
-
                     // Inject IDE bridge functions
                     val script = """
                     (function() {
