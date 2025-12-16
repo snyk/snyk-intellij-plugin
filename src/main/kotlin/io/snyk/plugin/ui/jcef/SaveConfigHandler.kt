@@ -13,7 +13,6 @@ import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import java.io.File.separator
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.cef.browser.CefBrowser
@@ -22,6 +21,7 @@ import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.trust.WorkspaceTrustService
+import java.io.File.separator
 import java.nio.file.Paths
 
 class SaveConfigHandler(
@@ -39,11 +39,13 @@ class SaveConfigHandler(
         nonce: String? = null
     ): CefLoadHandlerAdapter {
         val saveConfigQuery = JBCefJSQuery.create(jbCefBrowser)
+        val saveAttemptFinishedQuery = JBCefJSQuery.create(jbCefBrowser)
         val loginQuery = JBCefJSQuery.create(jbCefBrowser)
         val logoutQuery = JBCefJSQuery.create(jbCefBrowser)
         val onFormDirtyChangeQuery = JBCefJSQuery.create(jbCefBrowser)
 
         saveConfigQuery.addHandler { jsonString ->
+            var response: JBCefJSQuery.Response
             try {
                 parseAndSaveConfig(jsonString)
                 // Hide any previous error on success
@@ -51,9 +53,7 @@ class SaveConfigHandler(
                     "if (typeof window.hideError === 'function') { window.hideError(); }",
                     jbCefBrowser.cefBrowser.url, 0
                 )
-                // Notify that save is complete (for post-apply logic)
-                onSaveComplete?.invoke()
-                JBCefJSQuery.Response("success")
+                response = JBCefJSQuery.Response("success")
             } catch (e: Exception) {
                 logger.warn("Error saving config", e)
                 // Show error in browser
@@ -62,8 +62,24 @@ class SaveConfigHandler(
                     "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
                     jbCefBrowser.cefBrowser.url, 0
                 )
-                JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
+                response = JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
+            } finally {
+                try {
+                    onSaveComplete?.invoke()
+                } catch (e: Exception) {
+                    logger.warn("Error in onSaveComplete callback", e)
+                }
             }
+            response
+        }
+
+        saveAttemptFinishedQuery.addHandler {
+            try {
+                onSaveComplete?.invoke()
+            } catch (e: Exception) {
+                logger.warn("Error in onSaveComplete callback", e)
+            }
+            JBCefJSQuery.Response("success")
         }
 
         // Handle dirty state changes from LS DirtyTracker and fallback HTML
@@ -121,13 +137,21 @@ class SaveConfigHandler(
                     // Inject IDE bridge functions
                     val script = """
                     (function() {
-                        if (window.__saveIdeConfig__) {
-                            return;
+                        if (typeof window.__saveIdeConfig__ !== 'function') {
+                            window.__saveIdeConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
                         }
-                        window.__saveIdeConfig__ = function(value) { ${saveConfigQuery.inject("value")} };
-                        window.__onFormDirtyChange__ = function(isDirty) { ${onFormDirtyChangeQuery.inject("String(isDirty)")} };
-                        window.__ideLogin__ = function() { ${loginQuery.inject("'login'")} };
-                        window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
+                        if (typeof window.__ideSaveAttemptFinished__ !== 'function') {
+                            window.__ideSaveAttemptFinished__ = function(status) { ${saveAttemptFinishedQuery.inject("String(status)")} };
+                        }
+                        if (typeof window.__onFormDirtyChange__ !== 'function') {
+                            window.__onFormDirtyChange__ = function(isDirty) { ${onFormDirtyChangeQuery.inject("String(isDirty)")} };
+                        }
+                        if (typeof window.__ideLogin__ !== 'function') {
+                            window.__ideLogin__ = function() { ${loginQuery.inject("'login'")} };
+                        }
+                        if (typeof window.__ideLogout__ !== 'function') {
+                            window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
+                        }
                     })();
                     """
                     browser.executeJavaScript(script, browser.url, 0)
