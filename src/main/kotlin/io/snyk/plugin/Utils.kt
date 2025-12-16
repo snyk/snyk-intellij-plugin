@@ -329,23 +329,28 @@ fun navigateToSource(
 // `Memory leak` deceted by Jetbrains, see details here:
 // https://youtrack.jetbrains.com/issue/IJSDK-979/Usage-of-ShowSettingsUtilshowSettingsDialogProject-jClassT-will-cause-Memory-leak-detected-KotlinCompilerConfigurableTab
 fun showSettings(project: Project, componentNameToFocus: String, componentHelpHint: String) {
-    ShowSettingsUtil.getInstance()
-        .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java) {
-            val componentToFocus = UIComponentFinder.getComponentByName(
-                it.snykSettingsDialog.getRootPanel(),
-                JComponent::class,
-                componentNameToFocus
-            )
-            if (componentToFocus != null) {
-                it.snykSettingsDialog.runBackgroundable({
-                    componentToFocus.requestFocusInWindow()
-                    SnykBalloonNotificationHelper
-                        .showInfoBalloonForComponent(componentHelpHint, componentToFocus, true)
-                }, delayMillis = 1000)
-            } else {
-                logger.warn("Can't find component with name: $componentNameToFocus")
+    ApplicationManager.getApplication().invokeLater {
+        if (project.isDisposed) return@invokeLater
+        ShowSettingsUtil.getInstance()
+            .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java) {
+                val componentToFocus = UIComponentFinder.getComponentByName(
+                    it.snykSettingsDialog.getRootPanel(),
+                    JComponent::class,
+                    componentNameToFocus
+                )
+                if (componentToFocus != null) {
+                    it.snykSettingsDialog.runBackgroundable({
+                        ApplicationManager.getApplication().invokeLater {
+                            componentToFocus.requestFocusInWindow()
+                            SnykBalloonNotificationHelper
+                                .showInfoBalloonForComponent(componentHelpHint, componentToFocus, true)
+                        }
+                    }, delayMillis = 1000)
+                } else {
+                    logger.warn("Can't find component with name: $componentNameToFocus")
+                }
             }
-        }
+    }
 }
 
 fun String.suffixIfNot(suffix: String): String {
