@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
+import org.jetbrains.concurrency.runAsync
 
 /**
  * Show Snyk settings panel action.
@@ -14,8 +15,11 @@ import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        ShowSettingsUtil.getInstance()
-            .showSettingsDialog(actionEvent.project!!, SnykProjectSettingsConfigurable::class.java)
+        runAsync {
+            if (actionEvent.project?.isDisposed == true) return@runAsync
+            ShowSettingsUtil.getInstance()
+                .showSettingsDialog(actionEvent.project!!, SnykProjectSettingsConfigurable::class.java)
+        }
     }
 
     override fun update(actionEvent: AnActionEvent) {
