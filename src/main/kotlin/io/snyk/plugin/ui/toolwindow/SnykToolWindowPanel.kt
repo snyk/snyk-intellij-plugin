@@ -197,6 +197,7 @@ class SnykToolWindowPanel(
 
         vulnerabilitiesTree.selectionModel.addTreeSelectionListener { treeSelectionEvent ->
             runAsync {
+                if (isDisposed || project.isDisposed) return@runAsync
                 updateDescriptionPanelBySelectedTreeNode(treeSelectionEvent)
             }
         }
