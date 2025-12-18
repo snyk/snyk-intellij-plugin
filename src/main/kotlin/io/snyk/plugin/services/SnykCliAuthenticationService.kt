@@ -70,15 +70,19 @@ class SnykCliAuthenticationService(
                 }, ModalityState.any())
 
                 loginFuture?.whenComplete { result, e ->
-                    val token = result?.toString() ?: ""
-
                     if (e is CancellationException) {
                         logger.warn("login timed out or cancelled", e)
                     } else if (e != null) {
                         logger.warn("could not login", e)
                     }
 
-                    pluginSettings().token = token
+                    // Only set token if result is not blank (avoid overwriting token from hasAuthenticated)
+                    val token = result?.toString() ?: ""
+                    if (token.isNotBlank()) {
+                        pluginSettings().token = token
+                    } else {
+                        logger.warn("no token returned by login")
+                    }
                     val exitCode = if (!pluginSettings().token.isNullOrBlank()) {
                         DialogWrapper.OK_EXIT_CODE
                     } else {
