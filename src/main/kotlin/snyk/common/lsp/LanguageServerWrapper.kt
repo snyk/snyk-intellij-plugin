@@ -529,6 +529,7 @@ class LanguageServerWrapper(
             enableSnykOSSQuickFixCodeActions = "true",
             folderConfigs = folderConfigs,
             trustedFolders = trustedFolders,
+            riskScoreThreshold = ps.riskScoreThreshold,
         )
     }
 
