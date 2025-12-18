@@ -6,7 +6,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -274,6 +273,11 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
         if (disposed) return
+
+        // Always cancel pending login to close auth dialog, even if token unchanged
+        val wrapper = LanguageServerWrapper.getInstance(project)
+        wrapper.cancelPreviousLogin()
+
         val oldToken = pluginSettings().token ?: ""
         val oldApiUrl = pluginSettings().customEndpointUrl
         if (oldToken == param.token && oldApiUrl == param.apiUrl) return
@@ -295,7 +299,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         logger.info("force-saved settings")
 
         if (oldToken.isBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
-            val wrapper = LanguageServerWrapper.getInstance(project)
             wrapper.sendScanCommand()
         }
     }
