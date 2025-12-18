@@ -47,7 +47,8 @@ data class LanguageServerSettings(
     @SerializedName("hoverVerbosity") val hoverVerbosity: Int = 0,
     @SerializedName("outputFormat") val outputFormat: String = "html",
     @SerializedName("enableDeltaFindings") val enableDeltaFindings: String = pluginSettings().isDeltaFindingsEnabled().toString(),
-    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = emptyList()
+    @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = emptyList(),
+    @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
 )
 
 data class SeverityFilter(

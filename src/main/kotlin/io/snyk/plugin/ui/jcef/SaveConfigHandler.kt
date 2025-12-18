@@ -224,6 +224,16 @@ class SaveConfigHandler(
             settings.setDeltaEnabled(config.getBoolean("enableDeltaFindings"))
         }
 
+        // Risk score threshold - only apply if key is present
+        if (config.containsKey("riskScoreThreshold")) {
+            val value = config["riskScoreThreshold"]
+            settings.riskScoreThreshold = when (value) {
+                is Number -> value.toInt()
+                is String -> value.toIntOrNull()
+                else -> null
+            }
+        }
+
         // CLI settings
         config.getString("cliPath")?.let { path ->
             settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
