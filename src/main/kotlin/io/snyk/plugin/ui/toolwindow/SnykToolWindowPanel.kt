@@ -127,7 +127,8 @@ class SnykToolWindowPanel(
 
     // Debouncing for annotation refresh - coalesces per-file diagnostic updates
     private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
-    private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+    private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> =
+        java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     // Tree node expander for progressive, non-blocking expansion
     private val treeNodeExpander by lazy {
@@ -137,8 +138,10 @@ class SnykToolWindowPanel(
     companion object {
         // Debounce delay in milliseconds - coalesces rapid scan updates
         private const val RELOAD_DEBOUNCE_MS = 100
+
         // Debounce delay for annotation refresh - allows collecting multiple files
         private const val ANNOTATION_REFRESH_DEBOUNCE_MS = 150
+
         // Max files to refresh individually before falling back to global refresh
         private const val MAX_INDIVIDUAL_ANNOTATION_REFRESH = 20
 
@@ -256,17 +259,27 @@ class SnykToolWindowPanel(
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
                     override fun filtersChanged() {
+                        // Fetch data off-EDT
                         val codeSecurityResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return
-                        scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
-
                         val ossResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return
-                        scanListenerLS.displayOssResults(ossResultsLS)
-
                         val iacResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.IAC) ?: return
-                        scanListenerLS.displayIacResults(iacResultsLS)
+
+                        // Only UI updates on EDT
+                        invokeLater {
+                            if (isDisposed || project.isDisposed) return@invokeLater
+                            scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
+                        }
+                        invokeLater {
+                            if (isDisposed || project.isDisposed) return@invokeLater
+                            scanListenerLS.displayOssResults(ossResultsLS)
+                        }
+                        invokeLater {
+                            if (isDisposed || project.isDisposed) return@invokeLater
+                            scanListenerLS.displayIacResults(iacResultsLS)
+                        }
                     }
                 },
             )
@@ -650,6 +663,7 @@ class SnykToolWindowPanel(
             val errorSuffix = getSnykCachedResults(project)!!.currentIacError!!.treeNodeSuffix
             "$IAC_ROOT_TEXT $errorSuffix"
         }
+
         isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
         else ->
             iacResultsCount?.let { count ->
@@ -673,6 +687,7 @@ class SnykToolWindowPanel(
             val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
             "$CODE_SECURITY_ROOT_TEXT $errorSuffix"
         }
+
         isSnykCodeRunning(project) &&
             settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
 
@@ -698,6 +713,7 @@ class SnykToolWindowPanel(
             val errorSuffix = getSnykCachedResults(project)?.currentOssError?.treeNodeSuffix
             "$OSS_ROOT_TEXT $errorSuffix"
         }
+
         isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
 
         else ->
@@ -810,7 +826,8 @@ class SnykToolWindowPanel(
     internal fun smartReloadRootNode(nodeToReload: DefaultMutableTreeNode) {
         // Only show empty description if no issue is currently selected
         // This preserves the issue details panel when new scan results arrive
-        val currentlySelectedIssue = (vulnerabilitiesTree.selectionPath?.lastPathComponent as? SuggestionTreeNode)?.issue
+        val currentlySelectedIssue =
+            (vulnerabilitiesTree.selectionPath?.lastPathComponent as? SuggestionTreeNode)?.issue
         if (currentlySelectedIssue == null) {
             displayEmptyDescription()
         }
