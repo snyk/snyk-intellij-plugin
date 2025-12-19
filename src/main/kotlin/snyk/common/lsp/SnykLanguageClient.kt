@@ -12,6 +12,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykFolderConfigListener
@@ -144,7 +145,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
     fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): Set<ScanIssue> {
         val issues = diagnosticsParams.diagnostics.stream().map {
-            val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+            val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
             // load textRange for issue so it doesn't happen in UI thread
             issue.textRange
             if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
@@ -339,10 +340,17 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    Thread.sleep(30000)
-                    notification.expire()
-                }
+                AppExecutorUtil.getAppScheduledExecutorService().schedule(
+                    {
+                        ApplicationManager.getApplication().invokeLater {
+                            if (!project.isDisposed) {
+                                notification.expire()
+                            }
+                        }
+                    },
+                    30,
+                    TimeUnit.SECONDS
+                )
             }
 
             MessageType.Log -> logger.info(messageParams.message)

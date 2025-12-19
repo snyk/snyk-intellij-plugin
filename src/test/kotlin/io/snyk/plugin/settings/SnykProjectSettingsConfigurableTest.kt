@@ -65,7 +65,7 @@ class SnykProjectSettingsConfigurableTest {
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         // Use the real apply logic
@@ -107,7 +107,7 @@ class SnykProjectSettingsConfigurableTest {
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         // Use the real apply logic
@@ -149,7 +149,7 @@ class SnykProjectSettingsConfigurableTest {
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         // Use the real apply logic
@@ -191,7 +191,7 @@ class SnykProjectSettingsConfigurableTest {
         every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
 
         // Mock workspace folders
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         // Use the real apply logic

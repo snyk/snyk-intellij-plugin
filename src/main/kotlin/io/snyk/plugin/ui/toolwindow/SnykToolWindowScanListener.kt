@@ -72,7 +72,7 @@ class SnykToolWindowSnykScanListener(
         if (disposed) return
         invokeLater {
             if (disposed || project.isDisposed) return@invokeLater
-            this.snykToolWindowPanel.cleanUiAndCaches()
+            this.snykToolWindowPanel.cleanUiAndCaches(resetSummaryPanel = false)
             this.snykToolWindowPanel.updateTreeRootNodesPresentation()
             this.snykToolWindowPanel.displayScanningMessage()
         }
@@ -103,6 +103,7 @@ class SnykToolWindowSnykScanListener(
             displayOssResults(results)
             this.snykToolWindowPanel.triggerSelectionListeners = true
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     override fun scanningIacFinished() {

@@ -89,6 +89,7 @@ class SnykToolWindowPanel(
     Disposable {
     private val descriptionPanel = SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
     private val summaryPanel = SimpleToolWindowPanel(true, true).apply { name = "summaryPanel" }
+    private var summaryPanelContent: SummaryPanel? = null
     private val logger = Logger.getInstance(this::class.java)
     private val rootTreeNode = ChooseBranchNode(project = project)
     private val rootOssTreeNode = RootOssTreeNode(project)
@@ -268,17 +269,10 @@ class SnykToolWindowPanel(
                         val iacResultsLS =
                             getSnykCachedResultsForProduct(project, ProductType.IAC) ?: return
 
-                        // Only UI updates on EDT
                         invokeLater {
                             if (isDisposed || project.isDisposed) return@invokeLater
                             scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
-                        }
-                        invokeLater {
-                            if (isDisposed || project.isDisposed) return@invokeLater
                             scanListenerLS.displayOssResults(ossResultsLS)
-                        }
-                        invokeLater {
-                            if (isDisposed || project.isDisposed) return@invokeLater
                             scanListenerLS.displayIacResults(iacResultsLS)
                         }
                     }
@@ -371,54 +365,68 @@ class SnykToolWindowPanel(
             ) {
                 lastPathComponent.navigateToSource()
             }
-            when (val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode) {
-                is DescriptionHolderTreeNode -> {
-                    if (selectedNode is SuggestionTreeNode) {
-                        val cache = getSnykCachedResults(project) ?: return
-                        val issue = selectedNode.issue
-                        val productIssues = when (issue.filterableIssueType) {
-                            ScanIssue.CODE_SECURITY -> cache.currentSnykCodeResultsLS
-                            ScanIssue.OPEN_SOURCE -> cache.currentOSSResultsLS
-                            ScanIssue.INFRASTRUCTURE_AS_CODE -> cache.currentIacResultsLS
+            val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode
+            val shouldUpdateSuggestionDescriptionPanel =
+                if (selectedNode is SuggestionTreeNode) {
+                    val cache = getSnykCachedResults(project)
+                    val issue = selectedNode.issue
+                    val productIssues =
+                        when (issue.filterableIssueType) {
+                            ScanIssue.CODE_SECURITY -> cache?.currentSnykCodeResultsLS
+                            ScanIssue.OPEN_SOURCE -> cache?.currentOSSResultsLS
+                            ScanIssue.INFRASTRUCTURE_AS_CODE -> cache?.currentIacResultsLS
                             else -> {
-                                emptyMap()
+                                null
                             }
                         }
-                        productIssues.values.flatten().filter { issue.id == it.id }.forEach { _ ->
-                            val newDescriptionPanel = selectedNode.getDescriptionPanel()
+                    productIssues?.values?.any { issues -> issues.any { issue.id == it.id } } == true
+                } else {
+                    false
+                }
+            invokeLater {
+                if (isDisposed || project.isDisposed) return@invokeLater
+                when (selectedNode) {
+                    is DescriptionHolderTreeNode -> {
+                        if (selectedNode is SuggestionTreeNode) {
+                            if (shouldUpdateSuggestionDescriptionPanel) {
+                                val newDescriptionPanel = selectedNode.getDescriptionPanel()
+                                descriptionPanel.removeAll()
+                                descriptionPanel.add(
+                                    newDescriptionPanel,
+                                    BorderLayout.CENTER,
+                                )
+                            }
+                        } else {
                             descriptionPanel.removeAll()
                             descriptionPanel.add(
-                                newDescriptionPanel,
+                                selectedNode.getDescriptionPanel(),
                                 BorderLayout.CENTER,
                             )
                         }
-                    } else {
+                    }
+
+                    is ErrorHolderTreeNode -> {
                         descriptionPanel.removeAll()
-                        descriptionPanel.add(
-                            selectedNode.getDescriptionPanel(),
-                            BorderLayout.CENTER,
-                        )
+                        selectedNode.getSnykError()?.let {
+                            displaySnykError(it)
+                        } ?: displayEmptyDescription()
+                    }
+
+                    else -> {
+                        descriptionPanel.removeAll()
+                        displayEmptyDescription()
                     }
                 }
-
-                is ErrorHolderTreeNode -> {
-                    descriptionPanel.removeAll()
-                    selectedNode.getSnykError()?.let {
-                        displaySnykError(it)
-                    } ?: displayEmptyDescription()
-                }
-
-                else -> {
-                    descriptionPanel.removeAll()
-                    displayEmptyDescription()
-                }
+                descriptionPanel.revalidate()
+                descriptionPanel.repaint()
             }
         } else {
-            displayEmptyDescription()
-        }
-        invokeLater {
-            descriptionPanel.revalidate()
-            descriptionPanel.repaint()
+            invokeLater {
+                if (isDisposed || project.isDisposed) return@invokeLater
+                displayEmptyDescription()
+                descriptionPanel.revalidate()
+                descriptionPanel.repaint()
+            }
         }
     }
 
@@ -480,10 +488,16 @@ class SnykToolWindowPanel(
         }
     }
 
-    fun cleanUiAndCaches() {
+    fun cleanUiAndCaches(resetSummaryPanel: Boolean = true) {
         getSnykCachedResults(project)?.clearCaches()
         rootOssTreeNode.originalCliErrorMessage = null
         doCleanUi(true)
+        if (resetSummaryPanel) {
+            invokeLater {
+                if (isDisposed || project.isDisposed) return@invokeLater
+                updateSummaryPanel()
+            }
+        }
         refreshAnnotationsForOpenFiles(project)
     }
 
@@ -600,7 +614,12 @@ class SnykToolWindowPanel(
     }
 
     private fun updateSummaryPanel() {
+        summaryPanelContent?.let {
+            Disposer.dispose(it)
+        }
+
         val summaryPanelContent = SummaryPanel(project)
+        this.summaryPanelContent = summaryPanelContent
         summaryPanel.removeAll()
         Disposer.register(this, summaryPanelContent)
         summaryPanel.add(summaryPanelContent)

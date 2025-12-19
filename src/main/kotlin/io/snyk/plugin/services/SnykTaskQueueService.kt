@@ -10,7 +10,6 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSyncPublisher
-import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
@@ -19,6 +18,9 @@ import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanState
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @Service(Service.Level.PROJECT)
 class SnykTaskQueueService(val project: Project) {
@@ -68,10 +70,33 @@ class SnykTaskQueueService(val project: Project) {
     }
 
     fun waitUntilCliDownloadedIfNeeded() {
-        downloadLatestRelease()
-        do {
-            Thread.sleep(WAIT_FOR_DOWNLOAD_MILLIS)
-        } while (isCliDownloading())
+        if (!pluginSettings().manageBinariesAutomatically) return
+        if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
+
+        val completed = CompletableFuture<Unit>()
+        val connection = ApplicationManager.getApplication().messageBus.connect(project)
+        try {
+            connection.subscribe(
+                SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+                object : SnykCliDownloadListener {
+                    override fun checkCliExistsFinished() {
+                        completed.complete(Unit)
+                    }
+                }
+            )
+            downloadLatestRelease()
+            while (true) {
+                if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
+                try {
+                    completed.get(1, TimeUnit.SECONDS)
+                    return
+                } catch (_: TimeoutException) {
+                    // keep waiting
+                }
+            }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     fun downloadLatestRelease(force: Boolean = false) {
@@ -116,7 +141,4 @@ class SnykTaskQueueService(val project: Project) {
         taskQueuePublisher?.stopped()
     }
 
-    companion object {
-        private const val WAIT_FOR_DOWNLOAD_MILLIS = 1000L
-    }
 }

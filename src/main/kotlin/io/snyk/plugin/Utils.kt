@@ -232,12 +232,16 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
 fun refreshAnnotationsForFile(project: Project, virtualFile: VirtualFile) {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
     if (!virtualFile.isValid) return
-    // Do PSI lookup on EDT where read access is implicit, avoiding blocking read actions
-    invokeLater {
-        if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@invokeLater
-        if (!virtualFile.isValid) return@invokeLater
-        val psiFile = PsiManager.getInstance(project).findFile(virtualFile) ?: return@invokeLater
-        DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+
+    runAsync {
+        if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
+        if (!virtualFile.isValid) return@runAsync
+
+        val psiFile = findPsiFileIgnoringExceptions(virtualFile, project) ?: return@runAsync
+        ApplicationManager.getApplication().invokeLater {
+            if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@invokeLater
+            DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
+        }
     }
 }
 
@@ -290,8 +294,13 @@ fun navigateToSource(
 ) {
     runAsync {
         if (project.isDisposed || !virtualFile.isValid) return@runAsync
-        val textLength = virtualFile.contentsToByteArray().size
-        if (selectionStartOffset in (0 until textLength)) {
+        val textLength = virtualFile.getDocument()?.textLength
+        if (textLength != null && selectionStartOffset !in (0 until textLength)) {
+            logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
+            return@runAsync
+        }
+
+        if (selectionStartOffset >= 0) {
             // jump to Source
             val navigatable =
                 PsiNavigationSupport.getInstance().createNavigatable(
@@ -305,22 +314,21 @@ fun navigateToSource(
                     navigatable.navigate(false)
                 }
             }
-        } else {
-            logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
         }
 
         if (selectionEndOffset != null) {
             // highlight(by selection) suggestion range in source file
-            if (selectionEndOffset in (0 until textLength) &&
-                selectionStartOffset < selectionEndOffset
-            ) {
-                invokeLater {
-                    if (project.isDisposed) return@invokeLater
-                    val editor = FileEditorManager.getInstance(project).selectedTextEditor
-                    editor?.selectionModel?.setSelection(selectionStartOffset, selectionEndOffset)
+            invokeLater {
+                if (project.isDisposed) return@invokeLater
+                val editor = FileEditorManager.getInstance(project).selectedTextEditor
+                val docLength = editor?.document?.textLength
+                if (editor == null || docLength == null) return@invokeLater
+
+                if (selectionStartOffset < 0 || selectionEndOffset < 0 || selectionStartOffset >= docLength || selectionEndOffset > docLength || selectionStartOffset >= selectionEndOffset) {
+                    logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
+                    return@invokeLater
                 }
-            } else {
-                logger.warn("Selection of wrong range: [$selectionStartOffset:$selectionEndOffset]")
+                editor.selectionModel.setSelection(selectionStartOffset, selectionEndOffset)
             }
         }
     }

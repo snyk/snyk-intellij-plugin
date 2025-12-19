@@ -4,9 +4,12 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.treeStructure.Tree
+import io.mockk.mockk
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.pluginSettings
@@ -242,5 +245,23 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
         assertEquals(listOf("✅ Congrats! No open issues found!", "Adjust your settings to view Ignored issues."), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test scanning started does not reset summary panel`() {
+        val toolWindowPanelMock = mockk<SnykToolWindowPanel>(relaxed = true)
+        val listener = SnykToolWindowSnykScanListener(
+            project,
+            toolWindowPanelMock,
+            mockk(relaxed = true),
+            DefaultMutableTreeNode(),
+            DefaultMutableTreeNode(),
+            DefaultMutableTreeNode(),
+        )
+
+        listener.scanningStarted(mockk(relaxed = true))
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify { toolWindowPanelMock.cleanUiAndCaches(resetSummaryPanel = false) }
+        verify(exactly = 0) { toolWindowPanelMock.cleanUiAndCaches(resetSummaryPanel = true) }
     }
 }
