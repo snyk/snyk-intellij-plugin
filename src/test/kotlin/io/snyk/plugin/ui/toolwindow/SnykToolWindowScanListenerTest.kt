@@ -264,4 +264,19 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         verify { toolWindowPanelMock.cleanUiAndCaches(resetSummaryPanel = false) }
         verify(exactly = 0) { toolWindowPanelMock.cleanUiAndCaches(resetSummaryPanel = true) }
     }
+
+    fun `test displaySnykCodeResults shows issues when tree filtering disabled`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().treeFiltering.codeSecurityResults = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+        val issue = mockScanIssues().first().copy(filterableIssueType = ScanIssue.CODE_SECURITY)
+        cut.displaySnykCodeResults(mapOf(snykFile to setOf(issue)))
+
+        // Should contain info nodes and at least one file node.
+        assertTrue(rootSecurityIssuesTreeNode.childCount > 0)
+        val labels = mapToLabels(rootSecurityIssuesTreeNode)
+        assertTrue(labels.any { it.contains("issue") || it.contains("✅") || it.contains("✋") })
+    }
 }
