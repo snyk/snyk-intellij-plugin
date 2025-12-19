@@ -261,8 +261,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         listener.scanningStarted(mockk(relaxed = true))
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        verify { toolWindowPanelMock.cleanUiAndCaches(resetSummaryPanel = false) }
-        verify(exactly = 0) { toolWindowPanelMock.cleanUiAndCaches(resetSummaryPanel = true) }
+        verify(exactly = 0) { toolWindowPanelMock.cleanUiAndCaches(any()) }
     }
 
     fun `test displaySnykCodeResults shows issues when tree filtering disabled`() {

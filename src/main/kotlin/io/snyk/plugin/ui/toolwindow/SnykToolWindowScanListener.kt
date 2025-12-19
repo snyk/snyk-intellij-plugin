@@ -72,7 +72,28 @@ class SnykToolWindowSnykScanListener(
         if (disposed) return
         invokeLater {
             if (disposed || project.isDisposed) return@invokeLater
-            this.snykToolWindowPanel.cleanUiAndCaches(resetSummaryPanel = false)
+            val cache = getSnykCachedResults(project)
+            when (LsProduct.getFor(snykScan.product)) {
+                LsProduct.OpenSource -> {
+                    cache?.currentOSSResultsLS?.clear()
+                    cache?.currentOssError = null
+                    removeChildrenAndRefresh(rootOssIssuesTreeNode)
+                }
+
+                LsProduct.Code -> {
+                    cache?.currentSnykCodeResultsLS?.clear()
+                    cache?.currentSnykCodeError = null
+                    removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
+                }
+
+                LsProduct.InfrastructureAsCode -> {
+                    cache?.currentIacResultsLS?.clear()
+                    cache?.currentIacError = null
+                    removeChildrenAndRefresh(rootIacIssuesTreeNode)
+                }
+
+                LsProduct.Unknown -> Unit
+            }
             this.snykToolWindowPanel.updateTreeRootNodesPresentation()
             this.snykToolWindowPanel.displayScanningMessage()
         }
