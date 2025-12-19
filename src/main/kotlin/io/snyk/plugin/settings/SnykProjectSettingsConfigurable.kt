@@ -128,7 +128,7 @@ class SnykProjectSettingsConfigurable(
         // Always update folder configs for auto-org settings, using the same logic as language server
         val fcs = service<FolderConfigSettings>()
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+        val folderConfigs = languageServerWrapper.getWorkspaceFoldersFromRoots(project, promptForTrust = false)
             .asSequence()
             .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
             .map { it.uri.fromUriToPath().toString() }

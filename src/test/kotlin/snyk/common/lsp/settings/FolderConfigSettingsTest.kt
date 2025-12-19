@@ -389,7 +389,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns emptySet()
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns emptySet()
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
 
         val result = settings.getPreferredOrg(projectMock)
@@ -431,7 +431,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder1, workspaceFolder2)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder1, workspaceFolder2)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1, workspaceFolder2)
 
         val result = settings.getPreferredOrg(projectMock)
@@ -460,7 +460,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder1)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder1)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
 
         val result = settings.getPreferredOrg(projectMock)
@@ -501,7 +501,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder1, workspaceFolder2)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder1, workspaceFolder2)
         // Only workspaceFolder2 is configured
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder2)
 
@@ -593,7 +593,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         val result = settings.isAutoOrganizationEnabled(projectMock)
@@ -620,7 +620,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         val result = settings.isAutoOrganizationEnabled(projectMock)
@@ -647,7 +647,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         // Enable auto-organization
@@ -683,7 +683,7 @@ class FolderConfigSettingsTest {
 
         mockkObject(LanguageServerWrapper.Companion)
         every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
         every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
 
         // Set new organization

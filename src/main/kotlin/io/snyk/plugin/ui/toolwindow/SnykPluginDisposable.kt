@@ -39,7 +39,7 @@ class SnykPluginDisposable : Disposable, AppLifecycleListener {
     }
 
     init {
-        ApplicationManager.getApplication().messageBus.connect().subscribe(AppLifecycleListener.TOPIC, this)
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(AppLifecycleListener.TOPIC, this)
     }
 
     override fun appClosing() {

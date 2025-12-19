@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.ui.components.ActionLink
 import junit.framework.TestCase.assertEquals
 import org.junit.Test
+import java.net.URI
 import java.net.URL
 
 class LabelProviderTest {
@@ -85,7 +86,7 @@ class LabelProviderTest {
         val url = "https://snyk.io/reference"
         val text = "reference"
 
-        val label: ActionLink = LabelProvider().createActionLink(URL(url), text)
+        val label: ActionLink = LabelProvider().createActionLink(URI.create(url).toURL(), text)
 
         assertEquals(text, label.text)
     }

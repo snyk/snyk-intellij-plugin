@@ -940,7 +940,7 @@ class SnykSettingsDialog(
     private fun getFolderConfig(): FolderConfig? {
         val folderConfigSettings = service<FolderConfigSettings>()
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        return languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+        return languageServerWrapper.getWorkspaceFoldersFromRoots(project, promptForTrust = false)
             .asSequence()
             .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
             .map { folderConfigSettings.getFolderConfig(it.uri.fromUriToPath().toString()) }

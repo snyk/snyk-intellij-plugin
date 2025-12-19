@@ -92,7 +92,7 @@ class FolderConfigSettings {
      */
     fun getFolderConfigs(project: Project): List<FolderConfig> {
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        return languageServerWrapper.getWorkspaceFoldersFromRoots(project)
+        return languageServerWrapper.getWorkspaceFoldersFromRoots(project, promptForTrust = false)
             .asSequence()
             .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
             .map { getFolderConfig(it.uri.fromUriToPath().toString()) }

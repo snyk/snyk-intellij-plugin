@@ -11,6 +11,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.concurrency.AppExecutorUtil
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
@@ -78,7 +79,6 @@ import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
@@ -94,7 +94,7 @@ class LanguageServerWrapper(
 ) : Disposable {
     private val progressManager = ProgressManager(project)
     private val cliPath: String = getCliFile().absolutePath
-    private val executorService: ExecutorService = Executors.newCachedThreadPool()
+    private val executorService: ExecutorService = AppExecutorUtil.getAppExecutorService()
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
     private var cliNotFoundWarningDisplayed: Boolean = false
@@ -257,14 +257,14 @@ class LanguageServerWrapper(
 
     private fun processIsAlive() = ::process.isInitialized && process.isAlive
 
-    fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
+    fun getWorkspaceFoldersFromRoots(project: Project, promptForTrust: Boolean = true): Set<WorkspaceFolder> {
         if (disposed || project.isDisposed) return emptySet()
-        val normalizedRoots = getTrustedContentRoots(project)
+        val normalizedRoots = getTrustedContentRoots(project, promptForTrust)
         return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
     }
 
-    private fun getTrustedContentRoots(project: Project): MutableSet<VirtualFile> {
-        if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return mutableSetOf()
+    private fun getTrustedContentRoots(project: Project, promptForTrust: Boolean): MutableSet<VirtualFile> {
+        if (promptForTrust && !confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return mutableSetOf()
 
         val contentRoots = project.getContentRootVirtualFiles()
         val trustService = service<WorkspaceTrustService>()
@@ -397,7 +397,7 @@ class LanguageServerWrapper(
     fun sendScanCommand() {
         if (notAuthenticated()) return
         DumbService.getInstance(project).runWhenSmart {
-            getTrustedContentRoots(project).forEach {
+            getTrustedContentRoots(project, promptForTrust = true).forEach {
                 addContentRoots(project)
                 sendFolderScanCommand(it.path, project)
             }
