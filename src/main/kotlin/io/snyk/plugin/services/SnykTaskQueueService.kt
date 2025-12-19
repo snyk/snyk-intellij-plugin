@@ -26,6 +26,10 @@ import java.util.concurrent.TimeoutException
 class SnykTaskQueueService(val project: Project) {
     private val logger = logger<SnykTaskQueueService>()
 
+    private companion object {
+        private val WAIT_FOR_CLI_DOWNLOAD_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(20)
+    }
+
     private val cliDownloadPublisher
         get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
 
@@ -85,13 +89,16 @@ class SnykTaskQueueService(val project: Project) {
                 }
             )
             downloadLatestRelease()
-            while (true) {
-                if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
+            val deadline = System.currentTimeMillis() + WAIT_FOR_CLI_DOWNLOAD_TIMEOUT_MS
+            while (!project.isDisposed && !ApplicationManager.getApplication().isDisposed) {
                 try {
                     completed.get(1, TimeUnit.SECONDS)
                     return
                 } catch (_: TimeoutException) {
-                    // keep waiting
+                    if (System.currentTimeMillis() >= deadline) {
+                        logger.warn("Timed out waiting for CLI download to finish")
+                        return
+                    }
                 }
             }
         } finally {

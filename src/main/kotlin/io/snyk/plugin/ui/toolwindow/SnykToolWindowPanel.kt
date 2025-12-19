@@ -365,7 +365,7 @@ class SnykToolWindowPanel(
             ) {
                 lastPathComponent.navigateToSource()
             }
-            val selectedNode: DefaultMutableTreeNode = lastPathComponent as DefaultMutableTreeNode
+            val selectedNode = lastPathComponent as? DefaultMutableTreeNode ?: return
             val shouldUpdateSuggestionDescriptionPanel =
                 if (selectedNode is SuggestionTreeNode) {
                     val cache = getSnykCachedResults(project)
@@ -614,7 +614,7 @@ class SnykToolWindowPanel(
     }
 
     private fun updateSummaryPanel() {
-        summaryPanelContent?.let {
+        this.summaryPanelContent?.let {
             Disposer.dispose(it)
         }
 

@@ -13,7 +13,7 @@ import io.snyk.plugin.getSnykToolWindowPanel
 class SnykCleanScanAction : AnAction(AllIcons.Actions.GC), DumbAware {
 
     override fun actionPerformed(actionEvent: AnActionEvent) {
-        getSnykToolWindowPanel(actionEvent.project!!)?.cleanUiAndCaches()
+        getSnykToolWindowPanel(actionEvent.project!!)?.cleanUiAndCaches(resetSummaryPanel = false)
     }
 
     override fun update(actionEvent: AnActionEvent) {

@@ -77,6 +77,7 @@ class SnykToolWindowSnykScanListener(
                 LsProduct.OpenSource -> {
                     cache?.currentOSSResultsLS?.clear()
                     cache?.currentOssError = null
+                    (rootOssIssuesTreeNode as? RootOssTreeNode)?.originalCliErrorMessage = null
                     removeChildrenAndRefresh(rootOssIssuesTreeNode)
                 }
 

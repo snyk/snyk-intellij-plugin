@@ -294,8 +294,8 @@ fun navigateToSource(
 ) {
     runAsync {
         if (project.isDisposed || !virtualFile.isValid) return@runAsync
-        val textLength = virtualFile.getDocument()?.textLength
-        if (textLength != null && selectionStartOffset !in (0 until textLength)) {
+        val textLength = virtualFile.getDocument()?.textLength ?: return@runAsync
+        if (selectionStartOffset !in (0 until textLength)) {
             logger.warn("Navigation to wrong offset: $selectionStartOffset with file length=$textLength")
             return@runAsync
         }
