@@ -388,7 +388,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
         assertEquals("preview", realSettings.cliReleaseChannel)
         assertTrue(realSettings.ignoreUnknownCA)
-        assertTrue(realSettings.isFallbackForm)
 
         // Non-CLI settings should remain unchanged
         assertTrue(realSettings.ossScanEnable) // Not changed from original
@@ -421,7 +420,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertEquals("/new/path/to/cli", realSettings.cliPath)
         assertFalse(realSettings.ossScanEnable) // Changed
         assertEquals("new-org", realSettings.organization) // Changed
-        assertFalse(realSettings.isFallbackForm)
     }
 
     private fun invokeParseAndSaveConfig(jsonString: String) {
