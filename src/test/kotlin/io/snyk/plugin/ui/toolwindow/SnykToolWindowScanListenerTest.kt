@@ -116,7 +116,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
             title = "title",
             severity = Severity.CRITICAL.toString(),
             filePath = getTestDataPath(),
-            range = Range(),
+            range = Range(Position(0, 0), Position(0, 0)),
             additionalData = IssueData(
                 message = "Test message",
                 leadURL = "",
