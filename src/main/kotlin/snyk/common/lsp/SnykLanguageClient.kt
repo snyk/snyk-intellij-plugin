@@ -18,6 +18,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanSummaryListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
 import io.snyk.plugin.getDecodedParam
@@ -298,6 +299,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         // refresh tokens are always persisted, not only every 5 min.
         StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
         logger.info("force-saved settings")
+
+        // Notify listeners that settings have changed (including token update)
+        getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
 
         if (oldToken.isBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
             wrapper.sendScanCommand()

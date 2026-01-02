@@ -23,6 +23,11 @@ class WorkspaceTrustService {
         settings.addTrustedPath(path.toString())
     }
 
+    fun removeTrustedPath(path: Path) {
+        LOG.debug("Removing trusted path: $path")
+        settings.removeTrustedPath(path.toString())
+    }
+
     fun isPathTrusted(path: Path): Boolean {
         LOG.debug("Verifying if path is trusted: $path")
         return settings.getTrustedPaths().asSequence().mapNotNull {
