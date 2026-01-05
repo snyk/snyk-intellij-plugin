@@ -1,5 +1,3 @@
-// ABOUTME: Configuration data classes for parsing JSON from web UI settings panel
-// ABOUTME: Provides type-safe configuration handling with Gson serialization support
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.JsonDeserializationContext

@@ -108,7 +108,13 @@ class SaveConfigHandler(
                             "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
                             jbCefBrowser.cefBrowser.url, 0
                         )
+                    } else {
+                        jbCefBrowser.cefBrowser.executeJavaScript(
+                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
+                            jbCefBrowser.cefBrowser.url, 0
+                        )
                     }
+
                 }
             }
         )
@@ -186,7 +192,6 @@ class SaveConfigHandler(
         config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
         config.insecure?.let { settings.ignoreUnknownCA = it }
 
-        // Only persist non-CLI fields if not fallback form
         if (!isFallback) {
             settings.ossScanEnable = config.activateSnykOpenSource ?: false
             settings.snykCodeSecurityIssuesScanEnable = config.activateSnykCode ?: false
@@ -196,6 +201,7 @@ class SaveConfigHandler(
             config.scanningMode?.let { settings.scanOnSave = (it == "auto") }
 
             // Connection settings
+            config.organization?.let { settings.organization = it }
             config.endpoint?.let { settings.customEndpointUrl = it }
             config.token?.let { settings.token = it }
 

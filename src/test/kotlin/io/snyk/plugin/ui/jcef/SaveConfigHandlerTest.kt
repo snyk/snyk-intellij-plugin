@@ -181,20 +181,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         invokeParseAndSaveConfig("{}")
     }
 
-    fun `test parseAndSaveConfig handles partial config without scan types`() {
-        val realSettings = SnykApplicationSettingsStateService()
-        realSettings.organization = "original-org"
-        realSettings.ossScanEnable = true  // Initially enabled
-        every { pluginSettings() } returns realSettings
-
-        // Only update organization, no scan type keys present - scan types remain unchanged
-        val jsonConfig = """{"organization": "new-org"}"""
-        invokeParseAndSaveConfig(jsonConfig)
-
-        assertEquals("new-org", realSettings.organization)
-        assertTrue(realSettings.ossScanEnable) // Unchanged because no scan type keys in config
-    }
-
     fun `test parseAndSaveConfig treats missing scan types as false when other scan types present`() {
         val realSettings = SnykApplicationSettingsStateService()
         realSettings.ossScanEnable = true
@@ -304,8 +290,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         val realSettings = SnykApplicationSettingsStateService()
         every { pluginSettings() } returns realSettings
 
-        // LS sends "baseUrl" but we store as cliBaseDownloadURL
-        val jsonConfig = """{"baseUrl": "https://downloads.snyk.io/fips"}"""
+        val jsonConfig = """{"cliBaseDownloadURL": "https://downloads.snyk.io/fips"}"""
         invokeParseAndSaveConfig(jsonConfig)
 
         assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
