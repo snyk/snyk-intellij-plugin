@@ -72,7 +72,29 @@ class SnykToolWindowSnykScanListener(
         if (disposed) return
         invokeLater {
             if (disposed || project.isDisposed) return@invokeLater
-            this.snykToolWindowPanel.cleanUiAndCaches()
+            val cache = getSnykCachedResults(project)
+            when (LsProduct.getFor(snykScan.product)) {
+                LsProduct.OpenSource -> {
+                    cache?.currentOSSResultsLS?.clear()
+                    cache?.currentOssError = null
+                    (rootOssIssuesTreeNode as? RootOssTreeNode)?.originalCliErrorMessage = null
+                    removeChildrenAndRefresh(rootOssIssuesTreeNode)
+                }
+
+                LsProduct.Code -> {
+                    cache?.currentSnykCodeResultsLS?.clear()
+                    cache?.currentSnykCodeError = null
+                    removeChildrenAndRefresh(rootSecurityIssuesTreeNode)
+                }
+
+                LsProduct.InfrastructureAsCode -> {
+                    cache?.currentIacResultsLS?.clear()
+                    cache?.currentIacError = null
+                    removeChildrenAndRefresh(rootIacIssuesTreeNode)
+                }
+
+                LsProduct.Unknown -> Unit
+            }
             this.snykToolWindowPanel.updateTreeRootNodesPresentation()
             this.snykToolWindowPanel.displayScanningMessage()
         }
@@ -103,6 +125,7 @@ class SnykToolWindowSnykScanListener(
             displayOssResults(results)
             this.snykToolWindowPanel.triggerSelectionListeners = true
         }
+        refreshAnnotationsForOpenFiles(project)
     }
 
     override fun scanningIacFinished() {
@@ -154,20 +177,14 @@ class SnykToolWindowSnykScanListener(
 
         val settings = pluginSettings()
 
-        // display Security issues
-        val securityIssues =
-            snykResults
-                .map { it.key to it.value.filter { issue -> issue.additionalData.isSecurityType }.toSet() }
-                .toMap()
-
         displayIssues(
             filterableIssueType = ScanIssue.CODE_SECURITY,
             enabledInSettings = settings.snykCodeSecurityIssuesScanEnable,
             filterTree = settings.treeFiltering.codeSecurityResults,
-            snykResults = securityIssues,
+            snykResults = snykResults,
             rootNode = this.rootSecurityIssuesTreeNode,
-            securityIssuesCount = securityIssues.values.flatten().distinct().size,
-            fixableIssuesCount = securityIssues.values.flatten().distinct().count { it.hasAIFix() },
+            securityIssuesCount = snykResults.values.flatten().distinct().size,
+            fixableIssuesCount = snykResults.values.flatten().distinct().count { it.hasAIFix() },
         )
     }
 
@@ -266,23 +283,25 @@ class SnykToolWindowSnykScanListener(
         if (enabledInSettings) {
             rootNodePostFix = buildSeveritiesPostfixForFileNode(snykResults)
 
-            if (filterTree) {
-                addInfoTreeNodes(
-                    filterableIssueType = filterableIssueType,
-                    rootNode = rootNode,
-                    issues = snykResults.values.flatten().distinct(),
-                    fixableIssuesCount = fixableIssuesCount,
-                )
+            addInfoTreeNodes(
+                filterableIssueType = filterableIssueType,
+                rootNode = rootNode,
+                issues = snykResults.values.flatten().distinct(),
+                fixableIssuesCount = fixableIssuesCount,
+            )
 
-                val resultsToDisplay =
+            val resultsToDisplay =
+                if (filterTree) {
                     snykResults.map { entry ->
                         entry.key to
                             entry.value.filter {
                                 settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
                             }
                     }.toMap()
-                displayResultsForRootTreeNode(rootNode, resultsToDisplay)
-            }
+                } else {
+                    snykResults.map { entry -> entry.key to entry.value.toList() }.toMap()
+                }
+            displayResultsForRootTreeNode(rootNode, resultsToDisplay)
         }
 
         val currentOssError = getSnykCachedResults(project)?.currentOssError

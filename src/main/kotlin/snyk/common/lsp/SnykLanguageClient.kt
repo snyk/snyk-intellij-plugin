@@ -6,13 +6,13 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykFolderConfigListener
@@ -145,7 +145,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
     fun getScanIssues(diagnosticsParams: PublishDiagnosticsParams): Set<ScanIssue> {
         val issues = diagnosticsParams.diagnostics.stream().map {
-            val issue = Gson().fromJson(it.data.toString(), ScanIssue::class.java)
+            val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
             // load textRange for issue so it doesn't happen in UI thread
             issue.textRange
             if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
@@ -274,6 +274,11 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     @JsonNotification(value = "$/snyk.hasAuthenticated")
     fun hasAuthenticated(param: HasAuthenticatedParam) {
         if (disposed) return
+
+        // Always cancel pending login to close auth dialog, even if token unchanged
+        val wrapper = LanguageServerWrapper.getInstance(project)
+        wrapper.cancelPreviousLogin()
+
         val oldToken = pluginSettings().token ?: ""
         val oldApiUrl = pluginSettings().customEndpointUrl
         if (oldToken == param.token && oldApiUrl == param.apiUrl) return
@@ -295,7 +300,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         logger.info("force-saved settings")
 
         if (oldToken.isBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
-            val wrapper = LanguageServerWrapper.getInstance(project)
             wrapper.sendScanCommand()
         }
     }
@@ -336,10 +340,17 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
             MessageType.Info -> {
                 val notification = SnykBalloonNotificationHelper.showInfo(messageParams.message, project)
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    Thread.sleep(30000)
-                    notification.expire()
-                }
+                AppExecutorUtil.getAppScheduledExecutorService().schedule(
+                    {
+                        ApplicationManager.getApplication().invokeLater {
+                            if (!project.isDisposed) {
+                                notification.expire()
+                            }
+                        }
+                    },
+                    30,
+                    TimeUnit.SECONDS
+                )
             }
 
             MessageType.Log -> logger.info(messageParams.message)

@@ -64,6 +64,8 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var openIssuesEnabled = true
     var ignoredIssuesEnabled = false
 
+    var riskScoreThreshold: Int? = null
+
     var treeFiltering = TreeFiltering()
 
     var lastCheckDate: Date? = null

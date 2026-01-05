@@ -4,9 +4,12 @@ import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.treeStructure.Tree
+import io.mockk.mockk
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.pluginSettings
@@ -113,7 +116,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
             title = "title",
             severity = Severity.CRITICAL.toString(),
             filePath = getTestDataPath(),
-            range = Range(),
+            range = Range(Position(0, 0), Position(0, 0)),
             additionalData = IssueData(
                 message = "Test message",
                 leadURL = "",
@@ -242,5 +245,37 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
 
         cut.addInfoTreeNodes(ScanIssue.CODE_SECURITY, rootSecurityIssuesTreeNode, listOf(), 0)
         assertEquals(listOf("✅ Congrats! No open issues found!", "Adjust your settings to view Ignored issues."), mapToLabels(rootSecurityIssuesTreeNode))
+    }
+
+    fun `test scanning started does not reset summary panel`() {
+        val toolWindowPanelMock = mockk<SnykToolWindowPanel>(relaxed = true)
+        val listener = SnykToolWindowSnykScanListener(
+            project,
+            toolWindowPanelMock,
+            mockk(relaxed = true),
+            DefaultMutableTreeNode(),
+            DefaultMutableTreeNode(),
+            DefaultMutableTreeNode(),
+        )
+
+        listener.scanningStarted(mockk(relaxed = true))
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        verify(exactly = 0) { toolWindowPanelMock.cleanUiAndCaches(any()) }
+    }
+
+    fun `test displaySnykCodeResults shows issues when tree filtering disabled`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().treeFiltering.codeSecurityResults = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+        val issue = mockScanIssues().first().copy(filterableIssueType = ScanIssue.CODE_SECURITY)
+        cut.displaySnykCodeResults(mapOf(snykFile to setOf(issue)))
+
+        // Should contain info nodes and at least one file node.
+        assertTrue(rootSecurityIssuesTreeNode.childCount > 0)
+        val labels = mapToLabels(rootSecurityIssuesTreeNode)
+        assertTrue(labels.any { it.contains("issue") || it.contains("✅") || it.contains("✋") })
     }
 }

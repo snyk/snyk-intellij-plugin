@@ -5,7 +5,9 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.ide.CopyPasteManager
+import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
@@ -36,21 +38,9 @@ class SnykCliAuthenticationService(
     private val logger = logger<SnykCliAuthenticationService>()
 
     fun authenticate() {
-        // Run everything on EDT to avoid threading issues with modal dialogs
-        ApplicationManager.getApplication().invokeLater({
-            // Download CLI if needed (synchronous with progress)
-            if (!getCliFile().exists()) {
-                ProgressManager.getInstance().runProcessWithProgressSynchronously(
-                    { getSnykTaskQueueService(project)?.downloadLatestRelease() },
-                    "Download latest Snyk CLI",
-                    true,
-                    project,
-                )
-            }
+        fun showAuthDialog() {
+            if (!getCliFile().exists()) return
 
-            if (!getCliFile().exists()) return@invokeLater
-
-            // Show auth dialog
             val dialog = AuthDialog(project)
             val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
@@ -70,15 +60,22 @@ class SnykCliAuthenticationService(
                 }, ModalityState.any())
 
                 loginFuture?.whenComplete { result, e ->
-                    val token = result?.toString() ?: ""
-
-                    if (e is CancellationException) {
-                        logger.warn("login timed out or cancelled", e)
+                    val cancelled = e is CancellationException
+                    if (cancelled) {
+                        logger.debug("login timed out or cancelled", e)
                     } else if (e != null) {
                         logger.warn("could not login", e)
                     }
 
-                    pluginSettings().token = token
+                    // Only set token if result is not blank (avoid overwriting token from hasAuthenticated)
+                    if (!cancelled) {
+                        val token = result?.toString() ?: ""
+                        if (token.isNotBlank()) {
+                            pluginSettings().token = token
+                        } else {
+                            logger.warn("no token returned by login")
+                        }
+                    }
                     val exitCode = if (!pluginSettings().token.isNullOrBlank()) {
                         DialogWrapper.OK_EXIT_CODE
                     } else {
@@ -94,6 +91,28 @@ class SnykCliAuthenticationService(
             }
 
             dialog.show()
+
+        }
+
+        ApplicationManager.getApplication().invokeLater({
+            if (project.isDisposed) return@invokeLater
+            if (getCliFile().exists()) {
+                showAuthDialog()
+                return@invokeLater
+            }
+
+            ProgressManager.getInstance().run(
+                object : Task.Modal(project, "Download latest Snyk CLI", true) {
+                    override fun run(indicator: ProgressIndicator) {
+                        getSnykTaskQueueService(project)?.waitUntilCliDownloadedIfNeeded()
+                    }
+
+                    override fun onSuccess() {
+                        if (project.isDisposed) return
+                        showAuthDialog()
+                    }
+                }
+            )
         }, ModalityState.any())
     }
 }
