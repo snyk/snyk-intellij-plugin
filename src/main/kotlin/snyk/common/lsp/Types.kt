@@ -143,7 +143,7 @@ data class ScanIssue(
     private var startOffset: Int?
         get() {
             return if (field == null) {
-                field = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
+                field = getSafeOffset(range.start.line, range.start.character)
                 field
             } else {
                 field
@@ -153,7 +153,7 @@ data class ScanIssue(
     private var endOffset: Int?
         get() {
             return if (field == null) {
-                field = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
+                field = getSafeOffset(range.end.line, range.end.character)
                 field
             } else {
                 field
@@ -163,8 +163,16 @@ data class ScanIssue(
     init {
         virtualFile = filePath.toVirtualFile()
         document = virtualFile?.getDocument()
-        startOffset = document?.getLineStartOffset(range.start.line)?.plus(range.start.character)
-        endOffset = document?.getLineStartOffset(range.end.line)?.plus(range.end.character)
+        startOffset = getSafeOffset(range.start.line, range.start.character)
+        endOffset = getSafeOffset(range.end.line, range.end.character)
+    }
+
+    private fun getSafeOffset(line: Int, character: Int): Int? {
+        val doc = document ?: return null
+        if (line < 0) return 0
+        if (line >= doc.lineCount) return doc.textLength
+        val offset = doc.getLineStartOffset(line) + character
+        return if (offset > doc.textLength) doc.textLength else offset
     }
 
     fun title(): String {
