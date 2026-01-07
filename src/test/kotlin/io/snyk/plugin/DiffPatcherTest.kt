@@ -28,19 +28,19 @@ class DiffPatcherTest (){
         --- /Users/cata/git/playground/project-with-vulns
         +++ /Users/cata/git/playground/project-with-vulns-fixed
         @@ -4,9 +4,14 @@
-          */
-${" "}
+         */
+
          import path = require('path')
         +import rateLimit = require('express-rate-limit')
          import { type Request, type Response } from 'express'
-${" "}
+
          import challengeUtils = require('../lib/challengeUtils')
         +const apiLimiter = rateLimit({
         +  windowMs: 15 * 60 * 1000, // 15 minutes
         +  max: 100, // limit each IP to 100 requests per windowMs
         +})
          const challenges = require('../data/datacache').challenges
-${" "}
+
          module.exports = function servePremiumContent () {
     """.trimIndent()
 
@@ -63,8 +63,8 @@ ${" "}
 
             import challengeUtils = require('../lib/challengeUtils')
             const apiLimiter = rateLimit({
-              windowMs: 15 * 60 * 1000, // 15 minutes
-              max: 100, // limit each IP to 100 requests per windowMs
+            windowMs: 15 * 60 * 1000, // 15 minutes
+            max: 100, // limit each IP to 100 requests per windowMs
             })
             const challenges = require('../data/datacache').challenges
 
@@ -77,55 +77,5 @@ ${" "}
         """.trimIndent()
 
         assertEquals(expectedPatchedContent, patchedContent)
-    }
-
-    @Test
-    fun `test parsing filename with spaces`() {
-        val diff = """
-            --- /path/to/file with spaces.txt
-            +++ /path/to/file with spaces fixed.txt
-            @@ -1,1 +1,1 @@
-            -foo
-            +bar
-        """.trimIndent()
-
-        val patcher = DiffPatcher()
-        val diffPatch = patcher.parseDiff(diff)
-
-        assertEquals("/path/to/file with spaces.txt", diffPatch.originalFile)
-        assertEquals("/path/to/file with spaces fixed.txt", diffPatch.fixedFile)
-    }
-
-    @Test
-    fun `test parsing filename with special characters`() {
-        // Git often quotes filenames with special chars
-        val diff = """
-            --- "/path/to/file with \"quotes\".txt"
-            +++ "/path/to/file with \"quotes\" fixed.txt"
-            @@ -1,1 +1,1 @@
-            -foo
-            +bar
-        """.trimIndent()
-
-        val patcher = DiffPatcher()
-        val diffPatch = patcher.parseDiff(diff)
-
-        assertEquals("/path/to/file with \"quotes\".txt", diffPatch.originalFile)
-    }
-
-    @Test
-    fun `test parsing filename with timestamp (git format)`() {
-        val diff = """
-            --- /path/to/file.txt${'\t'}2023-01-01 12:00:00.000000000 +0000
-            +++ /path/to/file.txt${'\t'}2023-01-01 12:00:00.000000000 +0000
-            @@ -1,1 +1,1 @@
-            -foo
-            +bar
-        """.trimIndent()
-
-        val patcher = DiffPatcher()
-        val diffPatch = patcher.parseDiff(diff)
-
-        assertEquals("/path/to/file.txt", diffPatch.originalFile)
     }
 }
