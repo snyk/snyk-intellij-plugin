@@ -125,7 +125,7 @@ class SnykLanguageClientTest {
 
         assertTrue(result.isApplied)
         verify(exactly = 1) {
-            snyk.common.editor.DocumentChanger.applyChange(match { it?.key == encodedUri })
+            snyk.common.editor.DocumentChanger.applyChange(match { it.key == encodedUri })
         }
         verify(exactly = 1) {
             refreshAnnotationsForFile(projectMock, virtualFile)
