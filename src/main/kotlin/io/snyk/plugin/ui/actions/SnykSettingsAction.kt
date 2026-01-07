@@ -4,7 +4,6 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
@@ -18,10 +17,7 @@ class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
         val project = actionEvent.project ?: return
         if (project.isDisposed) return
 
-        ApplicationManager.getApplication().invokeLater {
-            if (project.isDisposed) return@invokeLater
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
-        }
+        ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
     }
 
     override fun update(actionEvent: AnActionEvent) {
