@@ -17,7 +17,10 @@ class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
         val project = actionEvent.project ?: return
         if (project.isDisposed) return
 
-        ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
+        ApplicationManager.getApplication().invokeLater {
+            if (project.isDisposed) return@invokeLater
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
+        }
     }
 
     override fun update(actionEvent: AnActionEvent) {
