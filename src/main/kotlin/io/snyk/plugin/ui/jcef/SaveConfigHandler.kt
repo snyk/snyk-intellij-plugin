@@ -1,14 +1,15 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
-import com.google.gson.reflect.TypeToken
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
@@ -31,7 +32,8 @@ class SaveConfigHandler(
     private val onSaveComplete: (() -> Unit)? = null
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
-    private val gson = Gson()
+    private val gson = GsonBuilder()
+        .create()
 
     fun generateSaveConfigHandler(
         jbCefBrowser: JBCefBrowserBase,
@@ -96,6 +98,29 @@ class SaveConfigHandler(
             JBCefJSQuery.Response("success")
         }
 
+        // Subscribe to settings changes to update auth token in browser
+        project.messageBus.connect().subscribe(
+            SnykSettingsListener.SNYK_SETTINGS_TOPIC,
+            object : SnykSettingsListener {
+                override fun settingsChanged() {
+                    val token = pluginSettings().token
+                    if (token?.isNotEmpty() == true) {
+                        val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
+                        jbCefBrowser.cefBrowser.executeJavaScript(
+                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
+                            jbCefBrowser.cefBrowser.url, 0
+                        )
+                    } else {
+                        jbCefBrowser.cefBrowser.executeJavaScript(
+                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
+                            jbCefBrowser.cefBrowser.url, 0
+                        )
+                    }
+
+                }
+            }
+        )
+
         loginQuery.addHandler {
             // Don't use runInBackground - authenticate() handles its own threading
             getSnykCliAuthenticationService(project)?.authenticate()
@@ -140,181 +165,154 @@ class SaveConfigHandler(
     }
 
     private fun parseAndSaveConfig(jsonString: String) {
-        val type = object : TypeToken<Map<String, Any?>>() {}.type
-        val config: Map<String, Any?> = try {
-            gson.fromJson(jsonString, type)
+        val config: SaveConfigRequest = try {
+            gson.fromJson(jsonString, SaveConfigRequest::class.java)
         } catch (e: JsonSyntaxException) {
             logger.warn("Invalid JSON config received: ${jsonString.take(200)}", e)
             throw IllegalArgumentException("Invalid configuration format", e)
-        } ?: emptyMap()
+        }
 
         val settings = pluginSettings()
         applyGlobalSettings(config, settings)
-        applyFolderConfigs(config)
-    }
 
-    /**
-     * Safely extracts a Boolean value from a config map, handling various input types.
-     * Supports Boolean, String ("true"/"false"), and Number (0/non-zero) values.
-     * Returns the default for missing keys (HTML forms omit unchecked checkboxes).
-     */
-    private fun Map<String, Any?>.getBoolean(key: String, default: Boolean = false): Boolean {
-        return when (val value = this[key]) {
-            is Boolean -> value
-            is String -> value.equals("true", ignoreCase = true)
-            is Number -> value.toInt() != 0
-            else -> default
+        // Only apply folder configs if not fallback form
+        val isFallback = config.isFallbackForm == true
+        if (!isFallback) {
+            config.folderConfigs?.let { applyFolderConfigs(it) }
         }
     }
 
-    /**
-     * Safely extracts a String value from a config map.
-     */
-    private fun Map<String, Any?>.getString(key: String): String? {
-        return this[key] as? String
-    }
+    private fun applyGlobalSettings(config: SaveConfigRequest, settings: SnykApplicationSettingsStateService) {
+        val isFallback = config.isFallbackForm == true
 
-    private fun applyGlobalSettings(config: Map<String, Any?>, settings: SnykApplicationSettingsStateService) {
-        // Scan type toggles - only apply if any scan type key is present (supports partial configs)
-        // Missing keys treated as false (unchecked checkbox) when the form has scan types
-        val hasScanTypeKeys = config.containsKey("activateSnykOpenSource") ||
-                               config.containsKey("activateSnykCode") ||
-                               config.containsKey("activateSnykIac")
-        if (hasScanTypeKeys) {
-            settings.ossScanEnable = config.getBoolean("activateSnykOpenSource")
-            settings.snykCodeSecurityIssuesScanEnable = config.getBoolean("activateSnykCode")
-            settings.iacScanEnabled = config.getBoolean("activateSnykIac")
-        }
-
-        // Scanning mode
-        config.getString("scanningMode")?.let { settings.scanOnSave = (it == "auto") }
-
-        // Connection settings
-        config.getString("organization")?.let { settings.organization = it }
-        config.getString("endpoint")?.let { settings.customEndpointUrl = it }
-        config.getString("token")?.let { settings.token = it }
-        if (config.containsKey("insecure")) {
-            settings.ignoreUnknownCA = config.getBoolean("insecure")
-        }
-
-        // Authentication method
-        config.getString("authenticationMethod")?.let { method ->
-            settings.authenticationType = when (method) {
-                "oauth" -> AuthenticationType.OAUTH2
-                "token" -> AuthenticationType.API_TOKEN
-                "pat" -> AuthenticationType.PAT
-                else -> AuthenticationType.OAUTH2
-            }
-        }
-
-        // Severity filters - only apply if section is present
-        @Suppress("UNCHECKED_CAST")
-        (config["filterSeverity"] as? Map<String, Any?>)?.let { severity ->
-            settings.criticalSeverityEnabled = severity.getBoolean("critical")
-            settings.highSeverityEnabled = severity.getBoolean("high")
-            settings.mediumSeverityEnabled = severity.getBoolean("medium")
-            settings.lowSeverityEnabled = severity.getBoolean("low")
-        }
-
-        // Issue view options - only apply if section is present
-        @Suppress("UNCHECKED_CAST")
-        (config["issueViewOptions"] as? Map<String, Any?>)?.let { options ->
-            settings.openIssuesEnabled = options.getBoolean("openIssues")
-            settings.ignoredIssuesEnabled = options.getBoolean("ignoredIssues")
-        }
-
-        // Delta findings - only apply if key is present
-        if (config.containsKey("enableDeltaFindings")) {
-            settings.setDeltaEnabled(config.getBoolean("enableDeltaFindings"))
-        }
-
-        // Risk score threshold - only apply if key is present
-        if (config.containsKey("riskScoreThreshold")) {
-            val value = config["riskScoreThreshold"]
-            settings.riskScoreThreshold = when (value) {
-                is Number -> value.toInt()
-                is String -> value.toIntOrNull()
-                else -> null
-            }
-        }
-
-        // CLI settings
-        config.getString("cliPath")?.let { path ->
+        // CLI Settings - always persist for both fallback and full forms
+        config.cliPath?.let { path ->
             settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
         }
-        if (config.containsKey("manageBinariesAutomatically")) {
-            settings.manageBinariesAutomatically = config.getBoolean("manageBinariesAutomatically")
-        }
-        config.getString("baseUrl")?.takeIf { it.isNotEmpty() }?.let { settings.cliBaseDownloadURL = it }
-        config.getString("cliBaseDownloadURL")?.takeIf { it.isNotEmpty() }?.let { settings.cliBaseDownloadURL = it }
-        config.getString("cliReleaseChannel")?.takeIf { it.isNotEmpty() }?.let { settings.cliReleaseChannel = it }
+        config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
+        config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
+        config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
+        config.insecure?.let { settings.ignoreUnknownCA = it }
 
-        // Trusted folders
-        @Suppress("UNCHECKED_CAST")
-        (config["trustedFolders"] as? List<String>)?.let { folders ->
-            val trustService = service<WorkspaceTrustService>()
-            folders.forEach { folder ->
-                try {
-                    trustService.addTrustedPath(Paths.get(folder))
-                } catch (e: Exception) {
-                    logger.warn("Failed to add trusted folder: $folder", e)
+        if (!isFallback) {
+            settings.ossScanEnable = config.activateSnykOpenSource ?: false
+            settings.snykCodeSecurityIssuesScanEnable = config.activateSnykCode ?: false
+            settings.iacScanEnabled = config.activateSnykIac ?: false
+
+            // Scanning mode
+            config.scanningMode?.let { settings.scanOnSave = (it == "auto") }
+
+            // Connection settings
+            config.organization?.let { settings.organization = it }
+            config.endpoint?.let { settings.customEndpointUrl = it }
+            config.token?.let { settings.token = it }
+
+            // Authentication method
+            config.authenticationMethod?.let { method ->
+                settings.authenticationType = when (method) {
+                    "oauth" -> AuthenticationType.OAUTH2
+                    "token" -> AuthenticationType.API_TOKEN
+                    "pat" -> AuthenticationType.PAT
+                    else -> AuthenticationType.OAUTH2
+                }
+            }
+
+            // Severity filters
+            config.filterSeverity?.let { severity ->
+                severity.critical?.let { settings.criticalSeverityEnabled = it }
+                severity.high?.let { settings.highSeverityEnabled = it }
+                severity.medium?.let { settings.mediumSeverityEnabled = it }
+                severity.low?.let { settings.lowSeverityEnabled = it }
+            }
+
+            // Issue view options
+            config.issueViewOptions?.let { options ->
+                options.openIssues?.let { settings.openIssuesEnabled = it }
+                options.ignoredIssues?.let { settings.ignoredIssuesEnabled = it }
+            }
+
+            // Delta findings
+            config.enableDeltaFindings?.let { settings.setDeltaEnabled(it) }
+
+            // Risk score threshold
+            config.riskScoreThreshold?.let { settings.riskScoreThreshold = it }
+
+            // Trusted folders - sync the list (add new, remove missing)
+            config.trustedFolders?.let { folders ->
+                val trustService = service<WorkspaceTrustService>()
+                val configPaths = folders.mapNotNull { folder ->
+                    try {
+                        Paths.get(folder)
+                    } catch (e: Exception) {
+                        logger.warn("Invalid path in trusted folders: $folder", e)
+                        null
+                    }
+                }.toSet()
+
+                val currentPaths = trustService.settings.getTrustedPaths().mapNotNull { pathStr ->
+                    try {
+                        Paths.get(pathStr)
+                    } catch (e: Exception) {
+                        logger.warn("Invalid path in current trusted paths: $pathStr", e)
+                        null
+                    }
+                }.toSet()
+
+                // Remove paths that are no longer in the config
+                currentPaths.forEach { currentPath ->
+                    if (currentPath !in configPaths) {
+                        try {
+                            trustService.removeTrustedPath(currentPath)
+                        } catch (e: Exception) {
+                            logger.warn("Failed to remove trusted folder: $currentPath", e)
+                        }
+                    }
+                }
+
+                // Add new paths from the config
+                configPaths.forEach { configPath ->
+                    try {
+                        trustService.addTrustedPath(configPath)
+                    } catch (e: Exception) {
+                        logger.warn("Failed to add trusted folder: $configPath", e)
+                    }
                 }
             }
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun applyFolderConfigs(config: Map<String, Any?>) {
-        val folderConfigs = config["folderConfigs"] as? List<Map<String, Any?>> ?: return
+    private fun applyFolderConfigs(folderConfigs: List<FolderConfigData>) {
         val fcs = service<FolderConfigSettings>()
 
         for (folderConfig in folderConfigs) {
-            val folderPath = folderConfig["folderPath"] as? String ?: continue
-            val existingConfig = fcs.getFolderConfig(folderPath)
+            val existingConfig = fcs.getFolderConfig(folderConfig.folderPath)
 
-            val additionalParams = (folderConfig["additionalParameters"] as? String)
-                ?.split(" ", System.lineSeparator())
-                ?.filter { it.isNotBlank() }
-                ?: existingConfig.additionalParameters
-
-            val orgSetByUser = folderConfig.getBoolean("orgSetByUser", existingConfig.orgSetByUser)
-
-            val preferredOrg = if (orgSetByUser) {
-                (folderConfig["preferredOrg"] as? String) ?: existingConfig.preferredOrg
-            } else {
-                ""
-            }
-
-            // Parse scanCommandConfig if present
-            val scanCommandConfig = parseScanCommandConfig(folderConfig)
-
+            // Build updated config, writing values directly from config (use defaults if null)
             val updatedConfig = existingConfig.copy(
-                additionalParameters = additionalParams,
-                preferredOrg = preferredOrg,
-                orgSetByUser = orgSetByUser,
-                scanCommandConfig = scanCommandConfig ?: existingConfig.scanCommandConfig
+                additionalParameters = folderConfig.additionalParameters,
+                additionalEnv = folderConfig.additionalEnv,
+                preferredOrg = folderConfig.preferredOrg ?: "",
+                autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
+                orgSetByUser = folderConfig.orgSetByUser ?: false,
+                scanCommandConfig = folderConfig.scanCommandConfig?.let { parseScanCommandConfig(it) }
+                    ?: existingConfig.scanCommandConfig
             )
             fcs.addFolderConfig(updatedConfig)
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun parseScanCommandConfig(folderConfig: Map<String, Any?>): Map<String, snyk.common.lsp.ScanCommandConfig>? {
-        val scanConfig = folderConfig["scanCommandConfig"] as? Map<String, Map<String, Any?>> ?: return null
-
+    private fun parseScanCommandConfig(scanConfig: Map<String, ScanCommandConfigData>): Map<String, snyk.common.lsp.ScanCommandConfig> {
         val result = mutableMapOf<String, snyk.common.lsp.ScanCommandConfig>()
 
         for ((product, config) in scanConfig) {
-            if (config.isEmpty()) continue
-
             result[product] = snyk.common.lsp.ScanCommandConfig(
-                preScanCommand = (config["command"] as? String) ?: "",
-                preScanOnlyReferenceFolder = config.getBoolean("preScanOnlyReferenceFolder", true),
-                postScanCommand = (config["postScanCommand"] as? String) ?: "",
-                postScanOnlyReferenceFolder = config.getBoolean("postScanOnlyReferenceFolder", true)
+                preScanCommand = config.preScanCommand ?: "",
+                preScanOnlyReferenceFolder = config.preScanOnlyReferenceFolder ?: false,
+                postScanCommand = config.postScanCommand ?: "",
+                postScanOnlyReferenceFolder = config.postScanOnlyReferenceFolder ?: false
             )
         }
 
-        return if (result.isNotEmpty()) result else null
+        return result
     }
 }
