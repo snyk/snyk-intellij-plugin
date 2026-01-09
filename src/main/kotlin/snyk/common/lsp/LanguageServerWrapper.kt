@@ -508,6 +508,7 @@ class LanguageServerWrapper(
             insecure = ps.ignoreUnknownCA.toString(),
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
+            cliBaseDownloadURL = ps.cliBaseDownloadURL,
             token = ps.token,
             filterSeverity =
                 SeverityFilter(
