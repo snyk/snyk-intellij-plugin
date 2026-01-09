@@ -24,6 +24,10 @@ class WorkspaceTrustSettings : SimplePersistentStateComponent<WorkspaceTrustSett
         state.trustedPaths.add(path)
     }
 
+    fun removeTrustedPath(path: String) {
+        state.trustedPaths.remove(path)
+    }
+
     fun getTrustedPaths(): List<String> = Collections.unmodifiableList(state.trustedPaths)
 }
 

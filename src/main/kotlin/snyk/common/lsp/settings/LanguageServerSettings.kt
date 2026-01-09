@@ -23,6 +23,7 @@ data class LanguageServerSettings(
     @SerializedName("enableTelemetry") val enableTelemetry: String? = "false",
     @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: String? = "false",
     @SerializedName("cliPath") val cliPath: String?,
+    @SerializedName("cliBaseDownloadURL") val cliBaseDownloadURL: String? = null,
     @SerializedName("token") val token: String?,
     @SerializedName("integrationName") val integrationName: String? = pluginInfo.integrationName,
     @SerializedName("integrationVersion") val integrationVersion: String? = pluginInfo.integrationVersion,
