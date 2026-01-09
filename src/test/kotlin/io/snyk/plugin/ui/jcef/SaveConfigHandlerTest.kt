@@ -252,26 +252,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertFalse(realSettings.lowSeverityEnabled)
     }
 
-    fun `test parseAndSaveConfig handles numeric booleans`() {
-        val realSettings = SnykApplicationSettingsStateService()
-        realSettings.ossScanEnable = false
-        realSettings.snykCodeSecurityIssuesScanEnable = true
-        every { pluginSettings() } returns realSettings
-
-        // Some systems might send 1/0 for boolean values
-        val jsonConfig = """
-        {
-            "activateSnykOpenSource": 1,
-            "activateSnykCode": 0
-        }
-        """.trimIndent()
-
-        invokeParseAndSaveConfig(jsonConfig)
-
-        assertTrue(realSettings.ossScanEnable)
-        assertFalse(realSettings.snykCodeSecurityIssuesScanEnable)
-    }
-
     fun `test parseAndSaveConfig handles null values gracefully`() {
         val realSettings = SnykApplicationSettingsStateService()
         realSettings.organization = "original-org"

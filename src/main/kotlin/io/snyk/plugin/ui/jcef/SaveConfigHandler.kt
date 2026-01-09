@@ -33,8 +33,6 @@ class SaveConfigHandler(
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = GsonBuilder()
-        .registerTypeAdapter(Boolean::class.java, FlexibleBooleanDeserializer())
-        .registerTypeAdapter(java.lang.Boolean::class.java, FlexibleBooleanDeserializer())
         .create()
 
     fun generateSaveConfigHandler(
@@ -287,9 +285,7 @@ class SaveConfigHandler(
 
             // Build updated config, writing values directly from config (use defaults if null)
             val updatedConfig = existingConfig.copy(
-                additionalParameters = folderConfig.additionalParameters?.let {
-                    it.split(" ", System.lineSeparator()).filter { param -> param.isNotBlank() }
-                } ?: existingConfig.additionalParameters,
+                additionalParameters = folderConfig.additionalParameters,
                 additionalEnv = folderConfig.additionalEnv,
                 preferredOrg = folderConfig.preferredOrg ?: "",
                 autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
