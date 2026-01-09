@@ -18,7 +18,8 @@ object DocumentChanger {
 
         // Use toVirtualFileOrNull() which properly handles URI decoding (e.g., %20 to spaces)
         // This converts the URI to a path first, which automatically decodes URL-encoded characters
-        val virtualFile = fileURI.toVirtualFileOrNull() ?: return
+        val virtualFile =
+            fileURI.toVirtualFileOrNull() ?: return logger.warn("applyChange: File not found for URI: $fileURI")
 
         val document = virtualFile.getDocument() ?: return
         // Our LS is coded to give us the TextEdits in ascending order, but we must apply them in descending order.
