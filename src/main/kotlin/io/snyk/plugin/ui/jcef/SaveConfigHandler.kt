@@ -72,11 +72,15 @@ class SaveConfigHandler(
             response
         }
 
-        saveAttemptFinishedQuery.addHandler {
-            try {
-                onSaveComplete?.invoke()
-            } catch (e: Exception) {
-                logger.warn("Error in onSaveComplete callback", e)
+        saveAttemptFinishedQuery.addHandler { status ->
+            // Only invoke onSaveComplete for non-success statuses.
+            // For success, onSaveComplete is already called by saveConfigQuery handler.
+            if (status != "success") {
+                try {
+                    onSaveComplete?.invoke()
+                } catch (e: Exception) {
+                    logger.warn("Error in onSaveComplete callback", e)
+                }
             }
             JBCefJSQuery.Response("success")
         }

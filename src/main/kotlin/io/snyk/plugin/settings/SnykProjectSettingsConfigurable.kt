@@ -85,6 +85,13 @@ class SnykProjectSettingsConfigurable(
             snykSettingsDialog.isIssueViewOptionsChanged() ||
             snykSettingsDialog.isScanTypeChanged()
 
+    override fun reset() {
+        if (useNewConfigDialog) {
+            htmlSettingsPanel?.reset()
+        }
+        // Old dialog doesn't support reset - values are initialized once in constructor
+    }
+
     override fun apply() {
         if (useNewConfigDialog) {
             htmlSettingsPanel?.apply()
