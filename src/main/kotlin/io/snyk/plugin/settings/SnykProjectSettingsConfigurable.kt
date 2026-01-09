@@ -88,8 +88,9 @@ class SnykProjectSettingsConfigurable(
     override fun reset() {
         if (useNewConfigDialog) {
             htmlSettingsPanel?.reset()
+        } else {
+            snykSettingsDialog.initializeFromSettings()
         }
-        // Old dialog doesn't support reset - values are initialized once in constructor
     }
 
     override fun apply() {

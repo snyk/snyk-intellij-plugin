@@ -131,9 +131,11 @@ class SnykSettingsDialog(
     private val scanTypesPanelOuter = ScanTypesPanel()
     private val scanTypesPanel = scanTypesPanelOuter.scanTypesPanel
 
-    private val issueViewOptionsPanel = IssueViewOptionsPanel(project).panel
+    private val issueViewOptionsPanelOuter = IssueViewOptionsPanel(project)
+    private val issueViewOptionsPanel = issueViewOptionsPanelOuter.panel
 
-    private val severityEnablementPanel = SeveritiesEnablementPanel().panel
+    private val severityEnablementPanelOuter = SeveritiesEnablementPanel()
+    private val severityEnablementPanel = severityEnablementPanelOuter.panel
 
     private val manageBinariesAutomatically: JCheckBox = JCheckBox()
     private val cliPathTextBoxWithFileBrowser = TextFieldWithBrowseButton()
@@ -234,6 +236,32 @@ class SnykSettingsDialog(
     }
 
     fun getRootPanel(): JComponent = rootPanel
+
+    fun initializeFromSettings() {
+        val settings = pluginSettings()
+        tokenTextField.text = settings.token
+        authenticationType.selectedIndex = settings.authenticationType.dialogIndex
+        customEndpointTextField.text = settings.customEndpointUrl
+        organizationTextField.text = settings.organization
+        ignoreUnknownCACheckBox.isSelected = settings.ignoreUnknownCA
+        manageBinariesAutomatically.isSelected = settings.manageBinariesAutomatically
+        cliPathTextBoxWithFileBrowser.text = settings.cliPath
+        cliBaseDownloadUrlTextField.text = settings.cliBaseDownloadURL
+        val haveFolderConfigs = LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+        updateProjectSettingsFields(haveFolderConfigs)
+        scanOnSaveCheckbox.isSelected = settings.scanOnSave
+        cliReleaseChannelDropDown.selectedItem = settings.cliReleaseChannel
+        baseBranchInfoLabel.text = service<FolderConfigSettings>().getAll()
+            .values.joinToString("\n") {
+                "${it.folderPath}: Reference branch: ${it.baseBranch}, Reference directory: ${it.referenceFolderPath}"
+            }
+        netNewIssuesDropDown.selectedItem = settings.issuesToDisplay
+
+        // Reset the sub-panels
+        scanTypesPanelOuter.reset()
+        severityEnablementPanelOuter.reset()
+        issueViewOptionsPanelOuter.reset()
+    }
 
     // We have to do background task run through Alarm on Alarm.ThreadToUse.POOLED_THREAD due to next (Idea?) bug:
     // Creation of Task.Backgroundable under another Task.Backgroundable does not work for Settings dialog,

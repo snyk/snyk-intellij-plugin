@@ -93,4 +93,12 @@ class SeveritiesEnablementPanel {
         }
         return true
     }
+
+    fun reset() {
+        currentCriticalSeverityEnabled = settings.criticalSeverityEnabled
+        currentHighSeverityEnabled = settings.highSeverityEnabled
+        currentMediumSeverityEnabled = settings.mediumSeverityEnabled
+        currentLowSeverityEnabled = settings.lowSeverityEnabled
+        panel.reset()
+    }
 }
