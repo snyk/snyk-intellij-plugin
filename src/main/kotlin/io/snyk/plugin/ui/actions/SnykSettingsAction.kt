@@ -7,8 +7,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbAware
-import com.intellij.util.SlowOperations
-import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 
 /**
  * Show Snyk settings panel action.
@@ -21,7 +19,7 @@ class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
 
         ApplicationManager.getApplication().invokeLater {
             if (project.isDisposed) return@invokeLater
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, "io.snyk.plugin.settings.SnykProjectSettingsConfigurable")
         }
     }
 

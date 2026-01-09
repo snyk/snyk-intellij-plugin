@@ -126,4 +126,13 @@ class ScanTypesPanel(
         }
         return true
     }
+
+    fun reset() {
+        currentOSSScanEnabled = settings.ossScanEnable
+        currentSnykCodeSecurityScanEnabled = settings.snykCodeSecurityIssuesScanEnable
+        currentIaCScanEnabled = settings.iacScanEnabled
+        codeSecurityCheckbox?.isSelected = settings.snykCodeSecurityIssuesScanEnable
+        snykCodeComment?.isVisible = shouldSnykCodeCommentBeVisible()
+        scanTypesPanel.reset()
+    }
 }

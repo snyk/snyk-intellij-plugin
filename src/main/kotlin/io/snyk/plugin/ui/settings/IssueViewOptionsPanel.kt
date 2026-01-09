@@ -70,4 +70,10 @@ class IssueViewOptionsPanel(
         }
         return true
     }
+
+    fun reset() {
+        currentOpenIssuesEnabled = settings.openIssuesEnabled
+        currentIgnoredIssuesEnabled = settings.ignoredIssuesEnabled
+        panel.reset()
+    }
 }

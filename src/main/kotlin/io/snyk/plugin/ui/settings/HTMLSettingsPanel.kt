@@ -260,6 +260,21 @@ class HTMLSettingsPanel(
         return modified.get()
     }
 
+    fun reset() {
+        // Reload HTML from language server to restore form to saved state
+        ApplicationManager.getApplication().executeOnPooledThread {
+            if (isDisposed) return@executeOnPooledThread
+            val html = getHtmlContent()
+            ApplicationManager.getApplication().invokeLater({
+                if (isDisposed) return@invokeLater
+                if (html != null) {
+                    initializeJcefBrowser(html)
+                }
+                modified.set(false)
+            }, ModalityState.any())
+        }
+    }
+
     fun apply() {
         // Capture previous values before save for change detection
         previousReleaseChannel = pluginSettings().cliReleaseChannel
@@ -321,6 +336,7 @@ class HTMLSettingsPanel(
         runAsync {
             runInBackground("Snyk: applying settings") {
                 // Handle release channel change - prompt to download new CLI
+                // TODO - Get rid of this?
                 if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
                     handleReleaseChannelChange(project)
                 }
