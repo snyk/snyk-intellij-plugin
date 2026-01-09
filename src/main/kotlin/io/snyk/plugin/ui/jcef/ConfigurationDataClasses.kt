@@ -6,27 +6,6 @@ import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 import java.lang.reflect.Type
 
-/**
- * Custom deserializer that handles Boolean values flexibly.
- * Supports: true/false, "true"/"false", 1/0, any non-zero number
- */
-class FlexibleBooleanDeserializer : JsonDeserializer<Boolean> {
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Boolean {
-        return when {
-            json.isJsonPrimitive -> {
-                val primitive = json.asJsonPrimitive
-                when {
-                    primitive.isBoolean -> primitive.asBoolean
-                    primitive.isString -> primitive.asString.equals("true", ignoreCase = true)
-                    primitive.isNumber -> primitive.asInt != 0
-                    else -> false
-                }
-            }
-            else -> false
-        }
-    }
-}
-
 data class SaveConfigRequest(
     // Scan Settings
     @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: Boolean? = null,
@@ -79,7 +58,7 @@ data class IssueViewOptionsConfig(
 
 data class FolderConfigData(
     @SerializedName("folderPath") val folderPath: String,
-    @SerializedName("additionalParameters") val additionalParameters: String? = null,
+    @SerializedName("additionalParameters") val additionalParameters: List<String>? = null,
     @SerializedName("additionalEnv") val additionalEnv: String? = null,
     @SerializedName("preferredOrg") val preferredOrg: String? = null,
     @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String? = null,
