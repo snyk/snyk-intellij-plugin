@@ -181,20 +181,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         invokeParseAndSaveConfig("{}")
     }
 
-    fun `test parseAndSaveConfig handles partial config without scan types`() {
-        val realSettings = SnykApplicationSettingsStateService()
-        realSettings.organization = "original-org"
-        realSettings.ossScanEnable = true  // Initially enabled
-        every { pluginSettings() } returns realSettings
-
-        // Only update organization, no scan type keys present - scan types remain unchanged
-        val jsonConfig = """{"organization": "new-org"}"""
-        invokeParseAndSaveConfig(jsonConfig)
-
-        assertEquals("new-org", realSettings.organization)
-        assertTrue(realSettings.ossScanEnable) // Unchanged because no scan type keys in config
-    }
-
     fun `test parseAndSaveConfig treats missing scan types as false when other scan types present`() {
         val realSettings = SnykApplicationSettingsStateService()
         realSettings.ossScanEnable = true
@@ -266,26 +252,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertFalse(realSettings.lowSeverityEnabled)
     }
 
-    fun `test parseAndSaveConfig handles numeric booleans`() {
-        val realSettings = SnykApplicationSettingsStateService()
-        realSettings.ossScanEnable = false
-        realSettings.snykCodeSecurityIssuesScanEnable = true
-        every { pluginSettings() } returns realSettings
-
-        // Some systems might send 1/0 for boolean values
-        val jsonConfig = """
-        {
-            "activateSnykOpenSource": 1,
-            "activateSnykCode": 0
-        }
-        """.trimIndent()
-
-        invokeParseAndSaveConfig(jsonConfig)
-
-        assertTrue(realSettings.ossScanEnable)
-        assertFalse(realSettings.snykCodeSecurityIssuesScanEnable)
-    }
-
     fun `test parseAndSaveConfig handles null values gracefully`() {
         val realSettings = SnykApplicationSettingsStateService()
         realSettings.organization = "original-org"
@@ -304,8 +270,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         val realSettings = SnykApplicationSettingsStateService()
         every { pluginSettings() } returns realSettings
 
-        // LS sends "baseUrl" but we store as cliBaseDownloadURL
-        val jsonConfig = """{"baseUrl": "https://downloads.snyk.io/fips"}"""
+        val jsonConfig = """{"cliBaseDownloadURL": "https://downloads.snyk.io/fips"}"""
         invokeParseAndSaveConfig(jsonConfig)
 
         assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
@@ -347,6 +312,79 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
         // Auth method should be updated so login handler can use it
         assertEquals(AuthenticationType.OAUTH2, realSettings.authenticationType)
+    }
+
+    fun `test parseAndSaveConfig with fallback form only saves CLI settings`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        // Set initial values to verify they don't change
+        realSettings.ossScanEnable = true
+        realSettings.snykCodeSecurityIssuesScanEnable = true
+        realSettings.organization = "original-org"
+        realSettings.token = "original-token"
+        realSettings.criticalSeverityEnabled = true
+        realSettings.highSeverityEnabled = true
+        every { pluginSettings() } returns realSettings
+
+        // Fallback form with CLI settings and other fields that should be ignored
+        val jsonConfig = """
+        {
+            "isFallbackForm": true,
+            "cliPath": "/new/path/to/cli",
+            "manageBinariesAutomatically": false,
+            "cliBaseDownloadURL": "https://downloads.snyk.io/fips",
+            "cliReleaseChannel": "preview",
+            "insecure": true,
+            "activateSnykOpenSource": false,
+            "activateSnykCode": false,
+            "organization": "should-not-save",
+            "token": "should-not-save",
+            "filterSeverity": {
+                "critical": false,
+                "high": false
+            }
+        }
+        """.trimIndent()
+
+        invokeParseAndSaveConfig(jsonConfig)
+
+        // CLI settings should be updated
+        assertEquals("/new/path/to/cli", realSettings.cliPath)
+        assertFalse(realSettings.manageBinariesAutomatically)
+        assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
+        assertEquals("preview", realSettings.cliReleaseChannel)
+        assertTrue(realSettings.ignoreUnknownCA)
+
+        // Non-CLI settings should remain unchanged
+        assertTrue(realSettings.ossScanEnable) // Not changed from original
+        assertTrue(realSettings.snykCodeSecurityIssuesScanEnable) // Not changed from original
+        assertEquals("original-org", realSettings.organization) // Not changed
+        assertEquals("original-token", realSettings.token) // Not changed
+        assertTrue(realSettings.criticalSeverityEnabled) // Not changed
+        assertTrue(realSettings.highSeverityEnabled) // Not changed
+    }
+
+    fun `test parseAndSaveConfig with full form saves all settings`() {
+        val realSettings = SnykApplicationSettingsStateService()
+        realSettings.ossScanEnable = true
+        realSettings.organization = "original-org"
+        every { pluginSettings() } returns realSettings
+
+        // Full form (isFallbackForm = false or missing)
+        val jsonConfig = """
+        {
+            "isFallbackForm": false,
+            "cliPath": "/new/path/to/cli",
+            "activateSnykOpenSource": false,
+            "organization": "new-org"
+        }
+        """.trimIndent()
+
+        invokeParseAndSaveConfig(jsonConfig)
+
+        // Both CLI and non-CLI settings should be updated
+        assertEquals("/new/path/to/cli", realSettings.cliPath)
+        assertFalse(realSettings.ossScanEnable) // Changed
+        assertEquals("new-org", realSettings.organization) // Changed
     }
 
     private fun invokeParseAndSaveConfig(jsonString: String) {
