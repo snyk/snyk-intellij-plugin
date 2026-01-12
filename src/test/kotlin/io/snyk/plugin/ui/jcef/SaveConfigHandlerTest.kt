@@ -388,7 +388,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     }
 
     private fun invokeParseAndSaveConfig(jsonString: String) {
-        val method = SaveConfigHandler::class.java.getDeclaredMethod("parseAndSaveConfig", String::class.java)
+        val method = SaveConfigHandler::class.java.getDeclaredMethod("saveConfig", String::class.java)
         method.isAccessible = true
         method.invoke(cut, jsonString)
     }

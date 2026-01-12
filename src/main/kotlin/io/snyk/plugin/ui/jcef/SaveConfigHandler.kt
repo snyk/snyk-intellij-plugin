@@ -32,9 +32,7 @@ class SaveConfigHandler(
     private val onSaveComplete: (() -> Unit)? = null
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
-    private val gson = GsonBuilder()
-        .registerTypeAdapter(object : com.google.gson.reflect.TypeToken<List<String>>() {}.type, StringOrListTypeAdapter())
-        .create()
+    private val gson = GsonBuilder().create()
 
     fun generateSaveConfigHandler(
         jbCefBrowser: JBCefBrowserBase,
