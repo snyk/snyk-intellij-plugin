@@ -24,10 +24,9 @@ import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingConstants
@@ -47,7 +46,8 @@ class HTMLSettingsPanel(
     private var currentNonce: String = JCEFUtils.generateNonce()
     @Volatile
     private var lastLsError: String? = null
-    private val applySaveLatch = AtomicReference<CountDownLatch?>(null)
+    private var saveConfigHandler: SaveConfigHandler? = null
+    private val saveSemaphore = Semaphore(0)
 
     init {
         // Set panel background to match IDE theme (prevents white flash)
@@ -174,17 +174,16 @@ class HTMLSettingsPanel(
         jbCefClient = cefClient
         jbCefBrowser = browser
 
-        val saveConfigHandler = SaveConfigHandler(
+        saveConfigHandler = SaveConfigHandler(
             project = project,
             onModified = { modified.set(true) },
             onReset = { modified.set(false) },
             onSaveComplete = {
+                saveSemaphore.release()
                 runPostApplySettings()
-                // Signal that apply() can complete
-                applySaveLatch.get()?.countDown()
             }
         )
-        val loadHandler = saveConfigHandler.generateSaveConfigHandler(jbCefBrowser!!, currentNonce)
+        val loadHandler = saveConfigHandler!!.generateSaveConfigHandler(jbCefBrowser!!, currentNonce)
         cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
 
         // Add browser to panel first (it already has IDE background from createBrowser)
@@ -288,41 +287,30 @@ class HTMLSettingsPanel(
             return
         }
 
-        // Create latch to wait for save completion
-        val latch = CountDownLatch(1)
-        applySaveLatch.set(latch)
+        // Drain any previous permits
+        saveSemaphore.drainPermits()
 
-        // Call getAndSaveIdeConfig() to collect form data and save
-        // The SaveConfigHandler.onSaveComplete callback will signal the latch
+        // Use the existing getAndSaveIdeConfig() which already works with Apply button
+        // The onSaveComplete callback will release the semaphore when save completes
         browser.executeJavaScript(
-            "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); } else { console.error('getAndSaveIdeConfig not defined'); }",
+            "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
             browser.url ?: "",
             0
         )
 
-        ApplicationManager.getApplication().executeOnPooledThread {
-            var shouldRunPostApply = false
-            try {
-                if (!latch.await(5, TimeUnit.SECONDS)) {
-                    logger.warn("Timeout waiting for settings save to complete, running post-apply anyway")
-                    shouldRunPostApply = true
-                }
-            } catch (e: InterruptedException) {
-                logger.warn("Interrupted while waiting for settings save", e)
-                Thread.currentThread().interrupt()
-                shouldRunPostApply = true
-            } finally {
-                applySaveLatch.set(null)
-            }
+        // Wait for save completion using a modal progress dialog
+        // This allows the EDT to process events (including JCEF callbacks) while showing progress
+        com.intellij.openapi.progress.ProgressManager.getInstance().runProcessWithProgressSynchronously(
+            {
+                saveSemaphore.tryAcquire(3, TimeUnit.SECONDS)
+            },
+            "Saving Snyk Settings",
+            false,
+            project
+        )
 
-            ApplicationManager.getApplication().invokeLater({
-                if (isDisposed) return@invokeLater
-                if (shouldRunPostApply) {
-                    runPostApplySettings()
-                }
-                modified.set(false)
-            }, ModalityState.any())
-        }
+        // runPostApplySettings is called by onSaveComplete callback
+        modified.set(false)
     }
 
     // Stored for change detection across async save - initialized with current values

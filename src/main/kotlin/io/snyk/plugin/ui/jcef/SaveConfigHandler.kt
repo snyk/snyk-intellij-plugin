@@ -33,6 +33,7 @@ class SaveConfigHandler(
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
     private val gson = GsonBuilder()
+        .registerTypeAdapter(object : com.google.gson.reflect.TypeToken<List<String>>() {}.type, StringOrListTypeAdapter())
         .create()
 
     fun generateSaveConfigHandler(
@@ -48,7 +49,7 @@ class SaveConfigHandler(
         saveConfigQuery.addHandler { jsonString ->
             var response: JBCefJSQuery.Response
             try {
-                parseAndSaveConfig(jsonString)
+                saveConfig(jsonString)
                 // Hide any previous error on success
                 jbCefBrowser.cefBrowser.executeJavaScript(
                     "if (typeof window.hideError === 'function') { window.hideError(); }",
@@ -164,7 +165,7 @@ class SaveConfigHandler(
         }
     }
 
-    private fun parseAndSaveConfig(jsonString: String) {
+    fun saveConfig(jsonString: String) {
         val config: SaveConfigRequest = try {
             gson.fromJson(jsonString, SaveConfigRequest::class.java)
         } catch (e: JsonSyntaxException) {
