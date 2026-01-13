@@ -82,7 +82,7 @@ class HTMLSettingsPanel(
                         showLsErrorInBrowser(lsError)
                     }
                 } else {
-                    showErrorMessage("Failed to load settings panel")
+                    showSettingsLoadError()
                 }
             }, ModalityState.any())
         }
@@ -180,19 +180,28 @@ class HTMLSettingsPanel(
             onReset = { modified.set(false) },
             onSaveComplete = {
                 saveSemaphore.release()
-                runPostApplySettings()
             }
         )
-        val loadHandler = saveConfigHandler!!.generateSaveConfigHandler(jbCefBrowser!!, currentNonce)
-        cefClient.addLoadHandler(loadHandler, jbCefBrowser!!.cefBrowser)
+
+        val handler = saveConfigHandler ?: run {
+            logger.warn("saveConfigHandler is null, cannot initialize browser handlers")
+            return
+        }
+        val jcefBrowser = jbCefBrowser ?: run {
+            logger.warn("jbCefBrowser is null, cannot initialize browser handlers")
+            return
+        }
+
+        val loadHandler = handler.generateSaveConfigHandler(jcefBrowser, currentNonce)
+        cefClient.addLoadHandler(loadHandler, jcefBrowser.cefBrowser)
 
         // Add browser to panel first (it already has IDE background from createBrowser)
-        add(jbCefBrowser!!.component, BorderLayout.CENTER)
+        add(jcefBrowser.component, BorderLayout.CENTER)
         revalidate()
         repaint()
 
         // Then load the actual content
-        jbCefBrowser?.loadHTML(processedHtml, jbCefBrowser?.cefBrowser?.url ?: "about:blank")
+        jcefBrowser.loadHTML(processedHtml, jcefBrowser.cefBrowser.url ?: "about:blank")
     }
 
     private fun disposeCurrentBrowser() {
@@ -249,9 +258,9 @@ class HTMLSettingsPanel(
         )
     }
 
-    private fun showErrorMessage(message: String) {
+    private fun showSettingsLoadError() {
         removeAll()
-        val label = JLabel("<html><center>$message</center></html>", SwingConstants.CENTER)
+        val label = JLabel("<html><center>Failed to load settings panel</center></html>", SwingConstants.CENTER)
         add(label, BorderLayout.CENTER)
     }
 
@@ -268,8 +277,8 @@ class HTMLSettingsPanel(
                 if (isDisposed) return@invokeLater
                 if (html != null) {
                     initializeJcefBrowser(html)
+                    modified.set(false)
                 }
-                modified.set(false)
             }, ModalityState.any())
         }
     }
@@ -300,17 +309,20 @@ class HTMLSettingsPanel(
 
         // Wait for save completion using a modal progress dialog
         // This allows the EDT to process events (including JCEF callbacks) while showing progress
+        var saveCompleted = false
         com.intellij.openapi.progress.ProgressManager.getInstance().runProcessWithProgressSynchronously(
             {
-                saveSemaphore.tryAcquire(3, TimeUnit.SECONDS)
+                saveCompleted = saveSemaphore.tryAcquire(3, TimeUnit.SECONDS)
             },
             "Saving Snyk Settings",
             false,
             project
         )
 
-        // runPostApplySettings is called by onSaveComplete callback
-        modified.set(false)
+        if (saveCompleted) {
+            runPostApplySettings()
+        }
+        modified.set(!saveCompleted)
     }
 
     // Stored for change detection across async save - initialized with current values
@@ -324,7 +336,6 @@ class HTMLSettingsPanel(
         runAsync {
             runInBackground("Snyk: applying settings") {
                 // Handle release channel change - prompt to download new CLI
-                // TODO - Get rid of this?
                 if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
                     handleReleaseChannelChange(project)
                 }
