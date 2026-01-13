@@ -163,7 +163,7 @@ class SaveConfigHandler(
         }
     }
 
-    fun saveConfig(jsonString: String) {
+    private fun saveConfig(jsonString: String) {
         val config: SaveConfigRequest = try {
             gson.fromJson(jsonString, SaveConfigRequest::class.java)
         } catch (e: JsonSyntaxException) {
