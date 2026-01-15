@@ -25,8 +25,14 @@ class AnnotatorCommon(val project: Project) {
             return
         }
 
-        // trigger LS initialization if not already done, we consciously don't check the result here
-        LanguageServerWrapper.getInstance(project).ensureLanguageServerInitialized()
+        // Don't block waiting for LS initialization - annotators can run on EDT or during
+        // focus changes, and blocking here would freeze the UI if CLI download holds the lock.
+        // If LS is not yet initialized, annotations will be updated when it becomes ready.
+        val lsWrapper = LanguageServerWrapper.getInstance(project)
+        if (!lsWrapper.isInitialized) {
+            logger.debug("LS not yet initialized, skipping annotation preparation")
+            return
+        }
 
         // todo: review later if any way to provide up-to-date context for CLI scans is available
         // force saving here will break some user's workflow: https://github.com/snyk/snyk-intellij-plugin/issues/324
