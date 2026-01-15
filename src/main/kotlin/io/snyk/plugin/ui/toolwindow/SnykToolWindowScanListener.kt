@@ -299,7 +299,7 @@ class SnykToolWindowSnykScanListener(
 
             // Use filtered results for all counts and display
             val filteredIssues = resultsToDisplay.values.flatten().distinct()
-            rootNodePostFix = buildSeveritiesPostfixForFileNode(resultsToDisplay)
+            rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredIssues)
 
             // Update counts to reflect filtered results
             when (filterableIssueType) {
@@ -522,12 +522,11 @@ class SnykToolWindowSnykScanListener(
         expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
-    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, out Iterable<ScanIssue>>): String {
-        val allIssues = results.values.flatten()
-        val critical = allIssues.count { it.getSeverityAsEnum() == Severity.CRITICAL }
-        val high = allIssues.count { it.getSeverityAsEnum() == Severity.HIGH }
-        val medium = allIssues.count { it.getSeverityAsEnum() == Severity.MEDIUM }
-        val low = allIssues.count { it.getSeverityAsEnum() == Severity.LOW }
+    private fun buildSeveritiesPostfixForFileNode(results: List<ScanIssue>): String {
+        val critical = results.count { it.getSeverityAsEnum() == Severity.CRITICAL }
+        val high = results.count { it.getSeverityAsEnum() == Severity.HIGH }
+        val medium = results.count { it.getSeverityAsEnum() == Severity.MEDIUM }
+        val low = results.count { it.getSeverityAsEnum() == Severity.LOW }
         return ": $critical critical, $high high, $medium medium, $low low"
     }
 }
