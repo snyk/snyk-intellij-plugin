@@ -61,11 +61,17 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
             Position(lineNumber, offset - lineStartOffset)
         )
         try {
+            // Use a shorter timeout to avoid blocking EDT for too long
+            // The documentation framework may call this on the UI thread
             val hover =
-                languageServerWrapper.languageServer.textDocumentService.hover(hoverParams).get(5, TimeUnit.SECONDS)
+                languageServerWrapper.languageServer.textDocumentService.hover(hoverParams).get(500, TimeUnit.MILLISECONDS)
             if (hover == null || hover.contents.right.value.isEmpty()) return emptyReturnList
             return mutableListOf(SnykDocumentationTarget(hover))
         } catch (ignored: TimeoutException) {
+            // Timeout is expected if LS is slow - return empty to avoid blocking UI
+            return emptyReturnList
+        } catch (ignored: Exception) {
+            // Don't let any exception block the UI
             return emptyReturnList
         }
     }
