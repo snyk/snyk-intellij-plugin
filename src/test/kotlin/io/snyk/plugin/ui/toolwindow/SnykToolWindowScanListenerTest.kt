@@ -111,10 +111,21 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         isIgnored: Boolean? = false,
         hasAIFix: Boolean? = false,
     ): List<ScanIssue> {
+        return mockScanIssuesWithSeverity(Severity.CRITICAL, isIgnored, hasAIFix)
+    }
+
+    private fun mockScanIssuesWithSeverity(
+        severity: Severity,
+        isIgnored: Boolean? = false,
+        hasAIFix: Boolean? = false,
+        filterableType: String = ScanIssue.OPEN_SOURCE,
+        id: String = "id",
+        riskScore: Int = 0,
+    ): List<ScanIssue> {
         val issue = ScanIssue(
-            id = "id",
+            id = id,
             title = "title",
-            severity = Severity.CRITICAL.toString(),
+            severity = severity.toString(),
             filePath = getTestDataPath(),
             range = Range(Position(0, 0), Position(0, 0)),
             additionalData = IssueData(
@@ -164,12 +175,12 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
                 references = emptyList(),
                 customUIContent = "",
                 key = "",
-                riskScore = 0,
+                riskScore = riskScore,
             ),
             isIgnored = isIgnored,
             ignoreDetails = null,
             isNew = false,
-            filterableIssueType = ScanIssue.OPEN_SOURCE,
+            filterableIssueType = filterableType,
         )
         return listOf(issue)
     }
@@ -277,5 +288,175 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         assertTrue(rootSecurityIssuesTreeNode.childCount > 0)
         val labels = mapToLabels(rootSecurityIssuesTreeNode)
         assertTrue(labels.any { it.contains("issue") || it.contains("✅") || it.contains("✋") })
+    }
+
+    fun `test displayOssResults filters issues by severity and updates count correctly`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = true
+
+        // Disable Medium and Low severity filtering
+        pluginSettings().treeFiltering.mediumSeverity = false
+        pluginSettings().treeFiltering.lowSeverity = false
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.criticalSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create issues with different severities
+        val highIssue = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-1"
+        ).first()
+        val mediumIssue = mockScanIssuesWithSeverity(
+            Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-1"
+        ).first()
+        val lowIssue = mockScanIssuesWithSeverity(
+            Severity.LOW, filterableType = ScanIssue.OPEN_SOURCE, id = "low-1"
+        ).first()
+
+        cut.displayOssResults(mapOf(snykFile to setOf(highIssue, mediumIssue, lowIssue)))
+
+        // Should only show 1 issue (high) since medium and low are filtered out
+        val labels = mapToLabels(rootOssIssuesTreeNode)
+        assertTrue(
+            "Expected '✋ 1 issue' but got: $labels",
+            labels.any { it.contains("✋ 1 issue") }
+        )
+    }
+
+    fun `test displaySnykCodeResults filters issues by severity and updates count correctly`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().treeFiltering.codeSecurityResults = true
+
+        // Enable only High severity
+        pluginSettings().treeFiltering.mediumSeverity = false
+        pluginSettings().treeFiltering.lowSeverity = false
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.criticalSeverity = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create 2 high and 1 medium issue
+        val highIssue1 = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.CODE_SECURITY, id = "high-1"
+        ).first()
+        val highIssue2 = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.CODE_SECURITY, id = "high-2"
+        ).first()
+        val mediumIssue = mockScanIssuesWithSeverity(
+            Severity.MEDIUM, filterableType = ScanIssue.CODE_SECURITY, id = "medium-1"
+        ).first()
+
+        cut.displaySnykCodeResults(mapOf(snykFile to setOf(highIssue1, highIssue2, mediumIssue)))
+
+        // Should show 2 issues (both high) - note: with CCI enabled it shows "open issues"
+        val labels = mapToLabels(rootSecurityIssuesTreeNode)
+        assertTrue(
+            "Expected label containing '2' and 'issue' but got: $labels",
+            labels.any { it.contains("2") && it.contains("issue") }
+        )
+    }
+
+    fun `test displayOssResults shows all issues when severity filtering disabled`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = false // Disable filtering
+
+        // Even if severities are disabled in treeFiltering, issues should still show
+        pluginSettings().treeFiltering.mediumSeverity = false
+        pluginSettings().treeFiltering.lowSeverity = false
+        pluginSettings().treeFiltering.highSeverity = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        val highIssue = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-1"
+        ).first()
+        val mediumIssue = mockScanIssuesWithSeverity(
+            Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-1"
+        ).first()
+
+        cut.displayOssResults(mapOf(snykFile to setOf(highIssue, mediumIssue)))
+
+        // Should show both issues since tree filtering is disabled
+        val labels = mapToLabels(rootOssIssuesTreeNode)
+        assertTrue(
+            "Expected '✋ 2 issues' but got: $labels",
+            labels.any { it.contains("✋ 2 issues") }
+        )
+    }
+
+    fun `test displayIacResults filters issues by severity correctly`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().iacScanEnabled = true
+        pluginSettings().treeFiltering.iacResults = true
+
+        // Only enable critical severity
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = false
+        pluginSettings().treeFiltering.mediumSeverity = false
+        pluginSettings().treeFiltering.lowSeverity = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        val criticalIssue = mockScanIssuesWithSeverity(
+            Severity.CRITICAL, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "critical-1"
+        ).first()
+        val highIssue = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "high-1"
+        ).first()
+
+        cut.displayIacResults(mapOf(snykFile to setOf(criticalIssue, highIssue)))
+
+        // Should show 1 issue (critical only)
+        val labels = mapToLabels(rootIacIssuesTreeNode)
+        assertTrue(
+            "Expected '✋ 1 issue' but got: $labels",
+            labels.any { it.contains("✋ 1 issue") }
+        )
+    }
+
+    fun `test filtered issue count matches displayed tree nodes`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = true
+
+        // Enable only High severity
+        pluginSettings().treeFiltering.criticalSeverity = false
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = false
+        pluginSettings().treeFiltering.lowSeverity = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create 3 high, 2 medium, 1 low issue
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-2").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-3").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-1").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-2").first(),
+            mockScanIssuesWithSeverity(Severity.LOW, filterableType = ScanIssue.OPEN_SOURCE, id = "low-1").first(),
+        )
+
+        cut.displayOssResults(mapOf(snykFile to issues.toSet()))
+
+        // Info nodes should show 3 issues (high only)
+        val labels = mapToLabels(rootOssIssuesTreeNode)
+        assertTrue(
+            "Expected '✋ 3 issues' but got: $labels",
+            labels.any { it.contains("✋ 3 issues") }
+        )
+
+        // Count the actual issue nodes in the tree (skip info nodes)
+        var actualIssueCount = 0
+        for (i in 0 until rootOssIssuesTreeNode.childCount) {
+            val child = rootOssIssuesTreeNode.getChildAt(i) as DefaultMutableTreeNode
+            if (child is io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode) {
+                actualIssueCount += child.childCount
+            }
+        }
+        assertEquals("Tree should contain 3 issue nodes", 3, actualIssueCount)
     }
 }
