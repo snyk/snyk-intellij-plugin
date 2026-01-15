@@ -615,7 +615,9 @@ class LanguageServerWrapper(
         if (key.isBlank()) throw RuntimeException("Issue ID is required")
         val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
         return try {
-            val result = executeCommand(generateIssueCommand, Long.MAX_VALUE)
+            // Use a reasonable timeout to avoid blocking the UI indefinitely
+            // If this is called on EDT, a long timeout will freeze the UI
+            val result = executeCommand(generateIssueCommand, 5000)
             when (result) {
                 is String -> result
                 is com.google.gson.JsonPrimitive -> result.asString
