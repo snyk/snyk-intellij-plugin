@@ -261,12 +261,9 @@ private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
 fun refreshAnnotationsForOpenFiles(project: Project) {
     runAsync {
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
-        try {
-            VirtualFileManager.getInstance().asyncRefresh()
-        } catch (e: Exception) {
-            // VFS refresh can fail on edge cases (remote files, deleted files, etc.)
-            Logger.getInstance("SnykUtils").debug("VFS async refresh failed", e)
-        }
+        // Note: Avoid VirtualFileManager.asyncRefresh() as it refreshes ALL files including
+        // remote/HTTP files, which can cause NPE in RemoteFileInfoImpl when localFile is null.
+        // Instead, we only refresh specific open files below.
 
         val openFiles = FileEditorManager.getInstance(project).openFiles
 
