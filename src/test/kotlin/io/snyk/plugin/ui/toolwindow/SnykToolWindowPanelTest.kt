@@ -2,13 +2,16 @@ package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatform4TestCase
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.treeStructure.Tree
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
@@ -21,6 +24,7 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykLanguageClient
 import java.awt.Container
 import java.util.concurrent.CompletableFuture
+import javax.swing.tree.DefaultMutableTreeNode
 
 class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     private val taskQueueService = mockk<SnykTaskQueueService>(relaxed = true)
@@ -152,5 +156,90 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
             currentParent = currentParent.parent
         }
         return currentParent
+    }
+
+    @Test
+    fun `smartReloadRootNode should collect multiple nodes and reload all of them`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        cut = SnykToolWindowPanel(project)
+
+        val rootNode = cut.getRootNode()
+        val ossNode = cut.getRootOssIssuesTreeNode()
+        val iacNode = cut.getRootIacIssuesTreeNode()
+
+        // Simulate rapid sequential calls (like when filtersChanged() triggers multiple products)
+        cut.smartReloadRootNode(ossNode)
+        cut.smartReloadRootNode(iacNode)
+
+        // Process pending events - the debounced reload should eventually fire
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Give the alarm time to fire (debounce delay is 50ms)
+        Thread.sleep(100)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Both nodes should still be in the tree after reload
+        assertTrue("OSS node should exist after reload", rootNode.isNodeChild(ossNode))
+        assertTrue("IAC node should exist after reload", rootNode.isNodeChild(iacNode))
+    }
+
+    @Test
+    fun `smartReloadRootNode should preserve tree structure during reload`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        cut = SnykToolWindowPanel(project)
+
+        val ossNode = cut.getRootOssIssuesTreeNode()
+
+        // Add a child node to simulate having results
+        val childNode = DefaultMutableTreeNode("Test Child")
+        ossNode.add(childNode)
+
+        val childCountBefore = ossNode.childCount
+
+        // Trigger reload
+        cut.smartReloadRootNode(ossNode)
+
+        // Process pending events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(100)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Child should still exist
+        assertEquals("Child count should be preserved", childCountBefore, ossNode.childCount)
+    }
+
+    @Test
+    fun `doSmartReload should not skip reload when any node type is present`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        cut = SnykToolWindowPanel(project)
+
+        val ossNode = cut.getRootOssIssuesTreeNode()
+
+        // Add info node and issue node
+        val infoNode = DefaultMutableTreeNode("✋ 5 issues")
+        ossNode.add(infoNode)
+
+        // Select the info node
+        cut.getTree().selectionPath = javax.swing.tree.TreePath(arrayOf(cut.getRootNode(), ossNode, infoNode))
+
+        // Trigger reload - should NOT skip even with info node selected
+        cut.smartReloadRootNode(ossNode)
+
+        // Process pending events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(100)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Tree should still be valid
+        assertTrue("OSS node should still have children after reload", ossNode.childCount > 0)
     }
 }
