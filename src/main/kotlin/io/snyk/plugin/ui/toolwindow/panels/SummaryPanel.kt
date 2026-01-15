@@ -64,11 +64,13 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
                     // Replace the current HTML with the new HTML from the Language Server
                     override fun onSummaryReceived(summaryParams: SnykScanSummaryParams) {
                         if (isDisposed) return
-                        styledHtml = getFormattedHtml(summaryParams.scanSummary)
-                            .replace("\${ideFunc}", "window.toggleDeltaQuery(isEnabled);")
-                        // Defer HTML loading to avoid potential EDT blocking
+                        // Capture the raw summary - defer all processing to EDT
+                        // getFormattedHtml accesses Swing components and must run on EDT
+                        val rawSummary = summaryParams.scanSummary
                         invokeLater {
                             if (!isDisposed) {
+                                styledHtml = getFormattedHtml(rawSummary)
+                                    .replace("\${ideFunc}", "window.toggleDeltaQuery(isEnabled);")
                                 jbCefBrowser.loadHTML(styledHtml)
                             }
                         }
