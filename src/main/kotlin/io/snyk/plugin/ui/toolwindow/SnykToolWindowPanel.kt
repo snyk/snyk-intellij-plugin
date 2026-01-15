@@ -124,7 +124,8 @@ class SnykToolWindowPanel(
 
     // Debouncing for tree reload operations - coalesces rapid updates
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
-    private var pendingReloadNode: DefaultMutableTreeNode? = null
+    private val pendingReloadNodes: MutableSet<DefaultMutableTreeNode> =
+        java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     // Debouncing for annotation refresh - coalesces per-file diagnostic updates
     private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
@@ -261,19 +262,20 @@ class SnykToolWindowPanel(
                 SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
                 object : SnykResultsFilteringListener {
                     override fun filtersChanged() {
-                        // Fetch data off-EDT
+                        // Fetch data off-EDT - handle each product independently
+                        // so that filtering works even if some products haven't been scanned
                         val codeSecurityResultsLS =
-                            getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY) ?: return
+                            getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY)
                         val ossResultsLS =
-                            getSnykCachedResultsForProduct(project, ProductType.OSS) ?: return
+                            getSnykCachedResultsForProduct(project, ProductType.OSS)
                         val iacResultsLS =
-                            getSnykCachedResultsForProduct(project, ProductType.IAC) ?: return
+                            getSnykCachedResultsForProduct(project, ProductType.IAC)
 
                         invokeLater {
                             if (isDisposed || project.isDisposed) return@invokeLater
-                            scanListenerLS.displaySnykCodeResults(codeSecurityResultsLS)
-                            scanListenerLS.displayOssResults(ossResultsLS)
-                            scanListenerLS.displayIacResults(iacResultsLS)
+                            codeSecurityResultsLS?.let { scanListenerLS.displaySnykCodeResults(it) }
+                            ossResultsLS?.let { scanListenerLS.displayOssResults(it) }
+                            iacResultsLS?.let { scanListenerLS.displayIacResults(it) }
                         }
                     }
                 },
@@ -852,12 +854,14 @@ class SnykToolWindowPanel(
             displayEmptyDescription()
         }
 
-        // Debounce: cancel pending reload and schedule new one
-        pendingReloadNode = nodeToReload
+        // Debounce: add node to pending set and schedule reload
+        // This allows multiple product nodes to be collected and reloaded together
+        pendingReloadNodes.add(nodeToReload)
         reloadAlarm.cancelAllRequests()
         reloadAlarm.addRequest({
-            pendingReloadNode?.let { doSmartReload(it) }
-            pendingReloadNode = null
+            val nodesToReload = pendingReloadNodes.toList()
+            pendingReloadNodes.clear()
+            nodesToReload.forEach { doSmartReload(it) }
         }, RELOAD_DEBOUNCE_MS)
     }
 
@@ -873,10 +877,6 @@ class SnykToolWindowPanel(
         // Save the currently selected issue ID (if any) to restore after reload
         val selectedPath = vulnerabilitiesTree.selectionPath
         val selectedIssueId = (selectedPath?.lastPathComponent as? SuggestionTreeNode)?.issue?.id
-
-        // Check if selection is an InfoTreeNode - if so, don't interfere
-        val selectedNodeUserObject = TreeUtil.findObjectInPath(selectedPath, Any::class.java)
-        if (TreeUtil.findNodeWithObject(rootTreeNode, selectedNodeUserObject) is InfoTreeNode) return
 
         // Reload the tree model (fast operation)
         (vulnerabilitiesTree.model as DefaultTreeModel).reload(nodeToReload)

@@ -32,8 +32,7 @@ class SaveConfigHandler(
     private val onSaveComplete: (() -> Unit)? = null
 ) {
     private val logger = Logger.getInstance(SaveConfigHandler::class.java)
-    private val gson = GsonBuilder()
-        .create()
+    private val gson = GsonBuilder().create()
 
     fun generateSaveConfigHandler(
         jbCefBrowser: JBCefBrowserBase,
@@ -48,7 +47,7 @@ class SaveConfigHandler(
         saveConfigQuery.addHandler { jsonString ->
             var response: JBCefJSQuery.Response
             try {
-                parseAndSaveConfig(jsonString)
+                saveConfig(jsonString)
                 // Hide any previous error on success
                 jbCefBrowser.cefBrowser.executeJavaScript(
                     "if (typeof window.hideError === 'function') { window.hideError(); }",
@@ -74,11 +73,15 @@ class SaveConfigHandler(
             response
         }
 
-        saveAttemptFinishedQuery.addHandler {
-            try {
-                onSaveComplete?.invoke()
-            } catch (e: Exception) {
-                logger.warn("Error in onSaveComplete callback", e)
+        saveAttemptFinishedQuery.addHandler { status ->
+            // Only invoke onSaveComplete for non-success statuses.
+            // For success, onSaveComplete is already called by saveConfigQuery handler.
+            if (status != "success") {
+                try {
+                    onSaveComplete?.invoke()
+                } catch (e: Exception) {
+                    logger.warn("Error in onSaveComplete callback", e)
+                }
             }
             JBCefJSQuery.Response("success")
         }
@@ -160,7 +163,7 @@ class SaveConfigHandler(
         }
     }
 
-    private fun parseAndSaveConfig(jsonString: String) {
+    private fun saveConfig(jsonString: String) {
         val config: SaveConfigRequest = try {
             gson.fromJson(jsonString, SaveConfigRequest::class.java)
         } catch (e: JsonSyntaxException) {

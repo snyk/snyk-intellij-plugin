@@ -3,8 +3,58 @@ package io.snyk.plugin.ui.jcef
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
+import com.google.gson.TypeAdapter
 import com.google.gson.annotations.SerializedName
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
+import com.google.gson.stream.JsonWriter
 import java.lang.reflect.Type
+
+/**
+ * Type adapter that handles additionalParameters as either a string or an array of strings.
+ * The LS HTML may send it as a string, while the fallback HTML sends it as an array.
+ */
+class StringOrListTypeAdapter : TypeAdapter<List<String>?>() {
+    override fun write(out: JsonWriter, value: List<String>?) {
+        if (value == null) {
+            out.nullValue()
+        } else {
+            out.beginArray()
+            value.forEach { out.value(it) }
+            out.endArray()
+        }
+    }
+
+    override fun read(reader: JsonReader): List<String>? {
+        return when (reader.peek()) {
+            JsonToken.NULL -> {
+                reader.nextNull()
+                null
+            }
+            JsonToken.STRING -> {
+                val str = reader.nextString()
+                if (str.isNullOrBlank()) emptyList() else listOf(str)
+            }
+            JsonToken.BEGIN_ARRAY -> {
+                val list = mutableListOf<String>()
+                reader.beginArray()
+                while (reader.hasNext()) {
+                    if (reader.peek() == JsonToken.STRING) {
+                        list.add(reader.nextString())
+                    } else {
+                        reader.skipValue()
+                    }
+                }
+                reader.endArray()
+                list
+            }
+            else -> {
+                reader.skipValue()
+                null
+            }
+        }
+    }
+}
 
 data class SaveConfigRequest(
     // Scan Settings
@@ -58,7 +108,9 @@ data class IssueViewOptionsConfig(
 
 data class FolderConfigData(
     @SerializedName("folderPath") val folderPath: String,
-    @SerializedName("additionalParameters") val additionalParameters: List<String>? = null,
+    @SerializedName("additionalParameters")
+    @com.google.gson.annotations.JsonAdapter(StringOrListTypeAdapter::class)
+    val additionalParameters: List<String>? = null,
     @SerializedName("additionalEnv") val additionalEnv: String? = null,
     @SerializedName("preferredOrg") val preferredOrg: String? = null,
     @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String? = null,

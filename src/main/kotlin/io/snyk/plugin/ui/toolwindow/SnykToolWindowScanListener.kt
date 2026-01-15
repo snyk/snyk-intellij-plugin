@@ -279,17 +279,12 @@ class SnykToolWindowSnykScanListener(
         rootNode.removeAllChildren()
 
         var rootNodePostFix = ""
+        var filteredOssResultsCount = ossResultsCount
+        var filteredSecurityIssuesCount = securityIssuesCount
+        var filteredIacResultsCount = iacResultsCount
 
         if (enabledInSettings) {
-            rootNodePostFix = buildSeveritiesPostfixForFileNode(snykResults)
-
-            addInfoTreeNodes(
-                filterableIssueType = filterableIssueType,
-                rootNode = rootNode,
-                issues = snykResults.values.flatten().distinct(),
-                fixableIssuesCount = fixableIssuesCount,
-            )
-
+            // Calculate filtered results first - apply severity filtering if enabled
             val resultsToDisplay =
                 if (filterTree) {
                     snykResults.map { entry ->
@@ -301,22 +296,46 @@ class SnykToolWindowSnykScanListener(
                 } else {
                     snykResults.map { entry -> entry.key to entry.value.toList() }.toMap()
                 }
+
+            // Use filtered results for all counts and display
+            val filteredIssues = resultsToDisplay.values.flatten().distinct()
+            rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredIssues)
+
+            // Update counts to reflect filtered results
+            when (filterableIssueType) {
+                ScanIssue.OPEN_SOURCE -> filteredOssResultsCount = filteredIssues.size
+                ScanIssue.CODE_SECURITY -> filteredSecurityIssuesCount = filteredIssues.size
+                ScanIssue.INFRASTRUCTURE_AS_CODE -> filteredIacResultsCount = filteredIssues.size
+            }
+
+            val filteredFixableCount = when (filterableIssueType) {
+                ScanIssue.CODE_SECURITY -> filteredIssues.count { it.hasAIFix() }
+                else -> filteredIssues.count { it.additionalData.isUpgradable }
+            }
+
+            addInfoTreeNodes(
+                filterableIssueType = filterableIssueType,
+                rootNode = rootNode,
+                issues = filteredIssues,
+                fixableIssuesCount = filteredFixableCount,
+            )
+
             displayResultsForRootTreeNode(rootNode, resultsToDisplay)
         }
 
         val currentOssError = getSnykCachedResults(project)?.currentOssError
         val cliErrorMessage = currentOssError?.error
 
-        var ossResultsCountForDisplay = ossResultsCount
+        var ossResultsCountForDisplay = filteredOssResultsCount
         if (cliErrorMessage?.contains(NO_OSS_FILES) == true) {
             snykToolWindowPanel.getRootOssIssuesTreeNode().originalCliErrorMessage = cliErrorMessage
             ossResultsCountForDisplay = NODE_NOT_SUPPORTED_STATE
         }
 
         snykToolWindowPanel.updateTreeRootNodesPresentation(
-            securityIssuesCount = securityIssuesCount,
+            securityIssuesCount = filteredSecurityIssuesCount,
             ossResultsCount = ossResultsCountForDisplay,
-            iacResultsCount = iacResultsCount,
+            iacResultsCount = filteredIacResultsCount,
             addHMLPostfix = rootNodePostFix,
         )
 
@@ -503,10 +522,11 @@ class SnykToolWindowSnykScanListener(
         expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
-    private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, Set<ScanIssue>>): String {
-        val high = results.values.flatten().count { it.getSeverityAsEnum() == Severity.HIGH }
-        val medium = results.values.flatten().count { it.getSeverityAsEnum() == Severity.MEDIUM }
-        val low = results.values.flatten().count { it.getSeverityAsEnum() == Severity.LOW }
-        return ": $high high, $medium medium, $low low"
+    private fun buildSeveritiesPostfixForFileNode(results: List<ScanIssue>): String {
+        val critical = results.count { it.getSeverityAsEnum() == Severity.CRITICAL }
+        val high = results.count { it.getSeverityAsEnum() == Severity.HIGH }
+        val medium = results.count { it.getSeverityAsEnum() == Severity.MEDIUM }
+        val low = results.count { it.getSeverityAsEnum() == Severity.LOW }
+        return ": $critical critical, $high high, $medium medium, $low low"
     }
 }
