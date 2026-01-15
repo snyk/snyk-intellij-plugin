@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
+import com.intellij.openapi.application.invokeLater
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
@@ -59,8 +60,14 @@ object JCEFUtils {
         return Pair(cefClient, jbCefBrowser)
     }
 
-    fun getJBCefBrowserIfSupported(
-        html: String,
+    /**
+     * Creates a JCEF browser with load handlers but WITHOUT loading HTML.
+     * Use this when you want to defer HTML loading to avoid EDT blocking.
+     * Call loadHTML() separately, preferably via invokeLater.
+     *
+     * @return The browser instance, or null if JCEF is not supported
+     */
+    fun getJBCefBrowserComponentIfSupported(
         loadHandlerGenerators: List<LoadHandlerGenerator>,
     ): JBCefBrowser? {
         if (!JBCefApp.isSupported()) {
@@ -68,15 +75,34 @@ object JCEFUtils {
             return null
         }
 
-        // Create a new browser for each panel - they can't share a single browser
-        // as loading new HTML in one panel would clear the other
         val (cefClient, jbCefBrowser) = createBrowser()
 
         for (loadHandlerGenerator in loadHandlerGenerators) {
             val loadHandler = loadHandlerGenerator(jbCefBrowser)
             cefClient.addLoadHandler(loadHandler, jbCefBrowser.cefBrowser)
         }
-        jbCefBrowser.loadHTML(html, jbCefBrowser.cefBrowser.url)
+
+        return jbCefBrowser
+    }
+
+    /**
+     * Creates a JCEF browser and loads HTML content.
+     * HTML loading is deferred via invokeLater to avoid blocking the EDT during browser initialization.
+     *
+     * @param html The HTML content to load
+     * @param loadHandlerGenerators List of load handler generators to attach to the browser
+     * @return The browser instance, or null if JCEF is not supported
+     */
+    fun getJBCefBrowserIfSupported(
+        html: String,
+        loadHandlerGenerators: List<LoadHandlerGenerator>,
+    ): JBCefBrowser? {
+        val jbCefBrowser = getJBCefBrowserComponentIfSupported(loadHandlerGenerators) ?: return null
+
+        // Defer HTML loading to next EDT cycle to avoid blocking during panel construction
+        invokeLater {
+            jbCefBrowser.loadHTML(html, jbCefBrowser.cefBrowser.url)
+        }
 
         return jbCefBrowser
     }

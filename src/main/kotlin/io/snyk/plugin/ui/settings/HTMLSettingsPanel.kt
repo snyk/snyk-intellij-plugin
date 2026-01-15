@@ -98,11 +98,14 @@ class HTMLSettingsPanel(
 
     private fun showLsErrorInBrowser(error: String) {
         val safeError = error.replace("'", "\\'").replace("\n", " ")
-        jbCefBrowser?.cefBrowser?.executeJavaScript(
-            "if (typeof window.showError === 'function') { window.showError('Language Server error: $safeError'); }",
-            jbCefBrowser?.cefBrowser?.url ?: "",
-            0
-        )
+        // Defer JavaScript execution to avoid EDT blocking
+        ApplicationManager.getApplication().invokeLater {
+            jbCefBrowser?.cefBrowser?.executeJavaScript(
+                "if (typeof window.showError === 'function') { window.showError('Language Server error: $safeError'); }",
+                jbCefBrowser?.cefBrowser?.url ?: "",
+                0
+            )
+        }
     }
 
     private fun getHtmlContent(): String? {
@@ -301,11 +304,14 @@ class HTMLSettingsPanel(
 
         // Use the existing getAndSaveIdeConfig() which already works with Apply button
         // The onSaveComplete callback will release the semaphore when save completes
-        browser.executeJavaScript(
-            "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
-            browser.url ?: "",
-            0
-        )
+        // Execute in invokeLater to ensure proper EDT sequencing and avoid potential blocking
+        ApplicationManager.getApplication().invokeLater {
+            browser.executeJavaScript(
+                "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
+                browser.url ?: "",
+                0
+            )
+        }
 
         // Wait for save completion using a modal progress dialog
         // This allows the EDT to process events (including JCEF callbacks) while showing progress

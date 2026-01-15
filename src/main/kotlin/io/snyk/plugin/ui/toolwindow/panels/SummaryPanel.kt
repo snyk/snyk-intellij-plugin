@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationNamesInfo
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
@@ -18,6 +19,9 @@ import snyk.common.lsp.SnykScanSummaryParams
 import java.awt.Dimension
 
 class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Disposable {
+    @Volatile
+    private var isDisposed = false
+
     init {
         name = "summaryPanel"
         minimumSize = Dimension(0, 0)
@@ -29,7 +33,7 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
         // along with the parent panel. We override the minimum size to 1 pixel x 1 pixel (this must be non-zero), and
         // use constrains to match the parent's size.
         val preferredSize = Dimension(1, 1)
-        val constraints =  baseGridConstraints(
+        val constraints = baseGridConstraints(
             row = 0,
             column = 0,
             anchor = ANCHOR_NORTHWEST,
@@ -39,19 +43,19 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
         )
 
         val rawHtml = SummaryPanel::class.java.classLoader.getResource(HTML_INIT_FILE)?.readText()
-        var styledHtml = getFormattedHtml(rawHtml?: "")
+        var styledHtml = getFormattedHtml(rawHtml ?: "")
 
         // Create handlers for the toggles between all issues and delta findings
         val loadHandlerGenerators = emptyList<LoadHandlerGenerator>().toMutableList()
         val toggleDeltaHandler = ToggleDeltaHandler(project)
         loadHandlerGenerators += { toggleDeltaHandler.generate(it) }
 
+        // Create browser without loading HTML - HTML will be loaded via invokeLater by JCEFUtils
         val jbCefBrowser =
             JCEFUtils.getJBCefBrowserIfSupported(styledHtml, loadHandlerGenerators)
 
         if (jbCefBrowser != null) {
             jbCefBrowser.component.preferredSize = preferredSize
-            jbCefBrowser.loadHTML(styledHtml, jbCefBrowser.cefBrowser.url)
             add(jbCefBrowser.component, constraints)
 
             // Subscribe to scan summaries
@@ -59,9 +63,15 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
                 .subscribe(SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC, object : SnykScanSummaryListener {
                     // Replace the current HTML with the new HTML from the Language Server
                     override fun onSummaryReceived(summaryParams: SnykScanSummaryParams) {
+                        if (isDisposed) return
                         styledHtml = getFormattedHtml(summaryParams.scanSummary)
                             .replace("\${ideFunc}", "window.toggleDeltaQuery(isEnabled);")
-                        jbCefBrowser.loadHTML(styledHtml)
+                        // Defer HTML loading to avoid potential EDT blocking
+                        invokeLater {
+                            if (!isDisposed) {
+                                jbCefBrowser.loadHTML(styledHtml)
+                            }
+                        }
                     }
                 })
 
@@ -74,7 +84,9 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
         }
     }
 
-    override fun dispose() {}
+    override fun dispose() {
+        isDisposed = true
+    }
 
     companion object {
         const val HTML_INIT_FILE = "html/ScanSummaryInit.html"

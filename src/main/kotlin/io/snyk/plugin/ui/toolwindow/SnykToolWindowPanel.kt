@@ -11,6 +11,8 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
@@ -345,6 +347,20 @@ class SnykToolWindowPanel(
                     }
                 }
             )
+
+        // Listen for tool window visibility changes to ensure proper repainting
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                ToolWindowManagerListener.TOPIC,
+                object : ToolWindowManagerListener {
+                    override fun toolWindowShown(toolWindow: com.intellij.openapi.wm.ToolWindow) {
+                        if (toolWindow.id == SnykToolWindowFactory.SNYK_TOOL_WINDOW) {
+                            refreshUI()
+                        }
+                    }
+                }
+            )
     }
 
     private fun updateDescriptionPanelBySelectedTreeNode(treeSelectionEvent: TreeSelectionEvent) {
@@ -436,6 +452,37 @@ class SnykToolWindowPanel(
 
     override fun dispose() {
         isDisposed = true
+    }
+
+    // Throttle for UI refresh to avoid rapid successive refreshes
+    private var lastRefreshTime: Long = 0
+    private val refreshThrottleMs: Long = 500
+
+    /**
+     * Refreshes the tree UI when the tool window becomes visible or the application regains focus.
+     * This ensures that any model updates that occurred while the tool window was hidden are properly displayed.
+     *
+     * Note: Only refreshes the JTree component. JCEF-based panels (summaryPanel, descriptionPanel)
+     * manage their own rendering and should not be manually repainted to avoid EDT blocking.
+     */
+    fun refreshUI() {
+        if (isDisposed || project.isDisposed) return
+
+        // Throttle rapid refreshes
+        val now = System.currentTimeMillis()
+        if (now - lastRefreshTime < refreshThrottleMs) return
+        lastRefreshTime = now
+
+        invokeLater {
+            if (isDisposed || project.isDisposed) return@invokeLater
+            // Only refresh if the tree is actually showing on screen
+            if (!vulnerabilitiesTree.isShowing) return@invokeLater
+
+            // Refresh only the tree view (pure Swing component)
+            // JCEF panels manage their own rendering - do not repaint them manually
+            vulnerabilitiesTree.revalidate()
+            vulnerabilitiesTree.repaint()
+        }
     }
 
     /**
