@@ -68,14 +68,26 @@ class SnykTaskQueueService(val project: Project) {
             waitUntilCliDownloadedIfNeeded()
 
             it.checkCanceled()
+            // Verify CLI is actually available before proceeding
+            if (!isCliInstalled()) {
+                logger.warn("CLI not available after download attempt, cannot start scan")
+                SnykBalloonNotificationHelper.showError(
+                    "Snyk CLI is not available. Please check your network connection and try again.",
+                    project
+                )
+                return@runInBackground
+            }
+
+            it.checkCanceled()
             it.text = "Snyk: triggering scan in language server"
             LanguageServerWrapper.getInstance(project).sendScanCommand()
         }
     }
 
     fun waitUntilCliDownloadedIfNeeded() {
-        if (!pluginSettings().manageBinariesAutomatically) return
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
+        // Don't skip when manageBinariesAutomatically is false - downloadLatestRelease()
+        // handles that case and shows an appropriate notification if CLI is missing
 
         val completed = CompletableFuture<Unit>()
         val connection = ApplicationManager.getApplication().messageBus.connect(project)
@@ -124,17 +136,33 @@ class SnykTaskQueueService(val project: Project) {
         }
 
         runInBackground("Snyk: Check CLI presence", project, true) { indicator ->
-            indicator.checkCanceled()
-            cliDownloadPublisher.checkCliExistsStarted()
-            if (project.isDisposed) return@runInBackground
+            try {
+                indicator.checkCanceled()
+                cliDownloadPublisher.checkCliExistsStarted()
+                if (project.isDisposed) return@runInBackground
 
-            indicator.checkCanceled()
-            if (!isCliInstalled()) {
-                cliDownloader.downloadLatestRelease(indicator, project)
-            } else {
-                cliDownloader.cliSilentAutoUpdate(indicator, project, force)
+                indicator.checkCanceled()
+                val cliInstalled = isCliInstalled()
+                logger.info("CLI check: isCliInstalled=$cliInstalled, force=$force")
+                if (!cliInstalled) {
+                    logger.info("CLI not installed, triggering download")
+                    cliDownloader.downloadLatestRelease(indicator, project)
+                } else {
+                    // Verify CLI integrity before using it
+                    val integrityOk = cliDownloader.verifyCliIntegrity(project)
+                    logger.info("CLI integrity check: integrityOk=$integrityOk")
+                    if (force || !integrityOk) {
+                        logger.info("Triggering download due to force=$force or integrity failure")
+                        cliDownloader.downloadLatestRelease(indicator, project)
+                    } else {
+                        logger.info("CLI installed and verified, checking for updates")
+                        cliDownloader.cliSilentAutoUpdate(indicator, project, force)
+                    }
+                }
+            } finally {
+                logger.info("CLI check finished, isCliInstalled=${isCliInstalled()}")
+                cliDownloadPublisher.checkCliExistsFinished()
             }
-            cliDownloadPublisher.checkCliExistsFinished()
         }
     }
 

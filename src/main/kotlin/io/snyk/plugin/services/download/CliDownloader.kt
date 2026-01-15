@@ -64,7 +64,10 @@ class CliDownloader {
             val expectedSha = expectedSha(cliVersion)
 
             indicator.checkCanceled()
-            verifyChecksum(expectedSha, downloadFile.readBytes())
+            val downloadedBytes = downloadFile.readBytes()
+            verifyChecksum(expectedSha, downloadedBytes)
+            // Save the checksum for integrity verification on future startups
+            pluginSettings().cliSha256 = calculateSha256(downloadedBytes)
 
             indicator.checkCanceled()
             if (cliFile.exists()) {

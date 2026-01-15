@@ -8,6 +8,7 @@ import com.intellij.psi.PsiFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import snyk.common.lsp.LanguageServerWrapper
@@ -17,6 +18,12 @@ class AnnotatorCommon(val project: Project) {
 
     fun prepareAnnotate(psiFile: PsiFile?) {
         logger.debug("Preparing annotation for $psiFile")
+
+        // Only try to initialize LS if CLI is available
+        if (!isCliInstalled()) {
+            logger.debug("CLI not installed, skipping LS initialization for annotations")
+            return
+        }
 
         // trigger LS initialization if not already done, we consciously don't check the result here
         LanguageServerWrapper.getInstance(project).ensureLanguageServerInitialized()

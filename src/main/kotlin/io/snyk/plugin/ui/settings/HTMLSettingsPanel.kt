@@ -21,7 +21,6 @@ import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
-import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
 import java.util.concurrent.Semaphore
@@ -304,14 +303,12 @@ class HTMLSettingsPanel(
 
         // Use the existing getAndSaveIdeConfig() which already works with Apply button
         // The onSaveComplete callback will release the semaphore when save completes
-        // Execute in invokeLater to ensure proper EDT sequencing and avoid potential blocking
-        ApplicationManager.getApplication().invokeLater {
-            browser.executeJavaScript(
-                "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
-                browser.url ?: "",
-                0
-            )
-        }
+        // Note: executeJavaScript is non-blocking (schedules JS in JCEF), so no invokeLater needed
+        browser.executeJavaScript(
+            "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
+            browser.url ?: "",
+            0
+        )
 
         // Wait for save completion using a modal progress dialog
         // This allows the EDT to process events (including JCEF callbacks) while showing progress
@@ -339,20 +336,19 @@ class HTMLSettingsPanel(
 
     private fun runPostApplySettings() {
         val settings = pluginSettings()
-        runAsync {
-            runInBackground("Snyk: applying settings") {
-                // Handle release channel change - prompt to download new CLI
-                if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
-                    handleReleaseChannelChange(project)
-                }
-
-                // Handle delta findings change - clear caches
-                if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
-                    handleDeltaFindingsChange(project)
-                }
-
-                executePostApplySettings(project)
+        // Use runInBackground directly (not wrapped in runAsync) to ensure the task executes
+        runInBackground("Snyk: applying settings") {
+            // Handle release channel change - prompt to download new CLI
+            if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
+                handleReleaseChannelChange(project)
             }
+
+            // Handle delta findings change - clear caches
+            if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
+                handleDeltaFindingsChange(project)
+            }
+
+            executePostApplySettings(project)
         }
     }
 

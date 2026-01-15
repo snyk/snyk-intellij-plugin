@@ -94,7 +94,11 @@ fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateSer
 
 fun getCliFile() = File(pluginSettings().cliPath)
 
-fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
+fun isCliInstalled(): Boolean {
+    if (ApplicationManager.getApplication().isUnitTestMode) return true
+    val cliFile = getCliFile()
+    return cliFile.exists() && cliFile.canExecute()
+}
 
 fun pluginSettings(): SnykApplicationSettingsStateService = ApplicationManager.getApplication().service()
 

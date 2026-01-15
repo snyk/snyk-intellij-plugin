@@ -139,13 +139,23 @@ class LanguageServerWrapper(
 
     private fun initialize() {
         if (disposed) return
-        if (cliPath.toNioPathOrNull()?.exists() == false) {
+        val cliFile = cliPath.toNioPathOrNull()?.toFile()
+        if (cliFile == null || !cliFile.exists()) {
             if (!cliNotFoundWarningDisplayed) {
                 val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $cliPath."
                 logger.warn(message)
                 cliNotFoundWarningDisplayed = true
             }
             return
+        }
+        if (!cliFile.canExecute()) {
+            logger.warn("Snyk CLI at $cliPath is not executable. Attempting to set executable permission.")
+            try {
+                cliFile.setExecutable(true)
+            } catch (e: SecurityException) {
+                logger.warn("Failed to set executable permission on CLI: ${e.message}")
+                return
+            }
         }
 
         try {

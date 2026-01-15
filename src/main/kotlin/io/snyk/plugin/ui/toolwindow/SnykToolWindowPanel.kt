@@ -729,7 +729,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentIacError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentIacError?.treeNodeSuffix
             "$IAC_ROOT_TEXT $errorSuffix"
         }
 
@@ -753,7 +753,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         getSnykCachedResults(project)?.currentSnykCodeError != null -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentSnykCodeError?.treeNodeSuffix
             "$CODE_SECURITY_ROOT_TEXT $errorSuffix"
         }
 
