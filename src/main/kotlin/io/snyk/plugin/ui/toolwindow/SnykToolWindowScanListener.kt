@@ -524,9 +524,10 @@ class SnykToolWindowSnykScanListener(
 
     private fun buildSeveritiesPostfixForFileNode(results: Map<SnykFile, out Iterable<ScanIssue>>): String {
         val allIssues = results.values.flatten()
+        val critical = allIssues.count { it.getSeverityAsEnum() == Severity.CRITICAL }
         val high = allIssues.count { it.getSeverityAsEnum() == Severity.HIGH }
         val medium = allIssues.count { it.getSeverityAsEnum() == Severity.MEDIUM }
         val low = allIssues.count { it.getSeverityAsEnum() == Severity.LOW }
-        return ": $high high, $medium medium, $low low"
+        return ": $critical critical, $high high, $medium medium, $low low"
     }
 }

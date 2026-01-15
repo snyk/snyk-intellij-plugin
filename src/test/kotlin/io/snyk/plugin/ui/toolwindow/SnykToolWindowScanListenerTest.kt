@@ -459,4 +459,44 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         }
         assertEquals("Tree should contain 3 issue nodes", 3, actualIssueCount)
     }
+
+    fun `test root node postfix includes critical severity count`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = true
+
+        // Enable all severities
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = true
+        pluginSettings().treeFiltering.lowSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create 2 critical, 1 high, 1 medium issue
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "critical-1").first(),
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "critical-2").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-1").first(),
+        )
+
+        cut.displayOssResults(mapOf(snykFile to issues.toSet()))
+
+        // Get the panel's actual root OSS node which receives the postfix via updateTreeRootNodesPresentation
+        val panelRootOssNode = snykToolWindowPanel.getRootOssIssuesTreeNode()
+        val rootNodeText = panelRootOssNode.userObject.toString()
+        assertTrue(
+            "Expected root node to contain '2 critical' but got: $rootNodeText",
+            rootNodeText.contains("2 critical")
+        )
+        assertTrue(
+            "Expected root node to contain '1 high' but got: $rootNodeText",
+            rootNodeText.contains("1 high")
+        )
+        assertTrue(
+            "Expected root node to contain '1 medium' but got: $rootNodeText",
+            rootNodeText.contains("1 medium")
+        )
+    }
 }
