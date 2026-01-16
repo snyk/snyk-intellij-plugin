@@ -1084,4 +1084,7 @@ class SnykToolWindowPanel(
 
     @TestOnly
     fun getDescriptionPanel() = descriptionPanel
+
+    @TestOnly
+    fun scheduleDebouncedTreeRefreshForTest(product: LsProduct) = scheduleDebouncedTreeRefresh(product)
 }

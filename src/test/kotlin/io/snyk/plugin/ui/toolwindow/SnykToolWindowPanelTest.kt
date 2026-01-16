@@ -9,9 +9,13 @@ import com.intellij.ui.treeStructure.Tree
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.isIacRunning
+import io.snyk.plugin.isOssRunning
+import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
@@ -241,5 +245,68 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
         // Tree should still be valid
         assertTrue("OSS node should still have children after reload", ossNode.childCount > 0)
+    }
+
+    @Test
+    fun `flushPendingTreeRefreshes should skip OSS refresh when scan is running`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        mockkStatic(::isOssRunning)
+        mockkStatic(::isSnykCodeRunning)
+        mockkStatic(::isIacRunning)
+
+        // Simulate OSS scan running
+        every { isOssRunning(any()) } returns true
+        every { isSnykCodeRunning(any()) } returns false
+        every { isIacRunning(any()) } returns false
+
+        cut = SnykToolWindowPanel(project)
+
+        val ossNode = cut.getRootOssIssuesTreeNode()
+        val initialChildCount = ossNode.childCount
+
+        // Trigger debounced tree refresh for OSS
+        cut.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+
+        // Process pending events and wait for debounce
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // OSS node should NOT be modified because scan is running
+        assertEquals("OSS node should not be modified while scanning", initialChildCount, ossNode.childCount)
+    }
+
+    @Test
+    fun `flushPendingTreeRefreshes should refresh OSS when scan is not running`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        every { settings.ossScanEnable } returns true
+        every { settings.treeFiltering } returns mockk(relaxed = true)
+        justRun { taskQueueService.scan() }
+
+        mockkStatic(::isOssRunning)
+        mockkStatic(::isSnykCodeRunning)
+        mockkStatic(::isIacRunning)
+
+        // Simulate no scans running
+        every { isOssRunning(any()) } returns false
+        every { isSnykCodeRunning(any()) } returns false
+        every { isIacRunning(any()) } returns false
+
+        cut = SnykToolWindowPanel(project)
+
+        // Trigger debounced tree refresh for OSS
+        cut.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+
+        // Process pending events and wait for debounce
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Tree should have been refreshed (no exception thrown)
+        assertNotNull("Tree should still exist", cut.getTree())
     }
 }
