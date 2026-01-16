@@ -5,6 +5,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
@@ -63,6 +64,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.cvssV3() } returns "cvssScore"
         every { issue.cvssScore() } returns "cvssScore"
         every { issue.id() } returns "id"
+        every { issue.id } returns "test-issue-id"
         every { issue.ruleId() } returns "ruleId"
         every { issue.filterableIssueType } returns ScanIssue.OPEN_SOURCE
         every { issue.additionalData.name } returns "Test name"
@@ -73,6 +75,16 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every {
             issue.additionalData.dataFlow
         } returns emptyList()
+    }
+
+    private fun waitForPanelInit(panel: SuggestionDescriptionPanel, timeoutMs: Long = 5000) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!panel.isInitialized() && System.currentTimeMillis() < deadline) {
+            PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+            Thread.sleep(10)
+        }
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertTrue("Panel should be initialized within timeout", panel.isInitialized())
     }
 
     fun `test createUI should build panel with HTML from details if allowed`() {
@@ -86,6 +98,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.details(any()) } returns "<html>HTML message</html>"
 
         cut = SuggestionDescriptionPanel(project, issue)
+        waitForPanelInit(cut)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)

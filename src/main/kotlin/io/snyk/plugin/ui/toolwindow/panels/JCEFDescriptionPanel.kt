@@ -19,6 +19,7 @@ import io.snyk.plugin.ui.jcef.SubmitIgnoreRequestHandler
 import io.snyk.plugin.ui.panelGridConstraints
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import io.snyk.plugin.ui.wrapWithScrollPane
+import org.jetbrains.annotations.TestOnly
 import snyk.common.lsp.ScanIssue
 import java.awt.BorderLayout
 import javax.swing.JPanel
@@ -30,6 +31,13 @@ class SuggestionDescriptionPanel(
     private val logger = logger<SuggestionDescriptionPanel>()
     private val unexpectedErrorMessage =
         "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
+
+    // Used by tests to check if async initialization is complete
+    @Volatile
+    private var initialized = false
+
+    @TestOnly
+    fun isInitialized() = initialized
 
     /**
      * Returns the formatted HTML with CSS and scripts injected.
@@ -54,6 +62,7 @@ class SuggestionDescriptionPanel(
             logger.debug("SuggestionDescriptionPanel: background task starting")
             if (project.isDisposed) {
                 logger.debug("SuggestionDescriptionPanel: project disposed, aborting")
+                initialized = true
                 return@executeOnPooledThread
             }
 
@@ -68,6 +77,7 @@ class SuggestionDescriptionPanel(
                 logger.debug("SuggestionDescriptionPanel: invokeLater executing")
                 if (project.isDisposed) {
                     logger.debug("SuggestionDescriptionPanel: project disposed in invokeLater, aborting")
+                    initialized = true
                     return@invokeLater
                 }
                 initializeBrowser(issueDetails)
@@ -156,6 +166,7 @@ class SuggestionDescriptionPanel(
         this.revalidate()
         this.repaint()
         logger.debug("SuggestionDescriptionPanel: initializeBrowser completed")
+        initialized = true
     }
 }
 

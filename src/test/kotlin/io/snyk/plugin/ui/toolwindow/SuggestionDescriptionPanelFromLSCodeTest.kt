@@ -5,6 +5,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
@@ -61,6 +62,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every { issue.cvssV3() } returns null
         every { issue.cvssScore() } returns null
         every { issue.id() } returns "id"
+        every { issue.id } returns "test-issue-id"
         every { issue.filterableIssueType } returns ScanIssue.CODE_SECURITY
         every { issue.additionalData.message } returns "Test message"
         every { issue.additionalData.repoDatasetSize } returns 1
@@ -78,12 +80,23 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
     }
 
+    private fun waitForPanelInit(panel: SuggestionDescriptionPanel, timeoutMs: Long = 5000) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!panel.isInitialized() && System.currentTimeMillis() < deadline) {
+            PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+            Thread.sleep(10)
+        }
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertTrue("Panel should be initialized within timeout", panel.isInitialized())
+    }
+
     fun `test createUI should show nothing if HTML is allowed but JCEF is not supported`() {
         mockkObject(JCEFUtils)
         every { JCEFUtils.getJBCefBrowserIfSupported(eq("<html>HTML message</html>"), any()) } returns null
 
         every { issue.details(project) } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanel(project, issue)
+        waitForPanelInit(cut)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
@@ -104,7 +117,7 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
         every { issue.details(project) } returns "<html>HTML message</html>"
         cut = SuggestionDescriptionPanel(project, issue)
-
+        waitForPanelInit(cut)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)
