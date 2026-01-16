@@ -21,16 +21,23 @@ plugins {
     id("pl.allegro.tech.build.axion-release") version "1.21.1"
 }
 
+// Configure axion-release BEFORE reading the version
+scmVersion {
+    // Use simple version without branch name suffix
+    versionCreator("simple")
+    // Include first 30 chars of branch name for snapshots (keeps version under 64 char limit)
+    snapshotCreator({ version, position ->
+        val branch = position.branch.take(30)
+        "$version-$branch-SNAPSHOT"
+    })
+}
+
 version = scmVersion.version
 
 group = properties("pluginGroup")
 description = properties("pluginName")
 
 val jdk = "21"
-
-scmVersion {
-    versionCreator("simple")
-}
 
 
 repositories {
