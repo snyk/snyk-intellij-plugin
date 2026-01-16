@@ -69,12 +69,12 @@ class SnykCliDownloaderService {
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
         currentProgressIndicator = indicator
-        logger.info("CLI download starting")
+        logger.debug("CLI download starting")
         publishAsync { cliDownloadStarted() }
         indicator.isIndeterminate = true
         var succeeded = false
         val cliFile = getCliFile()
-        logger.info("Starting CLI download to: ${cliFile.absolutePath}")
+        logger.debug("Starting CLI download to: ${cliFile.absolutePath}")
         val latestRelease: String
         try {
             latestRelease = requestLatestReleasesInformation() ?: ""
@@ -87,7 +87,7 @@ class SnykCliDownloaderService {
                 return
             }
 
-            logger.info("Downloading CLI version: $latestRelease")
+            logger.debug("Downloading CLI version: $latestRelease")
             indicator.text = "Downloading latest Snyk CLI release..."
             indicator.checkCanceled()
 
@@ -96,7 +96,7 @@ class SnykCliDownloaderService {
                 pluginSettings().cliVersion = latestRelease
                 pluginSettings().lastCheckDate = Date()
                 succeeded = true
-                logger.info("CLI download succeeded: ${cliFile.absolutePath}, exists=${cliFile.exists()}, canExecute=${cliFile.canExecute()}")
+                logger.debug("CLI download succeeded: ${cliFile.absolutePath}, exists=${cliFile.exists()}, canExecute=${cliFile.canExecute()}")
             } catch (e: HttpRequests.HttpStatusException) {
                 logger.warn("HTTP error during download", e)
                 errorHandler.handleHttpStatusException(e, project)
@@ -108,7 +108,7 @@ class SnykCliDownloaderService {
                 errorHandler.handleChecksumVerificationException(e, latestRelease, indicator, project)
             }
         } finally {
-            logger.info("CLI download finished, succeeded=$succeeded")
+            logger.debug("CLI download finished, succeeded=$succeeded")
             publishAsync { cliDownloadFinished(succeeded) }
             stopCliDownload()
         }
@@ -186,7 +186,7 @@ class SnykCliDownloaderService {
         if (storedSha256.isNullOrBlank()) {
             // No stored checksum - trigger download to ensure we have a verified CLI
             // The checksum will be stored after successful download
-            logger<SnykCliDownloaderService>().info("No stored CLI checksum, triggering download for verification")
+            logger<SnykCliDownloaderService>().debug("No stored CLI checksum, triggering download for verification")
             return false
         }
 

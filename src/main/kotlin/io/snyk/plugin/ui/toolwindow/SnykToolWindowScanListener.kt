@@ -102,10 +102,11 @@ class SnykToolWindowSnykScanListener(
 
     override fun scanningSnykCodeFinished() {
         if (disposed) return
-        val snykCachedResults = getSnykCachedResults(project)
-        val results = snykCachedResults?.currentSnykCodeResultsLS ?: emptyMap()
         invokeLater {
             if (disposed || project.isDisposed) return@invokeLater
+            // Fetch results inside invokeLater to get the latest cache state
+            // (diagnostics may continue arriving after scan finishes)
+            val results = getSnykCachedResults(project)?.currentSnykCodeResultsLS ?: emptyMap()
             this.rootSecurityIssuesTreeNode.userObject = "$CODE_SECURITY_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             displaySnykCodeResults(results)
@@ -116,10 +117,11 @@ class SnykToolWindowSnykScanListener(
 
     override fun scanningOssFinished() {
         if (disposed) return
-        val snykCachedResults = getSnykCachedResults(project)
-        val results = snykCachedResults?.currentOSSResultsLS ?: emptyMap()
         invokeLater {
             if (disposed || project.isDisposed) return@invokeLater
+            // Fetch results inside invokeLater to get the latest cache state
+            // (diagnostics may continue arriving after scan finishes)
+            val results = getSnykCachedResults(project)?.currentOSSResultsLS ?: emptyMap()
             this.rootOssIssuesTreeNode.userObject = "$OSS_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             displayOssResults(results)
@@ -130,10 +132,11 @@ class SnykToolWindowSnykScanListener(
 
     override fun scanningIacFinished() {
         if (disposed) return
-        val snykCachedResults = getSnykCachedResults(project)
-        val results = snykCachedResults?.currentIacResultsLS ?: emptyMap()
         invokeLater {
             if (disposed || project.isDisposed) return@invokeLater
+            // Fetch results inside invokeLater to get the latest cache state
+            // (diagnostics may continue arriving after scan finishes)
+            val results = getSnykCachedResults(project)?.currentIacResultsLS ?: emptyMap()
             this.rootIacIssuesTreeNode.userObject = "$IAC_ROOT_TEXT (scanning finished)"
             this.snykToolWindowPanel.triggerSelectionListeners = false
             displayIacResults(results)

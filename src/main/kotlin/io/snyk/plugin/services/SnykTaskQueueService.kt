@@ -171,31 +171,31 @@ class SnykTaskQueueService(val project: Project) {
 
                 indicator.checkCanceled()
                 val cliInstalled = isCliInstalled()
-                logger.info("CLI check: isCliInstalled=$cliInstalled, force=$force")
+                logger.debug("CLI check: isCliInstalled=$cliInstalled, force=$force")
                 if (!cliInstalled) {
-                    logger.info("CLI not installed, triggering download")
+                    logger.debug("CLI not installed, triggering download")
                     cliDownloader.downloadLatestRelease(indicator, project)
                 } else {
                     // Verify CLI integrity before using it
                     val integrityOk = cliDownloader.verifyCliIntegrity(project)
-                    logger.info("CLI integrity check: integrityOk=$integrityOk")
+                    logger.debug("CLI integrity check: integrityOk=$integrityOk")
                     if (force || !integrityOk) {
-                        logger.info("Triggering download due to force=$force or integrity failure")
+                        logger.debug("Triggering download due to force=$force or integrity failure")
                         cliDownloader.downloadLatestRelease(indicator, project)
                     } else {
-                        logger.info("CLI installed and verified, checking for updates")
+                        logger.debug("CLI installed and verified, checking for updates")
                         cliDownloader.cliSilentAutoUpdate(indicator, project, force)
                     }
                 }
             } finally {
-                logger.info("CLI check finished, isCliInstalled=${isCliInstalled()}")
+                logger.debug("CLI check finished, isCliInstalled=${isCliInstalled()}")
                 publishCliDownloadEventAsync { checkCliExistsFinished() }
             }
         }
     }
 
     fun stopScan() {
-        logger.info("stopScan called")
+        logger.debug("stopScan called")
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
         if (languageServerWrapper.isInitialized) {

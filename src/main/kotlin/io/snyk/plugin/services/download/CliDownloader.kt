@@ -76,7 +76,7 @@ class CliDownloader {
                 cliFile.delete()
             }
 
-            logger.info("CliDownloader: acquiring locks on all LanguageServerWrappers for file move")
+            logger.debug("CliDownloader: acquiring locks on all LanguageServerWrappers for file move")
             ProjectUtil.getOpenProjects().forEach { project ->
                 val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 // prevent spawning of language server until files are moved
@@ -92,7 +92,7 @@ class CliDownloader {
                 }
                 lockedLS.add(languageServerWrapper)
             }
-            logger.info("CliDownloader: all locks acquired, ${lockedLS.size} language servers locked")
+            logger.debug("CliDownloader: all locks acquired, ${lockedLS.size} language servers locked")
             try {
                 Files.move(
                     downloadFile.toPath(),
@@ -116,7 +116,7 @@ class CliDownloader {
             if (downloadFile.exists()) {
                 downloadFile.delete()
             }
-            logger.info("CliDownloader: releasing ${lockedLS.size} locks")
+            logger.debug("CliDownloader: releasing ${lockedLS.size} locks")
             lockedLS.forEach {
                 if (it.isInitializing.holdCount > 0) {
                     logger.debug("CliDownloader: releasing lock, holdCount=${it.isInitializing.holdCount}")
@@ -124,7 +124,7 @@ class CliDownloader {
                     logger.debug("CliDownloader: lock released")
                 }
             }
-            logger.info("CliDownloader: all locks released")
+            logger.debug("CliDownloader: all locks released")
         }
     }
 
