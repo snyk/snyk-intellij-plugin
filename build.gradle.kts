@@ -16,7 +16,7 @@ plugins {
     id("org.jetbrains.changelog") version "2.2.0"
     id("org.jetbrains.intellij.platform") version "2.5.0"
     id("org.jetbrains.kotlin.jvm") version "2.1.21"
-    id("org.jetbrains.kotlinx.kover") version "0.9.1"
+    id("org.jetbrains.kotlinx.kover") version "0.9.4"
     id("io.gitlab.arturbosch.detekt") version ("1.23.6")
     id("pl.allegro.tech.build.axion-release") version "1.21.1"
 }
