@@ -432,4 +432,36 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         // IAC node should NOT be modified because scan is running
         assertEquals("IAC node should not be modified while scanning", initialChildCount, iacNode.childCount)
     }
+
+    @Test
+    fun `tree node text should not contain literal null when error suffix is unavailable`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        mockkStatic(::isOssRunning)
+        mockkStatic(::isSnykCodeRunning)
+        mockkStatic(::isIacRunning)
+
+        every { isOssRunning(any()) } returns false
+        every { isSnykCodeRunning(any()) } returns false
+        every { isIacRunning(any()) } returns false
+
+        cut = SnykToolWindowPanel(project)
+
+        // Trigger tree update (ossResultsCount, securityIssuesCount, iacResultsCount, addHMLPostfix)
+        cut.updateTreeRootNodesPresentation(0, 0, 0, "")
+
+        // Process pending events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Verify no node contains literal "null" text
+        val ossNodeText = cut.getRootOssIssuesTreeNode().userObject.toString()
+        val codeNodeText = cut.getRootSecurityIssuesTreeNode().userObject.toString()
+        val iacNodeText = cut.getRootIacIssuesTreeNode().userObject.toString()
+
+        assertFalse("OSS node should not contain 'null': $ossNodeText", ossNodeText.contains("null"))
+        assertFalse("Code node should not contain 'null': $codeNodeText", codeNodeText.contains("null"))
+        assertFalse("IAC node should not contain 'null': $iacNodeText", iacNodeText.contains("null"))
+    }
 }
