@@ -93,7 +93,9 @@ class LanguageServerWrapper(
     private val project: Project,
 ) : Disposable {
     private val progressManager = ProgressManager(project)
-    private val cliPath: String = getCliFile().absolutePath
+    // Get the CLI path each time it is needed, so that Language Server restarts use the correct instance.
+    private val cliPath: String
+        get() = getCliFile().absolutePath
     private val executorService: ExecutorService = AppExecutorUtil.getAppExecutorService()
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
@@ -139,13 +141,23 @@ class LanguageServerWrapper(
 
     private fun initialize() {
         if (disposed) return
-        if (cliPath.toNioPathOrNull()?.exists() == false) {
+        val cliFile = cliPath.toNioPathOrNull()?.toFile()
+        if (cliFile == null || !cliFile.exists()) {
             if (!cliNotFoundWarningDisplayed) {
                 val message = "Snyk Language Server not found. Please make sure the Snyk CLI is installed at $cliPath."
                 logger.warn(message)
                 cliNotFoundWarningDisplayed = true
             }
             return
+        }
+        if (!cliFile.canExecute()) {
+            logger.warn("Snyk CLI at $cliPath is not executable. Attempting to set executable permission.")
+            try {
+                cliFile.setExecutable(true)
+            } catch (e: SecurityException) {
+                logger.warn("Failed to set executable permission on CLI: ${e.message}")
+                return
+            }
         }
 
         try {
@@ -357,9 +369,14 @@ class LanguageServerWrapper(
     }
 
     fun ensureLanguageServerInitialized(): Boolean {
-        if (disposed) return false
+        if (disposed) {
+            logger.debug("ensureLanguageServerInitialized: disposed, returning false")
+            return false
+        }
+        logger.debug("ensureLanguageServerInitialized: attempting to acquire lock, thread=${Thread.currentThread().name}")
         try {
             isInitializing.lock()
+            logger.debug("ensureLanguageServerInitialized: lock acquired, holdCount=${isInitializing.holdCount}")
             if (isInitializing.holdCount > 1) {
                 val message =
                     "Snyk failed to initialize. This is an unexpected loop error, please contact " +
@@ -369,14 +386,21 @@ class LanguageServerWrapper(
             }
 
             if (!isInitialized) {
+                logger.debug("ensureLanguageServerInitialized: not initialized, calling initialize()")
                 try {
                     initialize()
                 } catch (e: RuntimeException) {
+                    logger.error("ensureLanguageServerInitialized: initialize() threw exception", e)
                     throw (e)
                 }
+                logger.debug("ensureLanguageServerInitialized: initialize() completed, isInitialized=$isInitialized")
+            } else {
+                logger.debug("ensureLanguageServerInitialized: already initialized")
             }
         } finally {
+            logger.debug("ensureLanguageServerInitialized: releasing lock")
             isInitializing.unlock()
+            logger.debug("ensureLanguageServerInitialized: lock released")
         }
         return isInitialized
     }
@@ -509,6 +533,8 @@ class LanguageServerWrapper(
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
             cliBaseDownloadURL = ps.cliBaseDownloadURL,
+            cliReleaseChannel = ps.cliReleaseChannel,
+            manageBinariesAutomatically = ps.manageBinariesAutomatically.toString(),
             token = ps.token,
             filterSeverity =
                 SeverityFilter(
@@ -605,7 +631,9 @@ class LanguageServerWrapper(
         if (key.isBlank()) throw RuntimeException("Issue ID is required")
         val generateIssueCommand = ExecuteCommandParams(SNYK_GENERATE_ISSUE_DESCRIPTION, listOf(key))
         return try {
-            val result = executeCommand(generateIssueCommand, Long.MAX_VALUE)
+            // Use a reasonable timeout to avoid blocking the UI indefinitely
+            // If this is called on EDT, a long timeout will freeze the UI
+            val result = executeCommand(generateIssueCommand, 5000)
             when (result) {
                 is String -> result
                 is com.google.gson.JsonPrimitive -> result.asString

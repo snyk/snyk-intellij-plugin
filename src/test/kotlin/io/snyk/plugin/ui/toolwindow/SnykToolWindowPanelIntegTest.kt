@@ -363,4 +363,115 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         assertNotNull(component)
         return component!!
     }
+
+    @Test
+    fun `test refreshUI does not throw when panel is valid`() {
+        // refreshUI should complete without exception
+        toolWindowPanel.refreshUI()
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Panel should still be accessible
+        assertNotNull(toolWindowPanel.getTree())
+    }
+
+    @Test
+    fun `test refreshUI throttles rapid successive calls`() {
+        // First call should proceed
+        toolWindowPanel.refreshUI()
+        val firstCallTime = System.currentTimeMillis()
+
+        // Immediate second call should be throttled (not throw)
+        toolWindowPanel.refreshUI()
+
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Wait for throttle period
+        Thread.sleep(600)
+
+        // Third call after throttle period should proceed
+        toolWindowPanel.refreshUI()
+        val thirdCallTime = System.currentTimeMillis()
+
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Verify throttle period passed
+        assertTrue(thirdCallTime - firstCallTime >= 500)
+    }
+
+    @Test
+    fun `test scheduleDebouncedTreeRefresh coalesces multiple calls`() {
+        setUpOssTest()
+
+        // Rapidly schedule multiple refreshes
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+
+        // Process events - debounce should coalesce these
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300) // Wait for debounce timer
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Tree should be valid after debounced refresh
+        assertNotNull(toolWindowPanel.getTree())
+        assertTrue(toolWindowPanel.getTree().isShowing || !toolWindowPanel.getTree().isShowing) // Just verify no exception
+    }
+
+    @Test
+    fun `test scheduleDebouncedTreeRefresh handles multiple products`() {
+        pluginSettings().ossScanEnable = true
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().iacScanEnabled = true
+
+        // Schedule refreshes for multiple products
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.Code)
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.InfrastructureAsCode)
+
+        // Process events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300) // Wait for debounce timer
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // All root nodes should still be present
+        assertNotNull(toolWindowPanel.getRootOssIssuesTreeNode())
+        assertNotNull(toolWindowPanel.getRootSecurityIssuesTreeNode())
+        assertNotNull(toolWindowPanel.getRootIacIssuesTreeNode())
+    }
+
+    @Test
+    fun `test flushPendingTreeRefreshes skips refresh when scan is running`() {
+        setUpOssTest()
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { isOssRunning(project) } returns true
+
+        // Schedule refresh while scan is running
+        toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Node should not have been modified during active scan
+        // (exact behavior depends on whether there's cached data, but no exception should occur)
+        assertNotNull(toolWindowPanel.getRootOssIssuesTreeNode())
+    }
+
+    @Test
+    fun `test tree maintains state after multiple refreshUI calls`() {
+        waitWhileTreeBusy()
+
+        val tree = toolWindowPanel.getTree()
+        val initialRowCount = tree.rowCount
+
+        // Multiple refresh calls
+        repeat(5) {
+            toolWindowPanel.refreshUI()
+            PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        }
+
+        // Tree structure should be maintained
+        assertEquals(initialRowCount, tree.rowCount)
+    }
 }

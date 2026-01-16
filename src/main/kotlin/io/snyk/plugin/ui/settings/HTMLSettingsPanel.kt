@@ -11,6 +11,7 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefClient
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.settings.executePostApplySettings
@@ -21,7 +22,6 @@ import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
-import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import java.awt.BorderLayout
 import java.util.concurrent.Semaphore
@@ -98,11 +98,14 @@ class HTMLSettingsPanel(
 
     private fun showLsErrorInBrowser(error: String) {
         val safeError = error.replace("'", "\\'").replace("\n", " ")
-        jbCefBrowser?.cefBrowser?.executeJavaScript(
-            "if (typeof window.showError === 'function') { window.showError('Language Server error: $safeError'); }",
-            jbCefBrowser?.cefBrowser?.url ?: "",
-            0
-        )
+        // Defer JavaScript execution to avoid EDT blocking
+        ApplicationManager.getApplication().invokeLater {
+            jbCefBrowser?.cefBrowser?.executeJavaScript(
+                "if (typeof window.showError === 'function') { window.showError('Language Server error: $safeError'); }",
+                jbCefBrowser?.cefBrowser?.url ?: "",
+                0
+            )
+        }
     }
 
     private fun getHtmlContent(): String? {
@@ -287,6 +290,8 @@ class HTMLSettingsPanel(
         // Capture previous values before save for change detection
         previousReleaseChannel = pluginSettings().cliReleaseChannel
         previousDeltaEnabled = pluginSettings().isDeltaFindingsEnabled()
+        previousManageBinariesAutomatically = pluginSettings().manageBinariesAutomatically
+        previousCliPath = pluginSettings().cliPath
 
         val browser = jbCefBrowser?.cefBrowser
         if (browser == null) {
@@ -301,6 +306,7 @@ class HTMLSettingsPanel(
 
         // Use the existing getAndSaveIdeConfig() which already works with Apply button
         // The onSaveComplete callback will release the semaphore when save completes
+        // Note: executeJavaScript is non-blocking (schedules JS in JCEF), so no invokeLater needed
         browser.executeJavaScript(
             "if (typeof window.getAndSaveIdeConfig === 'function') { window.getAndSaveIdeConfig(); }",
             browser.url ?: "",
@@ -330,23 +336,38 @@ class HTMLSettingsPanel(
     private var previousReleaseChannel: String = pluginSettings().cliReleaseChannel
     @Volatile
     private var previousDeltaEnabled: Boolean = pluginSettings().isDeltaFindingsEnabled()
+    @Volatile
+    private var previousManageBinariesAutomatically: Boolean = pluginSettings().manageBinariesAutomatically
+    @Volatile
+    private var previousCliPath: String = pluginSettings().cliPath
 
     private fun runPostApplySettings() {
         val settings = pluginSettings()
-        runAsync {
-            runInBackground("Snyk: applying settings") {
-                // Handle release channel change - prompt to download new CLI
-                if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
-                    handleReleaseChannelChange(project)
-                }
-
-                // Handle delta findings change - clear caches
-                if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
-                    handleDeltaFindingsChange(project)
-                }
-
-                executePostApplySettings(project)
+        // Use runInBackground directly (not wrapped in runAsync) to ensure the task executes
+        runInBackground("Snyk: applying settings") {
+            // Handle release channel change - prompt to download new CLI
+            if (settings.cliReleaseChannel.isNotBlank() && previousReleaseChannel.isNotBlank() && settings.cliReleaseChannel != previousReleaseChannel) {
+                handleReleaseChannelChange(project)
             }
+
+            // Handle delta findings change - clear caches
+            if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
+                handleDeltaFindingsChange(project)
+            }
+
+            // Handle CLI-related changes that require LS restart
+            val manageBinariesToggled = settings.manageBinariesAutomatically != previousManageBinariesAutomatically
+            val cliPathChanged = settings.cliPath != previousCliPath
+
+            if (manageBinariesToggled && settings.manageBinariesAutomatically) {
+                // Toggled to auto-manage: trigger CLI download, LanguageServerRestartListener will restart LS after download
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
+            } else if (manageBinariesToggled || cliPathChanged) {
+                // Toggled to manual or changed CLI path: restart LS immediately
+                LanguageServerWrapper.getInstance(project).restart()
+            }
+
+            executePostApplySettings(project)
         }
     }
 

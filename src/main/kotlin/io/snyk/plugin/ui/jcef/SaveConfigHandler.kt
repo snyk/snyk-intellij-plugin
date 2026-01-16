@@ -1,8 +1,8 @@
 package io.snyk.plugin.ui.jcef
 
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -48,20 +48,24 @@ class SaveConfigHandler(
             var response: JBCefJSQuery.Response
             try {
                 saveConfig(jsonString)
-                // Hide any previous error on success
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                    "if (typeof window.hideError === 'function') { window.hideError(); }",
-                    jbCefBrowser.cefBrowser.url, 0
-                )
+                // Hide any previous error on success - defer to avoid EDT blocking
+                invokeLater {
+                    jbCefBrowser.cefBrowser.executeJavaScript(
+                        "if (typeof window.hideError === 'function') { window.hideError(); }",
+                        jbCefBrowser.cefBrowser.url, 0
+                    )
+                }
                 response = JBCefJSQuery.Response("success")
             } catch (e: Exception) {
                 logger.warn("Error saving config", e)
-                // Show error in browser
+                // Show error in browser - defer to avoid EDT blocking
                 val errorMsg = (e.message ?: "Unknown error").replace("'", "\\'")
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                    "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
-                    jbCefBrowser.cefBrowser.url, 0
-                )
+                invokeLater {
+                    jbCefBrowser.cefBrowser.executeJavaScript(
+                        "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
+                        jbCefBrowser.cefBrowser.url, 0
+                    )
+                }
                 response = JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
             } finally {
                 try {
@@ -102,20 +106,22 @@ class SaveConfigHandler(
             SnykSettingsListener.SNYK_SETTINGS_TOPIC,
             object : SnykSettingsListener {
                 override fun settingsChanged() {
-                    val token = pluginSettings().token
-                    if (token?.isNotEmpty() == true) {
-                        val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
-                        jbCefBrowser.cefBrowser.executeJavaScript(
-                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
-                            jbCefBrowser.cefBrowser.url, 0
-                        )
-                    } else {
-                        jbCefBrowser.cefBrowser.executeJavaScript(
-                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
-                            jbCefBrowser.cefBrowser.url, 0
-                        )
+                    // Defer JavaScript execution to avoid EDT blocking
+                    invokeLater {
+                        val token = pluginSettings().token
+                        if (token?.isNotEmpty() == true) {
+                            val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
+                            jbCefBrowser.cefBrowser.executeJavaScript(
+                                "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
+                                jbCefBrowser.cefBrowser.url, 0
+                            )
+                        } else {
+                            jbCefBrowser.cefBrowser.executeJavaScript(
+                                "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
+                                jbCefBrowser.cefBrowser.url, 0
+                            )
+                        }
                     }
-
                 }
             }
         )
@@ -185,10 +191,23 @@ class SaveConfigHandler(
         val isFallback = config.isFallbackForm == true
 
         // CLI Settings - always persist for both fallback and full forms
-        config.cliPath?.let { path ->
-            settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
-        }
+        val defaultCliPath = getPluginPath() + separator + Platform.current().snykWrapperFileName
+        val wasManagingAutomatically = settings.manageBinariesAutomatically
+
         config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
+
+        // When toggling TO manageBinariesAutomatically, reset cliPath to the default auto-managed location
+        // When manageBinariesAutomatically is false, always use the provided cliPath (user's custom path)
+        if (config.manageBinariesAutomatically == true && !wasManagingAutomatically) {
+            // Toggling from manual to auto-managed: reset to default path
+            settings.cliPath = defaultCliPath
+        } else if (config.manageBinariesAutomatically == false) {
+            // Manual mode: use the user-provided path, or keep existing if not provided
+            config.cliPath?.let { path ->
+                settings.cliPath = path.ifEmpty { settings.cliPath }
+            }
+        }
+        // When manageBinariesAutomatically stays true, don't change cliPath (it's managed automatically)
         config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
         config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
         config.insecure?.let { settings.ignoreUnknownCA = it }

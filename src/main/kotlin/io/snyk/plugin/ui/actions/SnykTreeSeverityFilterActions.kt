@@ -6,7 +6,7 @@ import com.intellij.openapi.actionSystem.ToggleAction
 import icons.SnykIcons
 import io.snyk.plugin.Severity
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.showSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -49,7 +49,7 @@ abstract class SnykTreeSeverityFilterActionBase(
         if (!state && isLastSeverityDisabling(e)) return
 
         pluginSettings().setSeverityTreeFiltered(severity, state)
-        getSyncPublisher(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
+        publishAsync(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
     }
 
     private fun isLastSeverityDisabling(e: AnActionEvent): Boolean {
