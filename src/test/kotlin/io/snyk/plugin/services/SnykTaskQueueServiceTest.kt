@@ -107,6 +107,57 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
         verify(exactly = 0) { downloaderMock.downloadFile(any(), any(), any()) }
     }
 
+    fun testCheckCliExistsFinishedPublishedWhenManageBinariesDisabled() {
+        val settings = setupAppSettingsForDownloadTests()
+        settings.manageBinariesAutomatically = false
+        every { isCliInstalled() } returns true
+
+        val latch = CountDownLatch(1)
+        var eventReceived = false
+
+        ApplicationManager.getApplication().messageBus.connect(testRootDisposable).subscribe(
+            SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+            object : SnykCliDownloadListener {
+                override fun checkCliExistsFinished() {
+                    eventReceived = true
+                    latch.countDown()
+                }
+            }
+        )
+
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+        snykTaskQueueService.downloadLatestRelease()
+
+        // Wait for the event with a short timeout - it should be published immediately
+        // when manageBinariesAutomatically is false
+        assertTrue(
+            "checkCliExistsFinished should be published when manageBinariesAutomatically is false",
+            latch.await(5, TimeUnit.SECONDS)
+        )
+        assertTrue("Event should have been received", eventReceived)
+    }
+
+    fun testWaitUntilCliDownloadedDoesNotHangWhenManageBinariesDisabled() {
+        val settings = setupAppSettingsForDownloadTests()
+        settings.manageBinariesAutomatically = false
+        every { isCliInstalled() } returns true
+
+        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+
+        // This should complete quickly (not wait 20 minutes) because
+        // checkCliExistsFinished is now published when manageBinariesAutomatically is false
+        val startTime = System.currentTimeMillis()
+        snykTaskQueueService.waitUntilCliDownloadedIfNeeded()
+        val elapsed = System.currentTimeMillis() - startTime
+
+        // Should complete in under 10 seconds (not the 20-minute timeout)
+        assertTrue(
+            "waitUntilCliDownloadedIfNeeded should complete quickly when manageBinariesAutomatically is false, " +
+                "but took ${elapsed}ms",
+            elapsed < 10_000
+        )
+    }
+
     private fun setupAppSettingsForDownloadTests(): SnykApplicationSettingsStateService {
         val settings = pluginSettings()
         settings.ossScanEnable = true

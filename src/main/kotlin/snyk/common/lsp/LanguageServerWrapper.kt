@@ -531,6 +531,7 @@ class LanguageServerWrapper(
             endpoint = getEndpointUrl(),
             cliPath = getCliFile().absolutePath,
             cliBaseDownloadURL = ps.cliBaseDownloadURL,
+            manageBinariesAutomatically = ps.manageBinariesAutomatically.toString(),
             token = ps.token,
             filterSeverity =
                 SeverityFilter(

@@ -158,6 +158,8 @@ class SnykTaskQueueService(val project: Project) {
             }
             // no need to cancel the indicator here, as isCliInstalled() will return false
             cliDownloader.stopCliDownload()
+            // Signal completion so waitUntilCliDownloadedIfNeeded() doesn't wait indefinitely
+            publishCliDownloadEventAsync { checkCliExistsFinished() }
             return
         }
 
