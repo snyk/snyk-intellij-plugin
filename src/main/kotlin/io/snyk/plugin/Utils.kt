@@ -151,6 +151,27 @@ fun <L : Any> publishAsync(project: Project, topic: Topic<L>, action: L.() -> Un
     }
 }
 
+/**
+ * Publishes an event asynchronously on the application message bus.
+ * This prevents potential deadlocks when listeners try to access EDT while the caller holds locks.
+ *
+ * @param topic The message bus topic
+ * @param action The action to perform on the publisher
+ */
+fun <L : Any> publishAsyncApp(topic: Topic<L>, action: L.() -> Unit) {
+    org.jetbrains.concurrency.runAsync {
+        try {
+            val app = ApplicationManager.getApplication()
+            if (!app.isDisposed) {
+                app.messageBus.syncPublisher(topic).action()
+            }
+        } catch (e: Exception) {
+            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+                .warn("Error publishing async app event to topic $topic", e)
+        }
+    }
+}
+
 val <T> List<T>.head: T
     get() = first()
 

@@ -12,6 +12,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsyncApp
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
@@ -31,22 +32,6 @@ class SnykCliDownloaderService {
     var errorHandler = CliDownloaderErrorHandler()
 
     private val logger = logger<SnykCliDownloaderService>()
-
-    // Use async publishing to avoid blocking the calling thread
-    // syncPublisher can cause deadlocks if listeners try to access EDT while caller holds locks
-    private fun publishAsync(action: SnykCliDownloadListener.() -> Unit) {
-        logger.debug("Publishing CLI download event asynchronously")
-        org.jetbrains.concurrency.runAsync {
-            try {
-                if (!application.isDisposed) {
-                    application.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC).action()
-                    logger.debug("CLI download event published successfully")
-                }
-            } catch (e: Exception) {
-                logger.warn("Error publishing CLI download event", e)
-            }
-        }
-    }
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
@@ -70,7 +55,7 @@ class SnykCliDownloaderService {
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
         currentProgressIndicator = indicator
         logger.debug("CLI download starting")
-        publishAsync { cliDownloadStarted() }
+        publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { cliDownloadStarted() }
         indicator.isIndeterminate = true
         var succeeded = false
         val cliFile = getCliFile()
@@ -109,7 +94,7 @@ class SnykCliDownloaderService {
             }
         } finally {
             logger.debug("CLI download finished, succeeded=$succeeded")
-            publishAsync { cliDownloadFinished(succeeded) }
+            publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { cliDownloadFinished(succeeded) }
             stopCliDownload()
         }
     }

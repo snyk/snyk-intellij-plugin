@@ -9,9 +9,10 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykCliDownloaderService
-import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
+import io.snyk.plugin.publishAsyncApp
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.concurrency.runAsync
@@ -28,38 +29,6 @@ class SnykTaskQueueService(val project: Project) {
 
     private companion object {
         private val WAIT_FOR_CLI_DOWNLOAD_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(20)
-    }
-
-    // Use async publishing to avoid blocking the calling thread
-    // syncPublisher can cause deadlocks if listeners try to access EDT while caller holds locks
-    private fun publishCliDownloadEventAsync(action: SnykCliDownloadListener.() -> Unit) {
-        logger.debug("Publishing CLI download event asynchronously from TaskQueueService")
-        org.jetbrains.concurrency.runAsync {
-            try {
-                val app = ApplicationManager.getApplication()
-                if (!app.isDisposed) {
-                    app.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC).action()
-                    logger.debug("CLI download event published successfully from TaskQueueService")
-                }
-            } catch (e: Exception) {
-                logger.warn("Error publishing CLI download event from TaskQueueService", e)
-            }
-        }
-    }
-
-    private fun publishTaskQueueEventAsync(action: SnykTaskQueueListener.() -> Unit) {
-        logger.debug("Publishing task queue event asynchronously")
-        org.jetbrains.concurrency.runAsync {
-            try {
-                if (!project.isDisposed) {
-                    val publisher = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
-                    publisher?.action()
-                    logger.debug("Task queue event published successfully")
-                }
-            } catch (e: Exception) {
-                logger.warn("Error publishing task queue event", e)
-            }
-        }
     }
 
     fun connectProjectToLanguageServer(project: Project) {
@@ -159,14 +128,14 @@ class SnykTaskQueueService(val project: Project) {
             // no need to cancel the indicator here, as isCliInstalled() will return false
             cliDownloader.stopCliDownload()
             // Signal completion so waitUntilCliDownloadedIfNeeded() doesn't wait indefinitely
-            publishCliDownloadEventAsync { checkCliExistsFinished() }
+            publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
             return
         }
 
         runInBackground("Snyk: Check CLI presence", project, true) { indicator ->
             try {
                 indicator.checkCanceled()
-                publishCliDownloadEventAsync { checkCliExistsStarted() }
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsStarted() }
                 if (project.isDisposed) return@runInBackground
 
                 indicator.checkCanceled()
@@ -189,7 +158,7 @@ class SnykTaskQueueService(val project: Project) {
                 }
             } finally {
                 logger.debug("CLI check finished, isCliInstalled=${isCliInstalled()}")
-                publishCliDownloadEventAsync { checkCliExistsFinished() }
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
             }
         }
     }
@@ -202,7 +171,7 @@ class SnykTaskQueueService(val project: Project) {
             languageServerWrapper.languageClient.progressManager.cancelProgresses()
             ScanState.scanInProgress.clear()
         }
-        publishTaskQueueEventAsync { stopped() }
+        publishAsync(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC) { stopped() }
     }
 
 }
