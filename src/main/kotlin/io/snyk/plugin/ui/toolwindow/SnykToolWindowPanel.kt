@@ -597,18 +597,24 @@ class SnykToolWindowPanel(
             productsToRefresh.forEach { product ->
                 when (product) {
                     LsProduct.OpenSource -> {
+                        // Skip refresh if scan is still in progress - let scanningOssFinished handle it
+                        if (isOssRunning(project)) return@forEach
                         val results = getSnykCachedResultsForProduct(project, ProductType.OSS)
                         if (results != null) {
                             scanListenerLS.displayOssResults(results)
                         }
                     }
                     LsProduct.Code -> {
+                        // Skip refresh if scan is still in progress - let scanningSnykCodeFinished handle it
+                        if (isSnykCodeRunning(project)) return@forEach
                         val results = getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY)
                         if (results != null) {
                             scanListenerLS.displaySnykCodeResults(results)
                         }
                     }
                     LsProduct.InfrastructureAsCode -> {
+                        // Skip refresh if scan is still in progress - let scanningIacFinished handle it
+                        if (isIacRunning(project)) return@forEach
                         val results = getSnykCachedResultsForProduct(project, ProductType.IAC)
                         if (results != null) {
                             scanListenerLS.displayIacResults(results)
