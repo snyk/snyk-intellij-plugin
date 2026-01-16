@@ -1,10 +1,15 @@
 package io.snyk.plugin
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.messages.MessageBus
+import com.intellij.util.messages.Topic
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
@@ -13,6 +18,9 @@ import org.apache.commons.lang3.SystemUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class UtilsKtTest {
 
@@ -113,5 +121,129 @@ class UtilsKtTest {
             assertEquals("Testing $actualPath to uri conversion", uri, actualPath.fromPathToUriString())
             i++
         }
+    }
+
+    @Test
+    fun `isCliInstalled returns true in unit test mode`() {
+        unmockkAll()
+        val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+        mockkStatic(ApplicationManager::class)
+        every { ApplicationManager.getApplication() } returns appMock
+        every { appMock.isUnitTestMode } returns true
+
+        // In unit test mode, isCliInstalled always returns true
+        assertTrue(isCliInstalled())
+    }
+
+    @Test
+    fun `isCliInstalled checks file exists and is executable`() {
+        unmockkAll()
+        val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+        mockkStatic(ApplicationManager::class)
+        every { ApplicationManager.getApplication() } returns appMock
+        every { appMock.isUnitTestMode } returns false
+
+        val tempFile = File.createTempFile("snyk-cli-test", ".exe")
+        try {
+            mockkStatic(::getCliFile)
+            every { getCliFile() } returns tempFile
+
+            // File exists but not executable
+            tempFile.setExecutable(false)
+            assertFalse(isCliInstalled())
+
+            // File exists and is executable
+            tempFile.setExecutable(true)
+            assertTrue(isCliInstalled())
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    @Test
+    fun `isCliInstalled returns false when file does not exist`() {
+        unmockkAll()
+        val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+        mockkStatic(ApplicationManager::class)
+        every { ApplicationManager.getApplication() } returns appMock
+        every { appMock.isUnitTestMode } returns false
+
+        val nonExistentFile = File("/non/existent/path/snyk-cli")
+        mockkStatic(::getCliFile)
+        every { getCliFile() } returns nonExistentFile
+
+        assertFalse(isCliInstalled())
+    }
+
+    @Test
+    fun `publishAsync publishes event asynchronously`() {
+        unmockkAll()
+
+        val project = mockk<Project>(relaxed = true)
+        val messageBus = mockk<MessageBus>(relaxed = true)
+        val listener = mockk<TestListener>(relaxed = true)
+
+        every { project.isDisposed } returns false
+        every { project.messageBus } returns messageBus
+        every { messageBus.isDisposed } returns false
+        every { messageBus.syncPublisher(any<Topic<TestListener>>()) } returns listener
+
+        val latch = CountDownLatch(1)
+        every { listener.onEvent() } answers {
+            latch.countDown()
+        }
+
+        val topic = Topic.create("test-topic", TestListener::class.java)
+        publishAsync(project, topic) { onEvent() }
+
+        // Wait for async execution
+        assertTrue("Async publish should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+        verify { listener.onEvent() }
+    }
+
+    @Test
+    fun `publishAsync does not publish when project is disposed`() {
+        unmockkAll()
+
+        val project = mockk<Project>(relaxed = true)
+        val messageBus = mockk<MessageBus>(relaxed = true)
+        val listener = mockk<TestListener>(relaxed = true)
+
+        every { project.isDisposed } returns true
+        every { project.messageBus } returns messageBus
+
+        val topic = Topic.create("test-topic", TestListener::class.java)
+        publishAsync(project, topic) { onEvent() }
+
+        // Give some time for potential async execution
+        Thread.sleep(100)
+
+        // Should not have accessed messageBus.syncPublisher since project is disposed
+        verify(exactly = 0) { messageBus.syncPublisher(any<Topic<TestListener>>()) }
+    }
+
+    @Test
+    fun `publishAsync does not publish when messageBus is disposed`() {
+        unmockkAll()
+
+        val project = mockk<Project>(relaxed = true)
+        val messageBus = mockk<MessageBus>(relaxed = true)
+
+        every { project.isDisposed } returns false
+        every { project.messageBus } returns messageBus
+        every { messageBus.isDisposed } returns true
+
+        val topic = Topic.create("test-topic", TestListener::class.java)
+        publishAsync(project, topic) { onEvent() }
+
+        // Give some time for potential async execution
+        Thread.sleep(100)
+
+        // Should not have called syncPublisher since messageBus is disposed
+        verify(exactly = 0) { messageBus.syncPublisher(any<Topic<TestListener>>()) }
+    }
+
+    interface TestListener {
+        fun onEvent()
     }
 }

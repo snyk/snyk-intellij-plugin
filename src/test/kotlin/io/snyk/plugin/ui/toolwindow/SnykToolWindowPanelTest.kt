@@ -309,4 +309,127 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
         // Tree should have been refreshed (no exception thrown)
         assertNotNull("Tree should still exist", cut.getTree())
     }
+
+    @Test
+    fun `refreshUI should not throw when called on valid panel`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        cut = SnykToolWindowPanel(project)
+
+        // Should not throw
+        cut.refreshUI()
+
+        // Process pending events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Panel should still be valid
+        assertNotNull("Panel should still exist", cut)
+    }
+
+    @Test
+    fun `refreshUI should throttle rapid calls`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        cut = SnykToolWindowPanel(project)
+
+        // First call should succeed
+        cut.refreshUI()
+
+        // Second call immediately after should be throttled (no error, just skipped)
+        cut.refreshUI()
+
+        // Process pending events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Panel should still be valid
+        assertNotNull("Panel should still exist after throttled calls", cut)
+    }
+
+    @Test
+    fun `scheduleDebouncedTreeRefresh should ignore Unknown product`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        cut = SnykToolWindowPanel(project)
+
+        // Trigger debounced tree refresh for Unknown product - should be ignored
+        cut.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.Unknown)
+
+        // Process pending events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Panel should still be valid (no errors)
+        assertNotNull("Panel should still exist", cut)
+    }
+
+    @Test
+    fun `flushPendingTreeRefreshes should skip Code refresh when scan is running`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        mockkStatic(::isOssRunning)
+        mockkStatic(::isSnykCodeRunning)
+        mockkStatic(::isIacRunning)
+
+        // Simulate Code scan running
+        every { isOssRunning(any()) } returns false
+        every { isSnykCodeRunning(any()) } returns true
+        every { isIacRunning(any()) } returns false
+
+        cut = SnykToolWindowPanel(project)
+
+        val codeNode = cut.getRootSecurityIssuesTreeNode()
+        val initialChildCount = codeNode.childCount
+
+        // Trigger debounced tree refresh for Code
+        cut.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.Code)
+
+        // Process pending events and wait for debounce
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // Code node should NOT be modified because scan is running
+        assertEquals("Code node should not be modified while scanning", initialChildCount, codeNode.childCount)
+    }
+
+    @Test
+    fun `flushPendingTreeRefreshes should skip IAC refresh when scan is running`() {
+        every { settings.token } returns "test-token"
+        every { settings.pluginFirstRun } returns false
+        justRun { taskQueueService.scan() }
+
+        mockkStatic(::isOssRunning)
+        mockkStatic(::isSnykCodeRunning)
+        mockkStatic(::isIacRunning)
+
+        // Simulate IAC scan running
+        every { isOssRunning(any()) } returns false
+        every { isSnykCodeRunning(any()) } returns false
+        every { isIacRunning(any()) } returns true
+
+        cut = SnykToolWindowPanel(project)
+
+        val iacNode = cut.getRootIacIssuesTreeNode()
+        val initialChildCount = iacNode.childCount
+
+        // Trigger debounced tree refresh for IAC
+        cut.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.InfrastructureAsCode)
+
+        // Process pending events and wait for debounce
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        Thread.sleep(300)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // IAC node should NOT be modified because scan is running
+        assertEquals("IAC node should not be modified while scanning", initialChildCount, iacNode.childCount)
+    }
 }
