@@ -177,8 +177,8 @@ class SnykCliDownloaderService {
 
         val cliFile = getCliFile()
         if (!cliFile.exists()) {
-            // CLI doesn't exist, will be downloaded
-            return true
+            // CLI doesn't exist, return false to trigger download
+            return false
         }
 
         return try {
