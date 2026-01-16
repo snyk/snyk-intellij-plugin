@@ -111,4 +111,9 @@
       name="controllerManager"
       interface="io.snyk.plugin.extensions.SnykControllerManager"/>
   </extensionPoints>
+
+  <applicationListeners>
+    <listener class="io.snyk.plugin.SnykApplicationActivationListener"
+              topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+  </applicationListeners>
 </idea-plugin>

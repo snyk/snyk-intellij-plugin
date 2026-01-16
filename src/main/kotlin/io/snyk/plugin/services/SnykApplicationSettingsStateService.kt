@@ -45,6 +45,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var organization: String? = null
     var ignoreUnknownCA = false
     var cliVersion: String? = null
+    var cliSha256: String? = null
     var scanOnSave: Boolean = true
 
     // can't be private -> serialization will not work

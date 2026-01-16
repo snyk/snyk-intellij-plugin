@@ -15,7 +15,7 @@ import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.isNewConfigDialogEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
@@ -239,9 +239,9 @@ fun executePostApplySettings(project: Project) {
 
     settings.matchFilteringWithEnablement()
 
-    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
-    getSyncPublisher(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
-    getSyncPublisher(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)?.enablementChanged()
+    publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
+    publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
+    publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) { enablementChanged() }
 }
 
 /**

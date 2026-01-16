@@ -1,8 +1,8 @@
 package io.snyk.plugin.ui.jcef
 
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
@@ -48,20 +48,24 @@ class SaveConfigHandler(
             var response: JBCefJSQuery.Response
             try {
                 saveConfig(jsonString)
-                // Hide any previous error on success
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                    "if (typeof window.hideError === 'function') { window.hideError(); }",
-                    jbCefBrowser.cefBrowser.url, 0
-                )
+                // Hide any previous error on success - defer to avoid EDT blocking
+                invokeLater {
+                    jbCefBrowser.cefBrowser.executeJavaScript(
+                        "if (typeof window.hideError === 'function') { window.hideError(); }",
+                        jbCefBrowser.cefBrowser.url, 0
+                    )
+                }
                 response = JBCefJSQuery.Response("success")
             } catch (e: Exception) {
                 logger.warn("Error saving config", e)
-                // Show error in browser
+                // Show error in browser - defer to avoid EDT blocking
                 val errorMsg = (e.message ?: "Unknown error").replace("'", "\\'")
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                    "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
-                    jbCefBrowser.cefBrowser.url, 0
-                )
+                invokeLater {
+                    jbCefBrowser.cefBrowser.executeJavaScript(
+                        "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
+                        jbCefBrowser.cefBrowser.url, 0
+                    )
+                }
                 response = JBCefJSQuery.Response(null, 1, e.message ?: "Unknown error")
             } finally {
                 try {
@@ -102,20 +106,22 @@ class SaveConfigHandler(
             SnykSettingsListener.SNYK_SETTINGS_TOPIC,
             object : SnykSettingsListener {
                 override fun settingsChanged() {
-                    val token = pluginSettings().token
-                    if (token?.isNotEmpty() == true) {
-                        val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
-                        jbCefBrowser.cefBrowser.executeJavaScript(
-                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
-                            jbCefBrowser.cefBrowser.url, 0
-                        )
-                    } else {
-                        jbCefBrowser.cefBrowser.executeJavaScript(
-                            "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
-                            jbCefBrowser.cefBrowser.url, 0
-                        )
+                    // Defer JavaScript execution to avoid EDT blocking
+                    invokeLater {
+                        val token = pluginSettings().token
+                        if (token?.isNotEmpty() == true) {
+                            val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
+                            jbCefBrowser.cefBrowser.executeJavaScript(
+                                "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
+                                jbCefBrowser.cefBrowser.url, 0
+                            )
+                        } else {
+                            jbCefBrowser.cefBrowser.executeJavaScript(
+                                "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
+                                jbCefBrowser.cefBrowser.url, 0
+                            )
+                        }
                     }
-
                 }
             }
         )

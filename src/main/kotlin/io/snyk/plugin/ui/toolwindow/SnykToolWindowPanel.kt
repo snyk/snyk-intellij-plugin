@@ -11,6 +11,8 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
@@ -132,6 +134,14 @@ class SnykToolWindowPanel(
     private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> =
         java.util.concurrent.ConcurrentHashMap.newKeySet()
 
+    // Debouncing for tree refresh - coalesces rapid diagnostic updates per product
+    private val treeRefreshAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+    private val pendingTreeRefreshProducts: MutableSet<LsProduct> =
+        java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    // Reference to scan listener for debounced tree refresh
+    private lateinit var scanListenerLS: SnykToolWindowSnykScanListener
+
     // Tree node expander for progressive, non-blocking expansion
     private val treeNodeExpander by lazy {
         TreeNodeExpander(vulnerabilitiesTree) { isDisposed }
@@ -143,6 +153,9 @@ class SnykToolWindowPanel(
 
         // Debounce delay for annotation refresh - allows collecting multiple files
         private const val ANNOTATION_REFRESH_DEBOUNCE_MS = 150
+
+        // Debounce delay for tree refresh - allows diagnostics to accumulate before refreshing tree
+        private const val TREE_REFRESH_DEBOUNCE_MS = 200
 
         // Max files to refresh individually before falling back to global refresh
         private const val MAX_INDIVIDUAL_ANNOTATION_REFRESH = 20
@@ -204,7 +217,7 @@ class SnykToolWindowPanel(
             }
         }
 
-        val scanListenerLS =
+        scanListenerLS =
             run {
                 val scanListener =
                     SnykToolWindowSnykScanListener(
@@ -242,11 +255,8 @@ class SnykToolWindowPanel(
                         }
                         // Schedule debounced annotation refresh - coalesces rapid per-file updates
                         scheduleAnnotationRefresh(snykFile.virtualFile)
-                        // Refresh the tree view on receiving new diags from the Language Server. This must be done on
-                        // the Event Dispatch Thread (EDT).
-                        invokeLater {
-                            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
-                        }
+                        // Schedule debounced tree refresh - coalesces rapid diagnostic updates per product
+                        scheduleDebouncedTreeRefresh(product)
                     }
 
                     override fun scanningSnykCodeFinished() = Unit
@@ -345,6 +355,22 @@ class SnykToolWindowPanel(
                     }
                 }
             )
+
+        // Listen for tool window visibility changes to ensure proper repainting
+        project.messageBus
+            .connect(this)
+            .subscribe(
+                ToolWindowManagerListener.TOPIC,
+                object : ToolWindowManagerListener {
+                    override fun toolWindowShown(toolWindow: com.intellij.openapi.wm.ToolWindow) {
+                        logger.debug("toolWindowShown: ${toolWindow.id}")
+                        if (toolWindow.id == SnykToolWindowFactory.SNYK_TOOL_WINDOW) {
+                            logger.debug("Snyk tool window shown, calling refreshUI")
+                            refreshUI()
+                        }
+                    }
+                }
+            )
     }
 
     private fun updateDescriptionPanelBySelectedTreeNode(treeSelectionEvent: TreeSelectionEvent) {
@@ -438,6 +464,52 @@ class SnykToolWindowPanel(
         isDisposed = true
     }
 
+    // Throttle for UI refresh to avoid rapid successive refreshes
+    private var lastRefreshTime: Long = 0
+    private val refreshThrottleMs: Long = 500
+
+    /**
+     * Refreshes the tree UI when the tool window becomes visible or the application regains focus.
+     * This ensures that any model updates that occurred while the tool window was hidden are properly displayed.
+     *
+     * Note: Only refreshes the JTree component. JCEF-based panels (summaryPanel, descriptionPanel)
+     * manage their own rendering and should not be manually repainted to avoid EDT blocking.
+     */
+    fun refreshUI() {
+        logger.debug("refreshUI called, isDisposed=$isDisposed, projectDisposed=${project.isDisposed}")
+        if (isDisposed || project.isDisposed) return
+
+        // Throttle rapid refreshes
+        val now = System.currentTimeMillis()
+        val timeSinceLastRefresh = now - lastRefreshTime
+        if (timeSinceLastRefresh < refreshThrottleMs) {
+            logger.debug("refreshUI throttled, timeSinceLastRefresh=$timeSinceLastRefresh ms")
+            return
+        }
+        lastRefreshTime = now
+
+        logger.debug("refreshUI scheduling invokeLater")
+        invokeLater {
+            logger.debug("refreshUI invokeLater executing")
+            if (isDisposed || project.isDisposed) {
+                logger.debug("refreshUI: disposed in invokeLater, skipping")
+                return@invokeLater
+            }
+            // Only refresh if the tree is actually showing on screen
+            if (!vulnerabilitiesTree.isShowing) {
+                logger.debug("refreshUI: tree not showing, skipping")
+                return@invokeLater
+            }
+
+            // Refresh only the tree view (pure Swing component)
+            // JCEF panels manage their own rendering - do not repaint them manually
+            logger.debug("refreshUI: revalidating and repainting tree")
+            vulnerabilitiesTree.revalidate()
+            vulnerabilitiesTree.repaint()
+            logger.debug("refreshUI: done")
+        }
+    }
+
     /**
      * Schedules a debounced annotation refresh for the given file.
      * Collects files over a short window and then refreshes them in batch.
@@ -485,6 +557,70 @@ class SnykToolWindowPanel(
                             analyzer.restart(psiFile)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Schedules a debounced tree refresh for the given product.
+     * Collects products over a short window and then refreshes them in batch.
+     * This ensures the tree stays in sync when diagnostics arrive after scan completion.
+     */
+    private fun scheduleDebouncedTreeRefresh(product: LsProduct) {
+        if (product == LsProduct.Unknown) return
+        pendingTreeRefreshProducts.add(product)
+        treeRefreshAlarm.cancelAllRequests()
+        treeRefreshAlarm.addRequest({
+            flushPendingTreeRefreshes()
+        }, TREE_REFRESH_DEBOUNCE_MS)
+    }
+
+    /**
+     * Flushes all pending tree refreshes, updating the tree for each affected product.
+     */
+    private fun flushPendingTreeRefreshes() {
+        if (isDisposed || project.isDisposed) return
+
+        val productsToRefresh = pendingTreeRefreshProducts.toSet().also {
+            pendingTreeRefreshProducts.clear()
+        }
+
+        if (productsToRefresh.isEmpty()) return
+
+        // Refresh tree for each product that received new diagnostics
+        invokeLater {
+            if (isDisposed || project.isDisposed) return@invokeLater
+
+            vulnerabilitiesTree.isRootVisible = pluginSettings().isDeltaFindingsEnabled()
+
+            productsToRefresh.forEach { product ->
+                when (product) {
+                    LsProduct.OpenSource -> {
+                        // Skip refresh if scan is still in progress - let scanningOssFinished handle it
+                        if (isOssRunning(project)) return@forEach
+                        val results = getSnykCachedResultsForProduct(project, ProductType.OSS)
+                        if (results != null) {
+                            scanListenerLS.displayOssResults(results)
+                        }
+                    }
+                    LsProduct.Code -> {
+                        // Skip refresh if scan is still in progress - let scanningSnykCodeFinished handle it
+                        if (isSnykCodeRunning(project)) return@forEach
+                        val results = getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY)
+                        if (results != null) {
+                            scanListenerLS.displaySnykCodeResults(results)
+                        }
+                    }
+                    LsProduct.InfrastructureAsCode -> {
+                        // Skip refresh if scan is still in progress - let scanningIacFinished handle it
+                        if (isIacRunning(project)) return@forEach
+                        val results = getSnykCachedResultsForProduct(project, ProductType.IAC)
+                        if (results != null) {
+                            scanListenerLS.displayIacResults(results)
+                        }
+                    }
+                    LsProduct.Unknown -> Unit
                 }
             }
         }
@@ -682,7 +818,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentIacError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentIacError?.treeNodeSuffix ?: ""
             "$IAC_ROOT_TEXT $errorSuffix"
         }
 
@@ -706,7 +842,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         getSnykCachedResults(project)?.currentSnykCodeError != null -> {
-            val errorSuffix = getSnykCachedResults(project)!!.currentSnykCodeError!!.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentSnykCodeError?.treeNodeSuffix ?: ""
             "$CODE_SECURITY_ROOT_TEXT $errorSuffix"
         }
 
@@ -732,7 +868,7 @@ class SnykToolWindowPanel(
         addHMLPostfix: String
     ) = when {
         realError -> {
-            val errorSuffix = getSnykCachedResults(project)?.currentOssError?.treeNodeSuffix
+            val errorSuffix = getSnykCachedResults(project)?.currentOssError?.treeNodeSuffix ?: ""
             "$OSS_ROOT_TEXT $errorSuffix"
         }
 
@@ -941,6 +1077,9 @@ class SnykToolWindowPanel(
     @TestOnly
     fun getRootOssIssuesTreeNode() = rootOssTreeNode
 
+    @TestOnly
+    fun getRootSecurityIssuesTreeNode() = rootSecurityIssuesTreeNode
+
     fun getTree() = vulnerabilitiesTree
 
     @TestOnly
@@ -948,4 +1087,7 @@ class SnykToolWindowPanel(
 
     @TestOnly
     fun getDescriptionPanel() = descriptionPanel
+
+    @TestOnly
+    fun scheduleDebouncedTreeRefreshForTest(product: LsProduct) = scheduleDebouncedTreeRefresh(product)
 }

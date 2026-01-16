@@ -12,6 +12,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
@@ -497,6 +498,106 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
         assertTrue(
             "Expected root node to contain '1 medium' but got: $rootNodeText",
             rootNodeText.contains("1 medium")
+        )
+    }
+
+    fun `test scanningOssFinished fetches results from cache at execution time`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+        val initialIssue = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "initial-1"
+        ).first()
+        val additionalIssue = mockScanIssuesWithSeverity(
+            Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "additional-1"
+        ).first()
+
+        // 1. Populate cache with initial issue
+        getSnykCachedResults(project)?.currentOSSResultsLS?.put(snykFile, setOf(initialIssue))
+
+        // 2. Call scanningOssFinished (this schedules invokeLater but doesn't execute it yet)
+        cut.scanningOssFinished()
+
+        // 3. Update cache with additional issue BEFORE invokeLater executes
+        // This simulates diagnostics arriving after scan finishes but before UI updates
+        getSnykCachedResults(project)?.currentOSSResultsLS?.put(snykFile, setOf(initialIssue, additionalIssue))
+
+        // 4. Process events to run invokeLater
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // 5. Verify that both issues appear (results were fetched at execution time)
+        val labels = mapToLabels(rootOssIssuesTreeNode)
+        assertTrue(
+            "Expected tree to show 2 issues (fetched at execution time), but got: $labels",
+            labels.any { it.contains("2 issues") }
+        )
+    }
+
+    fun `test scanningSnykCodeFinished fetches results from cache at execution time`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().treeFiltering.codeSecurityResults = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+        val initialIssue = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.CODE_SECURITY, id = "initial-1"
+        ).first()
+        val additionalIssue = mockScanIssuesWithSeverity(
+            Severity.CRITICAL, filterableType = ScanIssue.CODE_SECURITY, id = "additional-1"
+        ).first()
+
+        // 1. Populate cache with initial issue
+        getSnykCachedResults(project)?.currentSnykCodeResultsLS?.put(snykFile, setOf(initialIssue))
+
+        // 2. Call scanningSnykCodeFinished (schedules invokeLater)
+        cut.scanningSnykCodeFinished()
+
+        // 3. Update cache before invokeLater executes
+        getSnykCachedResults(project)?.currentSnykCodeResultsLS?.put(snykFile, setOf(initialIssue, additionalIssue))
+
+        // 4. Process events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // 5. Verify both issues appear
+        val labels = mapToLabels(rootSecurityIssuesTreeNode)
+        assertTrue(
+            "Expected tree to show 2 issues (fetched at execution time), but got: $labels",
+            labels.any { it.contains("2") && it.contains("issue") }
+        )
+    }
+
+    fun `test scanningIacFinished fetches results from cache at execution time`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().iacScanEnabled = true
+        pluginSettings().treeFiltering.iacResults = false
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+        val initialIssue = mockScanIssuesWithSeverity(
+            Severity.HIGH, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "initial-1"
+        ).first()
+        val additionalIssue = mockScanIssuesWithSeverity(
+            Severity.CRITICAL, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "additional-1"
+        ).first()
+
+        // 1. Populate cache with initial issue
+        getSnykCachedResults(project)?.currentIacResultsLS?.put(snykFile, setOf(initialIssue))
+
+        // 2. Call scanningIacFinished (schedules invokeLater)
+        cut.scanningIacFinished()
+
+        // 3. Update cache before invokeLater executes
+        getSnykCachedResults(project)?.currentIacResultsLS?.put(snykFile, setOf(initialIssue, additionalIssue))
+
+        // 4. Process events
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+        // 5. Verify both issues appear
+        val labels = mapToLabels(rootIacIssuesTreeNode)
+        assertTrue(
+            "Expected tree to show 2 issues (fetched at execution time), but got: $labels",
+            labels.any { it.contains("2 issues") }
         )
     }
 }
