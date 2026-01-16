@@ -48,7 +48,7 @@ alwaysApply: true
 - Re-use mocks.
 - don't change code that does not need to be changed. only do the minimum changes.
 - don't comment what is done, instead comment why something is done if the code is not clear
-- use `./gradlew test -x detekt` to run tests
+- use `./gradlew test -x detekt` to run tests.
 - achieve 80% of test coverage. use `./gradlew koverLog`
 - if files are not used or needed anymore, delete them instead of deprecating them.
 - ask the human, whether to maintain backwards compatibility or not
@@ -74,7 +74,7 @@ alwaysApply: true
 - NEVER commit implementation plan and implementation plan diagrams
 - NEVER NEVER NEVER skip the commit hooks
 - I REPEAT: NEVER USE --no-verify. DO NOT DO IT. NEVER. THIS IS CRITICAL, DO NOT DO IT.
-- run ./gradlew test before committing and fix the issues
+- run ./gradlew test before committing and fix the issues. don't run targeted tests, run the full suite (which may take >10min)
 - check with Kover (`./gradlew koverLog`) that coverage of changed files is 80%+
 - update the documentation before committing
 - when asked to commit, always use conventional commit messages (Conventional Commit Style (Subject + Body)). be descriptive in the body. if you find a JIRA issue (XXX-XXXX) in the branch name, use it as a postfix to the subject line in the format [XXX-XXXX]
