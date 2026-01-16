@@ -148,9 +148,13 @@ class UtilsKtTest {
             mockkStatic(::getCliFile)
             every { getCliFile() } returns tempFile
 
-            // File exists but not executable
-            tempFile.setExecutable(false)
-            assertFalse(isCliInstalled())
+            // On Windows, setExecutable(false) doesn't work reliably - canExecute() returns true
+            // for most files based on extension. Only test the positive case on all platforms.
+            if (!SystemUtils.IS_OS_WINDOWS) {
+                // File exists but not executable (Unix only)
+                tempFile.setExecutable(false)
+                assertFalse(isCliInstalled())
+            }
 
             // File exists and is executable
             tempFile.setExecutable(true)
