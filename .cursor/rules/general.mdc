@@ -72,6 +72,7 @@ alwaysApply: true
 
 <committing>
 - NEVER commit implementation plan and implementation plan diagrams
+- NEVER amend commits, keep a history so we can revert atomic commits
 - NEVER NEVER NEVER skip the commit hooks
 - I REPEAT: NEVER USE --no-verify. DO NOT DO IT. NEVER. THIS IS CRITICAL, DO NOT DO IT.
 - run ./gradlew test before committing and fix the issues. don't run targeted tests, run the full suite (which may take >10min)
