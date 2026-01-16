@@ -28,6 +28,11 @@ description = properties("pluginName")
 
 val jdk = "21"
 
+scmVersion {
+    versionCreator("simple")
+}
+
+
 repositories {
     mavenCentral()
     mavenLocal()
