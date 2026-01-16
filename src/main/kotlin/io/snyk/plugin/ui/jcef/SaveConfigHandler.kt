@@ -191,10 +191,23 @@ class SaveConfigHandler(
         val isFallback = config.isFallbackForm == true
 
         // CLI Settings - always persist for both fallback and full forms
-        config.cliPath?.let { path ->
-            settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
-        }
+        val defaultCliPath = getPluginPath() + separator + Platform.current().snykWrapperFileName
+        val wasManagingAutomatically = settings.manageBinariesAutomatically
+
         config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
+
+        // When toggling TO manageBinariesAutomatically, reset cliPath to the default auto-managed location
+        // When manageBinariesAutomatically is false, always use the provided cliPath (user's custom path)
+        if (config.manageBinariesAutomatically == true && !wasManagingAutomatically) {
+            // Toggling from manual to auto-managed: reset to default path
+            settings.cliPath = defaultCliPath
+        } else if (config.manageBinariesAutomatically == false) {
+            // Manual mode: use the user-provided path, or keep existing if not provided
+            config.cliPath?.let { path ->
+                settings.cliPath = path.ifEmpty { settings.cliPath }
+            }
+        }
+        // When manageBinariesAutomatically stays true, don't change cliPath (it's managed automatically)
         config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
         config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
         config.insecure?.let { settings.ignoreUnknownCA = it }

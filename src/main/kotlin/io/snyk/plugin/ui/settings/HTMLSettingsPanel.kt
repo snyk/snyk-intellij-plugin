@@ -11,6 +11,7 @@ import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefClient
 import com.intellij.util.ui.UIUtil
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.settings.executePostApplySettings
@@ -289,6 +290,8 @@ class HTMLSettingsPanel(
         // Capture previous values before save for change detection
         previousReleaseChannel = pluginSettings().cliReleaseChannel
         previousDeltaEnabled = pluginSettings().isDeltaFindingsEnabled()
+        previousManageBinariesAutomatically = pluginSettings().manageBinariesAutomatically
+        previousCliPath = pluginSettings().cliPath
 
         val browser = jbCefBrowser?.cefBrowser
         if (browser == null) {
@@ -333,6 +336,10 @@ class HTMLSettingsPanel(
     private var previousReleaseChannel: String = pluginSettings().cliReleaseChannel
     @Volatile
     private var previousDeltaEnabled: Boolean = pluginSettings().isDeltaFindingsEnabled()
+    @Volatile
+    private var previousManageBinariesAutomatically: Boolean = pluginSettings().manageBinariesAutomatically
+    @Volatile
+    private var previousCliPath: String = pluginSettings().cliPath
 
     private fun runPostApplySettings() {
         val settings = pluginSettings()
@@ -346,6 +353,18 @@ class HTMLSettingsPanel(
             // Handle delta findings change - clear caches
             if (settings.isDeltaFindingsEnabled() != previousDeltaEnabled) {
                 handleDeltaFindingsChange(project)
+            }
+
+            // Handle CLI-related changes that require LS restart
+            val manageBinariesToggled = settings.manageBinariesAutomatically != previousManageBinariesAutomatically
+            val cliPathChanged = settings.cliPath != previousCliPath
+
+            if (manageBinariesToggled && settings.manageBinariesAutomatically) {
+                // Toggled to auto-manage: trigger CLI download, LanguageServerRestartListener will restart LS after download
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
+            } else if (manageBinariesToggled || cliPathChanged) {
+                // Toggled to manual or changed CLI path: restart LS immediately
+                LanguageServerWrapper.getInstance(project).restart()
             }
 
             executePostApplySettings(project)
