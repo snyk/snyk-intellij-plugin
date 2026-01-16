@@ -91,11 +91,12 @@ alwaysApply: true
 
 <PR_creation>
 - use github mcp, if not found, use `gh` command line util for pr creation.
+- use the template in .github
 - always create draft prs
 - update the github pr description with the current status `gh` command line util
 - use the diff between the current branch and main to generate the description and title
 - respect the pr template
-- get the pr review comments from snyk-pr-review-bot, analyse them and propose fixes for them. check before each commit.
+- get the pr review comments, analyse them and propose fixes for them. check before each commit.
 </PR_creation>
 
 <documenting>

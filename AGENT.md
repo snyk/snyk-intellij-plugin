@@ -65,7 +65,7 @@ alwaysApply: true
 - determine the absolute path of the project directory. you can do that e.g. by executing pwd on the shell within the directory.
 - pass the absolute path of the project directory as a parameter to snyk_sca_scan and snyk_code_scan.
 - run snyk_sca_scan after updating gradle.build.kts
-- run snyk_code_scan before committing. if not test data, fix issues before committing.
+- run snyk_sca_scan and snyk_code_scan before committing. if not test data, fix issues before committing.
 - fix security issues if they are fixable. take the snyk scan results and the test results as input
 - don't fix test data
 </security>
@@ -91,11 +91,12 @@ alwaysApply: true
 
 <PR_creation>
 - use github mcp, if not found, use `gh` command line util for pr creation.
+- use the template in .github
 - always create draft prs
 - update the github pr description with the current status `gh` command line util
 - use the diff between the current branch and main to generate the description and title
 - respect the pr template
-- get the pr review comments from snyk-pr-review-bot, analyse them and propose fixes for them. check before each commit.
+- get the pr review comments, analyse them and propose fixes for them. check before each commit.
 </PR_creation>
 
 <documenting>
