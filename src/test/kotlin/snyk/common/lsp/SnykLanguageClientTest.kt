@@ -3,6 +3,7 @@ package snyk.common.lsp
 import com.google.gson.Gson
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
@@ -11,6 +12,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.MessageBus
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -18,15 +20,19 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.toVirtualFileOrNull
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
+import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.ShowDocumentParams
+import org.eclipse.lsp4j.TextEdit
+import org.eclipse.lsp4j.WorkspaceEdit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -58,6 +64,9 @@ class SnykLanguageClientTest {
         unmockkAll()
         mockkStatic("io.snyk.plugin.UtilsKt")
         mockkStatic(ApplicationManager::class)
+        mockkStatic(WriteCommandAction::class)
+
+        mockkObject(snyk.common.editor.DocumentChanger)
 
         every { ApplicationManager.getApplication() } returns applicationMock
         every { applicationMock.getService(WorkspaceTrustService::class.java) } returns trustServiceMock
@@ -87,6 +96,10 @@ class SnykLanguageClientTest {
 
 
         cut = SnykLanguageClient(projectMock, mockk(relaxed = true))
+
+        every { WriteCommandAction.runWriteCommandAction(projectMock, any<Runnable>()) } answers {
+            secondArg<Runnable>().run()
+        }
     }
 
     @After
@@ -95,7 +108,29 @@ class SnykLanguageClientTest {
     }
 
     @Test
-    fun applyEdit() {}
+    fun applyEdit() {
+        val encodedUri = "file:///Users/user%20name/file%20with%20spaces%20%24peci%40l.txt"
+        val virtualFile = mockk<VirtualFile>(relaxed = true)
+        every { encodedUri.toVirtualFile() } returns virtualFile
+
+        every { snyk.common.editor.DocumentChanger.applyChange(any()) } returns Unit
+        every { refreshAnnotationsForFile(projectMock, any()) } returns Unit
+
+        val edits = listOf(
+            TextEdit(Range(Position(0, 0), Position(0, 0)), "test")
+        )
+        val params = ApplyWorkspaceEditParams(WorkspaceEdit(mapOf(encodedUri to edits)))
+
+        val result = cut.applyEdit(params).get()
+
+        assertTrue(result.isApplied)
+        verify(exactly = 1) {
+            snyk.common.editor.DocumentChanger.applyChange(match { it.key == encodedUri })
+        }
+        verify(exactly = 1) {
+            refreshAnnotationsForFile(projectMock, virtualFile)
+        }
+    }
 
     @Test
     fun `refreshCodeLenses does not run when disposed`() {
