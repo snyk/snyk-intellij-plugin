@@ -82,7 +82,8 @@ alwaysApply: true
 </committing>
 
 <pushing>
-- never push without asking
+- before pushing, run ./gradlew verifyPlugin
+- never push without asking every single time
 - never force push
 - when asked to push, always use 'git push --set-upstream origin $(git_current_branch)' with git_current_branch being the current branch we are on
 - regularly fetch main branch and offer to merge it into git_current_branch
