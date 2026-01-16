@@ -17,7 +17,7 @@ import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.ui.addAndGetCenteredPanel
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
@@ -55,7 +55,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
                     for (path in paths) {
                         trustService.addTrustedPath(path)
                     }
-                    getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+                    publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
                 }
             }
         }).apply {

@@ -127,6 +127,30 @@ fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     return messageBus.syncPublisher(topic)
 }
 
+/**
+ * Publishes an event asynchronously to avoid blocking the calling thread.
+ * This prevents potential deadlocks when listeners try to access EDT while the caller holds locks.
+ *
+ * @param project The project context
+ * @param topic The message bus topic
+ * @param action The action to perform on the publisher
+ */
+fun <L : Any> publishAsync(project: Project, topic: Topic<L>, action: L.() -> Unit) {
+    org.jetbrains.concurrency.runAsync {
+        try {
+            if (!project.isDisposed) {
+                val messageBus = project.messageBus
+                if (!messageBus.isDisposed) {
+                    messageBus.syncPublisher(topic).action()
+                }
+            }
+        } catch (e: Exception) {
+            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+                .warn("Error publishing async event to topic $topic", e)
+        }
+    }
+}
+
 val <T> List<T>.head: T
     get() = first()
 
@@ -499,7 +523,7 @@ fun VirtualFile.isInContent(project: Project): Boolean {
         return if (project.isDisposed) false
         else ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
     }
-    
+
     // Not on EDT and no read access - this shouldn't block EDT
     return app.runReadAction<Boolean> {
         if (project.isDisposed) false

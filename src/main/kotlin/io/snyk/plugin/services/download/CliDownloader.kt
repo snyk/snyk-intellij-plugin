@@ -1,6 +1,7 @@
 package io.snyk.plugin.services.download
 
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.pluginSettings
@@ -17,6 +18,7 @@ import java.util.Locale
 import javax.xml.bind.DatatypeConverter
 
 class CliDownloader {
+    private val logger = logger<CliDownloader>()
     companion object {
         val BASE_URL: String
             get() = pluginSettings().cliBaseDownloadURL
@@ -74,18 +76,23 @@ class CliDownloader {
                 cliFile.delete()
             }
 
+            logger.info("CliDownloader: acquiring locks on all LanguageServerWrappers for file move")
             ProjectUtil.getOpenProjects().forEach { project ->
                 val languageServerWrapper = LanguageServerWrapper.getInstance(project)
                 // prevent spawning of language server until files are moved
+                logger.debug("CliDownloader: acquiring lock for project ${project.name}")
                 languageServerWrapper.isInitializing.lock()
+                logger.debug("CliDownloader: lock acquired for project ${project.name}")
                 try {
                     // shutdown, so the binary can be updated
+                    logger.debug("CliDownloader: shutting down LS for project ${project.name}")
                     languageServerWrapper.shutdown()
                 } catch (_: Exception) {
                     // do nothing
                 }
                 lockedLS.add(languageServerWrapper)
             }
+            logger.info("CliDownloader: all locks acquired, ${lockedLS.size} language servers locked")
             try {
                 Files.move(
                     downloadFile.toPath(),
@@ -109,11 +116,15 @@ class CliDownloader {
             if (downloadFile.exists()) {
                 downloadFile.delete()
             }
+            logger.info("CliDownloader: releasing ${lockedLS.size} locks")
             lockedLS.forEach {
                 if (it.isInitializing.holdCount > 0) {
+                    logger.debug("CliDownloader: releasing lock, holdCount=${it.isInitializing.holdCount}")
                     it.isInitializing.unlock()
+                    logger.debug("CliDownloader: lock released")
                 }
             }
+            logger.info("CliDownloader: all locks released")
         }
     }
 

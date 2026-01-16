@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.toolwindow.panels
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
@@ -19,10 +20,13 @@ import snyk.common.lsp.SnykScanSummaryParams
 import java.awt.Dimension
 
 class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Disposable {
+    private val logger = logger<SummaryPanel>()
+
     @Volatile
     private var isDisposed = false
 
     init {
+        logger.debug("SummaryPanel init starting")
         name = "summaryPanel"
         minimumSize = Dimension(0, 0)
 
@@ -43,7 +47,9 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
         )
 
         val rawHtml = SummaryPanel::class.java.classLoader.getResource(HTML_INIT_FILE)?.readText()
+        logger.debug("SummaryPanel: getting formatted HTML")
         var styledHtml = getFormattedHtml(rawHtml ?: "")
+        logger.debug("SummaryPanel: formatted HTML obtained")
 
         // Create handlers for the toggles between all issues and delta findings
         val loadHandlerGenerators = emptyList<LoadHandlerGenerator>().toMutableList()
@@ -51,27 +57,37 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
         loadHandlerGenerators += { toggleDeltaHandler.generate(it) }
 
         // Create browser without loading HTML - HTML will be loaded via invokeLater by JCEFUtils
+        logger.debug("SummaryPanel: creating JCEF browser")
         val jbCefBrowser =
             JCEFUtils.getJBCefBrowserIfSupported(styledHtml, loadHandlerGenerators)
+        logger.debug("SummaryPanel: JCEF browser created, isNull=${jbCefBrowser == null}")
 
         if (jbCefBrowser != null) {
             jbCefBrowser.component.preferredSize = preferredSize
+            logger.debug("SummaryPanel: adding browser component")
             add(jbCefBrowser.component, constraints)
+            logger.debug("SummaryPanel: browser component added")
 
             // Subscribe to scan summaries
             project.messageBus.connect(this)
                 .subscribe(SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC, object : SnykScanSummaryListener {
                     // Replace the current HTML with the new HTML from the Language Server
                     override fun onSummaryReceived(summaryParams: SnykScanSummaryParams) {
+                        logger.debug("SummaryPanel: onSummaryReceived called, isDisposed=$isDisposed")
                         if (isDisposed) return
                         // Capture the raw summary - defer all processing to EDT
                         // getFormattedHtml accesses Swing components and must run on EDT
                         val rawSummary = summaryParams.scanSummary
+                        logger.debug("SummaryPanel: scheduling invokeLater for HTML update")
                         invokeLater {
+                            logger.debug("SummaryPanel: invokeLater executing, isDisposed=$isDisposed")
                             if (!isDisposed) {
+                                logger.debug("SummaryPanel: getting formatted HTML in invokeLater")
                                 styledHtml = getFormattedHtml(rawSummary)
                                     .replace("\${ideFunc}", "window.toggleDeltaQuery(isEnabled);")
+                                logger.debug("SummaryPanel: loading HTML into browser")
                                 jbCefBrowser.loadHTML(styledHtml)
+                                logger.debug("SummaryPanel: HTML loaded")
                             }
                         }
                     }
@@ -84,6 +100,7 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
                 null
             )
         }
+        logger.debug("SummaryPanel init completed")
     }
 
     override fun dispose() {

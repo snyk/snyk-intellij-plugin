@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.intellij.openapi.application.invokeLater
+import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefBrowserBuilder
@@ -19,6 +20,7 @@ typealias LoadHandlerGenerator = (jbCefBrowser: JBCefBrowser) -> CefLoadHandlerA
 fun Color.toHex(): String = JCEFUtils.colorToHex(this)
 
 object JCEFUtils {
+    private val logger = logger<JCEFUtils>()
     private val secureRandom = SecureRandom()
 
     /**
@@ -45,9 +47,12 @@ object JCEFUtils {
      * @param offScreenRendering Use off-screen rendering (default: true). Set to true for lightweight rendering without native window.
      */
     fun createBrowser(offScreenRendering: Boolean = true): Pair<JBCefClient, JBCefBrowser> {
+        logger.debug("JCEFUtils.createBrowser starting, offScreenRendering=$offScreenRendering")
         val cefClient = JBCefApp.getInstance().createClient()
+        logger.debug("JCEFUtils.createBrowser: CEF client created")
         cefClient.setProperty("JS_QUERY_POOL_SIZE", 1)
 
+        logger.debug("JCEFUtils.createBrowser: building browser")
         val jbCefBrowser = JBCefBrowserBuilder()
             .setClient(cefClient)
             .setEnableOpenDevToolsMenuItem(false)
@@ -55,8 +60,10 @@ object JCEFUtils {
             .setOffScreenRendering(offScreenRendering)
             .setUrl("about:blank")
             .build()
+        logger.debug("JCEFUtils.createBrowser: browser built")
         jbCefBrowser.setOpenLinksInExternalBrowser(true)
 
+        logger.debug("JCEFUtils.createBrowser completed")
         return Pair(cefClient, jbCefBrowser)
     }
 
@@ -70,18 +77,23 @@ object JCEFUtils {
     fun getJBCefBrowserComponentIfSupported(
         loadHandlerGenerators: List<LoadHandlerGenerator>,
     ): JBCefBrowser? {
+        logger.debug("JCEFUtils.getJBCefBrowserComponentIfSupported starting")
         if (!JBCefApp.isSupported()) {
+            logger.warn("JCEFUtils: JCEF is not supported on this platform")
             SnykBalloonNotificationHelper.showWarn("JCEF is not supported on this platform, we cannot display issue details", null)
             return null
         }
 
+        logger.debug("JCEFUtils: JCEF is supported, creating browser")
         val (cefClient, jbCefBrowser) = createBrowser()
 
+        logger.debug("JCEFUtils: adding ${loadHandlerGenerators.size} load handlers")
         for (loadHandlerGenerator in loadHandlerGenerators) {
             val loadHandler = loadHandlerGenerator(jbCefBrowser)
             cefClient.addLoadHandler(loadHandler, jbCefBrowser.cefBrowser)
         }
 
+        logger.debug("JCEFUtils.getJBCefBrowserComponentIfSupported completed")
         return jbCefBrowser
     }
 
@@ -97,13 +109,18 @@ object JCEFUtils {
         html: String,
         loadHandlerGenerators: List<LoadHandlerGenerator>,
     ): JBCefBrowser? {
+        logger.debug("JCEFUtils.getJBCefBrowserIfSupported starting, htmlLength=${html.length}")
         val jbCefBrowser = getJBCefBrowserComponentIfSupported(loadHandlerGenerators) ?: return null
 
         // Defer HTML loading to next EDT cycle to avoid blocking during panel construction
+        logger.debug("JCEFUtils: scheduling invokeLater for HTML loading")
         invokeLater {
+            logger.debug("JCEFUtils: invokeLater executing, loading HTML")
             jbCefBrowser.loadHTML(html, jbCefBrowser.cefBrowser.url)
+            logger.debug("JCEFUtils: HTML load call completed")
         }
 
+        logger.debug("JCEFUtils.getJBCefBrowserIfSupported completed")
         return jbCefBrowser
     }
 }

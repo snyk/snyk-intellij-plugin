@@ -30,8 +30,23 @@ class SnykCliDownloaderService {
     var downloader = CliDownloader()
     var errorHandler = CliDownloaderErrorHandler()
 
-    private val cliDownloadPublisher
-        get() = application.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+    private val logger = logger<SnykCliDownloaderService>()
+
+    // Use async publishing to avoid blocking the calling thread
+    // syncPublisher can cause deadlocks if listeners try to access EDT while caller holds locks
+    private fun publishAsync(action: SnykCliDownloadListener.() -> Unit) {
+        logger.debug("Publishing CLI download event asynchronously")
+        org.jetbrains.concurrency.runAsync {
+            try {
+                if (!application.isDisposed) {
+                    application.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC).action()
+                    logger.debug("CLI download event published successfully")
+                }
+            } catch (e: Exception) {
+                logger.warn("Error publishing CLI download event", e)
+            }
+        }
+    }
 
     private var currentProgressIndicator: ProgressIndicator? = null
 
@@ -47,19 +62,19 @@ class SnykCliDownloaderService {
         return try {
             createRequest(CliDownloader.LATEST_RELEASES_URL).readString()
         } catch (ignore: Exception) {
-            logger<SnykCliDownloaderService>().warn(ignore)
+            logger.warn(ignore)
             null
         }
     }
 
     fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
-        val log = logger<SnykCliDownloaderService>()
         currentProgressIndicator = indicator
-        cliDownloadPublisher.cliDownloadStarted()
+        logger.info("CLI download starting")
+        publishAsync { cliDownloadStarted() }
         indicator.isIndeterminate = true
         var succeeded = false
         val cliFile = getCliFile()
-        log.info("Starting CLI download to: ${cliFile.absolutePath}")
+        logger.info("Starting CLI download to: ${cliFile.absolutePath}")
         val latestRelease: String
         try {
             latestRelease = requestLatestReleasesInformation() ?: ""
@@ -67,12 +82,12 @@ class SnykCliDownloaderService {
             if (latestRelease.isEmpty()) {
                 val failedMsg = "Failed to fetch the latest Snyk CLI release info. " +
                     "Please retry in a few minutes or contact support if the issue persists."
-                log.warn("Failed to fetch release info, URL: ${CliDownloader.LATEST_RELEASES_URL}")
+                logger.warn("Failed to fetch release info, URL: ${CliDownloader.LATEST_RELEASES_URL}")
                 errorHandler.showErrorWithRetryAndContactAction(failedMsg, project)
                 return
             }
 
-            log.info("Downloading CLI version: $latestRelease")
+            logger.info("Downloading CLI version: $latestRelease")
             indicator.text = "Downloading latest Snyk CLI release..."
             indicator.checkCanceled()
 
@@ -81,20 +96,20 @@ class SnykCliDownloaderService {
                 pluginSettings().cliVersion = latestRelease
                 pluginSettings().lastCheckDate = Date()
                 succeeded = true
-                log.info("CLI download succeeded: ${cliFile.absolutePath}, exists=${cliFile.exists()}, canExecute=${cliFile.canExecute()}")
+                logger.info("CLI download succeeded: ${cliFile.absolutePath}, exists=${cliFile.exists()}, canExecute=${cliFile.canExecute()}")
             } catch (e: HttpRequests.HttpStatusException) {
-                log.warn("HTTP error during download", e)
+                logger.warn("HTTP error during download", e)
                 errorHandler.handleHttpStatusException(e, project)
             } catch (e: IOException) {
-                log.warn("IO error during download", e)
+                logger.warn("IO error during download", e)
                 errorHandler.handleIOException(e, latestRelease, indicator, project)
             } catch (e: ChecksumVerificationException) {
-                log.warn("Checksum verification failed", e)
+                logger.warn("Checksum verification failed", e)
                 errorHandler.handleChecksumVerificationException(e, latestRelease, indicator, project)
             }
         } finally {
-            log.info("CLI download finished, succeeded=$succeeded")
-            cliDownloadPublisher.cliDownloadFinished(succeeded)
+            logger.info("CLI download finished, succeeded=$succeeded")
+            publishAsync { cliDownloadFinished(succeeded) }
             stopCliDownload()
         }
     }

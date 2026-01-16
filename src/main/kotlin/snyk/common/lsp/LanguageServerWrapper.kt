@@ -367,9 +367,14 @@ class LanguageServerWrapper(
     }
 
     fun ensureLanguageServerInitialized(): Boolean {
-        if (disposed) return false
+        if (disposed) {
+            logger.debug("ensureLanguageServerInitialized: disposed, returning false")
+            return false
+        }
+        logger.debug("ensureLanguageServerInitialized: attempting to acquire lock, thread=${Thread.currentThread().name}")
         try {
             isInitializing.lock()
+            logger.debug("ensureLanguageServerInitialized: lock acquired, holdCount=${isInitializing.holdCount}")
             if (isInitializing.holdCount > 1) {
                 val message =
                     "Snyk failed to initialize. This is an unexpected loop error, please contact " +
@@ -379,14 +384,21 @@ class LanguageServerWrapper(
             }
 
             if (!isInitialized) {
+                logger.debug("ensureLanguageServerInitialized: not initialized, calling initialize()")
                 try {
                     initialize()
                 } catch (e: RuntimeException) {
+                    logger.error("ensureLanguageServerInitialized: initialize() threw exception", e)
                     throw (e)
                 }
+                logger.debug("ensureLanguageServerInitialized: initialize() completed, isInitialized=$isInitialized")
+            } else {
+                logger.debug("ensureLanguageServerInitialized: already initialized")
             }
         } finally {
+            logger.debug("ensureLanguageServerInitialized: releasing lock")
             isInitializing.unlock()
+            logger.debug("ensureLanguageServerInitialized: lock released")
         }
         return isInitialized
     }

@@ -65,7 +65,7 @@ alwaysApply: true
 - determine the absolute path of the project directory. you can do that e.g. by executing pwd on the shell within the directory.
 - pass the absolute path of the project directory as a parameter to snyk_sca_scan and snyk_code_scan.
 - run snyk_sca_scan after updating gradle.build.kts
-- run snyk_code_scan before committing. if not test data, fix issues before committing.
+- run snyk_sca_scan and snyk_code_scan before committing. if not test data, fix issues before committing.
 - fix security issues if they are fixable. take the snyk scan results and the test results as input
 - don't fix test data
 </security>

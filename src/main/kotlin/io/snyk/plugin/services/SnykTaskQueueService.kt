@@ -30,11 +30,37 @@ class SnykTaskQueueService(val project: Project) {
         private val WAIT_FOR_CLI_DOWNLOAD_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(20)
     }
 
-    private val cliDownloadPublisher
-        get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+    // Use async publishing to avoid blocking the calling thread
+    // syncPublisher can cause deadlocks if listeners try to access EDT while caller holds locks
+    private fun publishCliDownloadEventAsync(action: SnykCliDownloadListener.() -> Unit) {
+        logger.debug("Publishing CLI download event asynchronously from TaskQueueService")
+        org.jetbrains.concurrency.runAsync {
+            try {
+                val app = ApplicationManager.getApplication()
+                if (!app.isDisposed) {
+                    app.messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC).action()
+                    logger.debug("CLI download event published successfully from TaskQueueService")
+                }
+            } catch (e: Exception) {
+                logger.warn("Error publishing CLI download event from TaskQueueService", e)
+            }
+        }
+    }
 
-    private val taskQueuePublisher
-        get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
+    private fun publishTaskQueueEventAsync(action: SnykTaskQueueListener.() -> Unit) {
+        logger.debug("Publishing task queue event asynchronously")
+        org.jetbrains.concurrency.runAsync {
+            try {
+                if (!project.isDisposed) {
+                    val publisher = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
+                    publisher?.action()
+                    logger.debug("Task queue event published successfully")
+                }
+            } catch (e: Exception) {
+                logger.warn("Error publishing task queue event", e)
+            }
+        }
+    }
 
     fun connectProjectToLanguageServer(project: Project) {
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
@@ -138,7 +164,7 @@ class SnykTaskQueueService(val project: Project) {
         runInBackground("Snyk: Check CLI presence", project, true) { indicator ->
             try {
                 indicator.checkCanceled()
-                cliDownloadPublisher.checkCliExistsStarted()
+                publishCliDownloadEventAsync { checkCliExistsStarted() }
                 if (project.isDisposed) return@runInBackground
 
                 indicator.checkCanceled()
@@ -161,19 +187,20 @@ class SnykTaskQueueService(val project: Project) {
                 }
             } finally {
                 logger.info("CLI check finished, isCliInstalled=${isCliInstalled()}")
-                cliDownloadPublisher.checkCliExistsFinished()
+                publishCliDownloadEventAsync { checkCliExistsFinished() }
             }
         }
     }
 
     fun stopScan() {
+        logger.info("stopScan called")
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
         if (languageServerWrapper.isInitialized) {
             languageServerWrapper.languageClient.progressManager.cancelProgresses()
             ScanState.scanInProgress.clear()
         }
-        taskQueuePublisher?.stopped()
+        publishTaskQueueEventAsync { stopped() }
     }
 
 }
