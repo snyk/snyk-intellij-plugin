@@ -16,6 +16,7 @@ plugins {
     id("org.jetbrains.changelog") version "2.2.0"
     id("org.jetbrains.intellij.platform") version "2.5.0"
     id("org.jetbrains.kotlin.jvm") version "2.1.21"
+    id("org.jetbrains.kotlinx.kover") version "0.9.1"
     id("io.gitlab.arturbosch.detekt") version ("1.23.6")
     id("pl.allegro.tech.build.axion-release") version "1.21.1"
 }
@@ -115,6 +116,28 @@ detekt {
     config.setFrom("$projectDir/.github/detekt/detekt-config.yml")
     baseline = file("$projectDir/.github/detekt/detekt-baseline.xml")
     buildUponDefaultConfig = true
+}
+
+// Configure Kover for code coverage
+kover {
+    reports {
+        total {
+            xml {
+                onCheck = false
+                xmlFile = layout.buildDirectory.file("reports/kover/report.xml")
+            }
+            html {
+                onCheck = false
+                htmlDir = layout.buildDirectory.dir("reports/kover/html")
+            }
+        }
+        filters {
+            excludes {
+                // Exclude generated code and test utilities
+                classes("**/generated/**", "**/test/**")
+            }
+        }
+    }
 }
 
 // Configure gradle-changelog-plugin
