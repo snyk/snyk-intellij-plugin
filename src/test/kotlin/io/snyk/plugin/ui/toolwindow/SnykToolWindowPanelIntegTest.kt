@@ -446,9 +446,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
         mockkStatic("io.snyk.plugin.UtilsKt")
         every { isOssRunning(project) } returns true
 
-        val ossNode = toolWindowPanel.getRootOssIssuesTreeNode()
-        val initialUserObject = ossNode.userObject
-
         // Schedule refresh while scan is running
         toolWindowPanel.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
 
