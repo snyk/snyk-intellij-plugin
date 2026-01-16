@@ -247,6 +247,55 @@ class UtilsKtTest {
         verify(exactly = 0) { messageBus.syncPublisher(any<Topic<TestListener>>()) }
     }
 
+    @Test
+    fun `publishAsyncApp publishes event asynchronously on application message bus`() {
+        unmockkAll()
+
+        val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+        val messageBus = mockk<MessageBus>(relaxed = true)
+        val listener = mockk<TestListener>(relaxed = true)
+
+        mockkStatic(ApplicationManager::class)
+        every { ApplicationManager.getApplication() } returns appMock
+        every { appMock.isDisposed } returns false
+        every { appMock.messageBus } returns messageBus
+        every { messageBus.syncPublisher(any<Topic<TestListener>>()) } returns listener
+
+        val latch = CountDownLatch(1)
+        every { listener.onEvent() } answers {
+            latch.countDown()
+        }
+
+        val topic = Topic.create("test-app-topic", TestListener::class.java)
+        publishAsyncApp(topic) { onEvent() }
+
+        // Wait for async execution
+        assertTrue("Async app publish should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+        verify { listener.onEvent() }
+    }
+
+    @Test
+    fun `publishAsyncApp does not publish when application is disposed`() {
+        unmockkAll()
+
+        val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+        val messageBus = mockk<MessageBus>(relaxed = true)
+
+        mockkStatic(ApplicationManager::class)
+        every { ApplicationManager.getApplication() } returns appMock
+        every { appMock.isDisposed } returns true
+        every { appMock.messageBus } returns messageBus
+
+        val topic = Topic.create("test-app-topic", TestListener::class.java)
+        publishAsyncApp(topic) { onEvent() }
+
+        // Give some time for potential async execution
+        Thread.sleep(100)
+
+        // Should not have accessed messageBus.syncPublisher since application is disposed
+        verify(exactly = 0) { messageBus.syncPublisher(any<Topic<TestListener>>()) }
+    }
+
     interface TestListener {
         fun onEvent()
     }
