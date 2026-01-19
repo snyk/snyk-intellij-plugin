@@ -15,4 +15,6 @@ interface SnykCliDownloadListener {
     fun cliDownloadStarted() {}
 
     fun cliDownloadFinished(succeed: Boolean = true) {}
+
+    fun restartCLI() {}
 }

@@ -37,6 +37,7 @@ import com.intellij.util.Alarm
 import com.intellij.util.messages.Topic
 import com.intellij.util.queryParameters
 import io.snyk.plugin.analytics.AnalyticsScanListener
+import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.services.SnykProjectSettingsStateService
@@ -56,6 +57,7 @@ import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
 import java.io.File
+import java.io.File.separator
 import java.io.FileNotFoundException
 import java.net.URI
 import java.net.URLDecoder
@@ -103,6 +105,8 @@ fun isCliInstalled(): Boolean {
 fun pluginSettings(): SnykApplicationSettingsStateService = ApplicationManager.getApplication().service()
 
 fun getPluginPath() = PathManager.getPluginsPath() + "/snyk-intellij-plugin"
+
+fun getDefaultCliPath() = getPluginPath() + separator + Platform.current().snykWrapperFileName
 
 fun isProjectSettingsAvailable(project: Project?) = nonNull(project) && !project!!.isDefault
 

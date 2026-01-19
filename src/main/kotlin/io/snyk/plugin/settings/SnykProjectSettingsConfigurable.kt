@@ -15,11 +15,11 @@ import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.publishAsync
 import io.snyk.plugin.isNewConfigDialogEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.settings.HTMLSettingsPanel
@@ -124,7 +124,15 @@ class SnykProjectSettingsConfigurable(
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
-        settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
+
+        val newCliPath = snykSettingsDialog.getCliPath().trim()
+        if (settingsStateService.cliPath != newCliPath) {
+            settingsStateService.cliPath = newCliPath
+            runBackgroundableTask("Process CLI path changes", project, true) {
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true, forceRestart = true)
+            }
+        }
+
         settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
 
         settingsStateService.scanOnSave = snykSettingsDialog.isScanOnSaveEnabled()
@@ -152,17 +160,23 @@ class SnykProjectSettingsConfigurable(
             )
         }
 
-        runBackgroundableTask("Processing config changes", project, true) {
-            if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-                settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+        val newCliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+        if (settingsStateService.cliReleaseChannel != newCliReleaseChannel) {
+            settingsStateService.cliReleaseChannel = newCliReleaseChannel
+            runBackgroundableTask("Processing CLI release channel changes", project, true) {
                 handleReleaseChannelChange(project)
             }
+        }
 
-            if (snykSettingsDialog.getDisplayIssuesSelection() != pluginSettings().issuesToDisplay) {
-                settingsStateService.issuesToDisplay = snykSettingsDialog.getDisplayIssuesSelection()
+        val newDisplayIssuesSelection = snykSettingsDialog.getDisplayIssuesSelection()
+        if (settingsStateService.issuesToDisplay != newDisplayIssuesSelection) {
+            settingsStateService.issuesToDisplay = newCliReleaseChannel
+            runBackgroundableTask("Processing display issue selection changes", project, true) {
                 handleDeltaFindingsChange(project)
             }
+        }
 
+        runBackgroundableTask("Execute post apply settings", project, true) {
             executePostApplySettings(project)
         }
 

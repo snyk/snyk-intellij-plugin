@@ -95,6 +95,9 @@ class SnykCliDownloaderService {
         } finally {
             logger.debug("CLI download finished, succeeded=$succeeded")
             publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { cliDownloadFinished(succeeded) }
+            if (succeeded) {
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { restartCLI() }
+            }
             stopCliDownload()
         }
     }

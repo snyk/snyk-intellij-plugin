@@ -21,10 +21,9 @@ class LanguageServerRestartListener(val project: Project) : Disposable {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
         application.messageBus.connect()
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
-                override fun cliDownloadFinished(succeed: Boolean) {
-                    if (succeed && !disposed) {
-                        LanguageServerWrapper.getInstance(project).restart()
-                    }
+                override fun restartCLI() {
+                    super.restartCLI()
+                    LanguageServerWrapper.getInstance(project).restart()
                 }
             })
     }

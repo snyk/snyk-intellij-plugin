@@ -8,6 +8,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.XmlSerializerUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.cli.Platform
+import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.getPluginPath
 import java.io.File.separator
 import java.time.Instant
@@ -34,7 +35,7 @@ class SnykApplicationSettingsStateService : PersistentStateComponent<SnykApplica
     var currentLSProtocolVersion: Int? = 0
     var isGlobalIgnoresFeatureEnabled = false
     var cliBaseDownloadURL: String = "https://downloads.snyk.io"
-    var cliPath: String = getPluginPath() + separator + Platform.current().snykWrapperFileName
+    var cliPath: String = getDefaultCliPath()
     var cliReleaseChannel = "stable"
     var issuesToDisplay: String = DISPLAY_ALL_ISSUES
     var manageBinariesAutomatically: Boolean = true

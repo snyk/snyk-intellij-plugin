@@ -34,6 +34,7 @@ import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
@@ -1047,7 +1048,7 @@ class SnykSettingsDialog(
 
     fun getCliPath(): String = cliPathTextBoxWithFileBrowser.text
     fun setDefaultCliPath() {
-        cliPathTextBoxWithFileBrowser.text = getPluginPath() + separator + Platform.current().snykWrapperFileName
+        cliPathTextBoxWithFileBrowser.text = getDefaultCliPath()
     }
 
     fun manageBinariesAutomatically() = manageBinariesAutomatically.isSelected

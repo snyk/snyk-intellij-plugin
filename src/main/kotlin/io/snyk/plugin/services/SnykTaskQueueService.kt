@@ -15,6 +15,7 @@ import io.snyk.plugin.publishAsync
 import io.snyk.plugin.publishAsyncApp
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanState
@@ -86,7 +87,7 @@ class SnykTaskQueueService(val project: Project) {
         // handles that case and shows an appropriate notification if CLI is missing
 
         val completed = CompletableFuture<Unit>()
-        val connection = ApplicationManager.getApplication().messageBus.connect(project)
+        val connection = ApplicationManager.getApplication().messageBus.connect(SnykPluginDisposable.getInstance(project))
         try {
             connection.subscribe(
                 SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
@@ -114,7 +115,7 @@ class SnykTaskQueueService(val project: Project) {
         }
     }
 
-    fun downloadLatestRelease(force: Boolean = false) {
+    fun downloadLatestRelease(force: Boolean = false, forceRestart: Boolean = false) {
         // abort even before submitting a task
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
         val cliDownloader = getSnykCliDownloaderService()
@@ -130,6 +131,9 @@ class SnykTaskQueueService(val project: Project) {
             cliDownloader.stopCliDownload()
             // Signal completion so waitUntilCliDownloadedIfNeeded() doesn't wait indefinitely
             publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
+            if (forceRestart) {
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { restartCLI() }
+            }
             return
         }
 

@@ -10,6 +10,7 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
@@ -190,11 +191,13 @@ class SaveConfigHandler(
     private fun applyGlobalSettings(config: SaveConfigRequest, settings: SnykApplicationSettingsStateService) {
         val isFallback = config.isFallbackForm == true
 
-        // CLI Settings - always persist for both fallback and full forms
-        config.cliPath?.let { path ->
-            settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
-        }
         config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
+
+        // Use the provided cliPath from the config if present, or the default CLI path if not.
+        config.cliPath?.let { path ->
+            settings.cliPath = path.ifEmpty { getDefaultCliPath() }
+        }
+
         config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
         config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
         config.insecure?.let { settings.ignoreUnknownCA = it }

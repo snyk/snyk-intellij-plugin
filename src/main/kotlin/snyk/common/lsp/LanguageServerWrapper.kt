@@ -93,7 +93,9 @@ class LanguageServerWrapper(
     private val project: Project,
 ) : Disposable {
     private val progressManager = ProgressManager(project)
-    private val cliPath: String = getCliFile().absolutePath
+    // Get the CLI path each time it is needed, so that Language Server restarts use the correct instance.
+    private val cliPath: String
+        get() = getCliFile().absolutePath
     private val executorService: ExecutorService = AppExecutorUtil.getAppExecutorService()
     private var authenticatedUser: Map<String, String>? = null
     private var initializeResult: InitializeResult? = null
