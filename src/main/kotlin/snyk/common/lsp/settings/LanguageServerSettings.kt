@@ -24,7 +24,6 @@ data class LanguageServerSettings(
     @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: String? = "false",
     @SerializedName("cliPath") val cliPath: String?,
     @SerializedName("cliBaseDownloadURL") val cliBaseDownloadURL: String? = null,
-    @SerializedName("cliReleaseChannel") val cliReleaseChannel: String? = null,
     @SerializedName("token") val token: String?,
     @SerializedName("integrationName") val integrationName: String? = pluginInfo.integrationName,
     @SerializedName("integrationVersion") val integrationVersion: String? = pluginInfo.integrationVersion,
