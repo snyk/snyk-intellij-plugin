@@ -1,6 +1,5 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
@@ -202,7 +201,7 @@ tasks {
         pluginDescription.set(descriptionFromReadme)
 
         // Get the latest available change notes from the changelog file
-        changeNotes.set(provider { changelog.renderItem(changelog.getLatest(), Changelog.OutputType.HTML) })
+        changeNotes.set("<a href=\"https://github.com/snyk/snyk-intellij-plugin/releases\">Release Notes</a>")
     }
 
     val createOpenApiSourceJar by registering(Jar::class) {
