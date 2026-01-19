@@ -15,11 +15,11 @@ import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getSnykToolWindowPanel
-import io.snyk.plugin.publishAsync
 import io.snyk.plugin.isNewConfigDialogEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.settings.HTMLSettingsPanel
@@ -127,10 +127,10 @@ class SnykProjectSettingsConfigurable(
 
         val newCliPath = snykSettingsDialog.getCliPath().trim()
         if (settingsStateService.cliPath != newCliPath) {
+            settingsStateService.cliPath = newCliPath
             runBackgroundableTask("Process CLI path changes", project, true) {
                 getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
             }
-            settingsStateService.cliPath = newCliPath
         }
 
         settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
@@ -162,18 +162,18 @@ class SnykProjectSettingsConfigurable(
 
         val newCliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
         if (settingsStateService.cliReleaseChannel != newCliReleaseChannel) {
+            settingsStateService.cliReleaseChannel = newCliReleaseChannel
             runBackgroundableTask("Processing CLI release channel changes", project, true) {
                 handleReleaseChannelChange(project)
             }
-            settingsStateService.cliReleaseChannel = newCliReleaseChannel
         }
 
         val newDisplayIssuesSelection = snykSettingsDialog.getDisplayIssuesSelection()
         if (settingsStateService.issuesToDisplay != newDisplayIssuesSelection) {
+            settingsStateService.issuesToDisplay = newCliReleaseChannel
             runBackgroundableTask("Processing display issue selection changes", project, true) {
                 handleDeltaFindingsChange(project)
             }
-            settingsStateService.issuesToDisplay = newCliReleaseChannel
         }
 
         runBackgroundableTask("Execute post apply settings", project, true) {
