@@ -62,7 +62,6 @@ class SuggestionDescriptionPanel(
             logger.debug("SuggestionDescriptionPanel: background task starting")
             if (project.isDisposed) {
                 logger.debug("SuggestionDescriptionPanel: project disposed, aborting")
-                initialized = true
                 return@executeOnPooledThread
             }
 
@@ -77,7 +76,6 @@ class SuggestionDescriptionPanel(
                 logger.debug("SuggestionDescriptionPanel: invokeLater executing")
                 if (project.isDisposed) {
                     logger.debug("SuggestionDescriptionPanel: project disposed in invokeLater, aborting")
-                    initialized = true
                     return@invokeLater
                 }
                 initializeBrowser(issueDetails)

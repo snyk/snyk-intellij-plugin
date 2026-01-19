@@ -87,8 +87,8 @@ class CliDownloader {
                     // shutdown, so the binary can be updated
                     logger.debug("CliDownloader: shutting down LS for project ${project.name}")
                     languageServerWrapper.shutdown()
-                } catch (_: Exception) {
-                    // do nothing
+                } catch (e: Exception) {
+                    logger.debug("CliDownloader: exception during LS shutdown for ${project.name}, continuing: ${e.message}")
                 }
                 lockedLS.add(languageServerWrapper)
             }

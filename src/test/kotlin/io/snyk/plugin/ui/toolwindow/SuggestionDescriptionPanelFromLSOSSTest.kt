@@ -15,6 +15,7 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.waitForPanelInit
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import snyk.UIComponentFinder.getJLabelByText
@@ -75,16 +76,6 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every {
             issue.additionalData.dataFlow
         } returns emptyList()
-    }
-
-    private fun waitForPanelInit(panel: SuggestionDescriptionPanel, timeoutMs: Long = 5000) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (!panel.isInitialized() && System.currentTimeMillis() < deadline) {
-            PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-            Thread.sleep(10)
-        }
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-        assertTrue("Panel should be initialized within timeout", panel.isInitialized())
     }
 
     fun `test createUI should build panel with HTML from details if allowed`() {

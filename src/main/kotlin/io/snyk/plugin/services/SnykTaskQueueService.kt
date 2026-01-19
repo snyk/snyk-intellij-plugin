@@ -66,8 +66,9 @@ class SnykTaskQueueService(val project: Project) {
             // Verify CLI is actually available before proceeding
             if (!isCliInstalled()) {
                 logger.warn("CLI not available after download attempt, cannot start scan")
-                SnykBalloonNotificationHelper.showError(
-                    "Snyk CLI is not available. Please check your network connection and try again.",
+                getSnykCliDownloaderService().errorHandler.showErrorWithRetryAndContactAction(
+                    "Snyk CLI is not available. The download may have failed or the CLI could not be installed. " +
+                        "Please retry or contact support if the problem persists.",
                     project
                 )
                 return@runInBackground
@@ -149,7 +150,7 @@ class SnykTaskQueueService(val project: Project) {
                     val integrityOk = cliDownloader.verifyCliIntegrity(project)
                     logger.debug("CLI integrity check: integrityOk=$integrityOk")
                     if (force || !integrityOk) {
-                        logger.debug("Triggering download due to force=$force or integrity failure")
+                        logger.debug("Triggering CLI download: forceUpdate=$force, integrityCheckFailed=${!integrityOk}")
                         cliDownloader.downloadLatestRelease(indicator, project)
                     } else {
                         logger.debug("CLI installed and verified, checking for updates")

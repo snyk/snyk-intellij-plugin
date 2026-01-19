@@ -15,6 +15,7 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.waitForPanelInit
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import org.eclipse.lsp4j.Position
@@ -78,16 +79,6 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
         every {
             issue.additionalData.dataFlow
         } returns listOf(DataFlow(0, getTestDataPath(), Range(Position(1, 1), Position(1, 1)), ""))
-    }
-
-    private fun waitForPanelInit(panel: SuggestionDescriptionPanel, timeoutMs: Long = 5000) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (!panel.isInitialized() && System.currentTimeMillis() < deadline) {
-            PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-            Thread.sleep(10)
-        }
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
-        assertTrue("Panel should be initialized within timeout", panel.isInitialized())
     }
 
     fun `test createUI should show nothing if HTML is allowed but JCEF is not supported`() {
