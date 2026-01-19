@@ -1,5 +1,13 @@
 # Snyk Security Changelog
 
+## [2.19.0]
+### Changed
+- Added support for JetBrains 2025.3 IDE releases
+- Added support for improved Settings UI for simpler configuration of Snyk settings (experimental)
+- Added support for risk score filtering (closed beta)
+- Automatic organization configuration is now enabled by default
+- Bump LS protocol version to 22
+
 ## [2.18.1]
 ### Fixed
 - Fixed Agent Fix not applying edits for file paths containing spaces or special characters by properly handling URL-encoded URIs in workspace edit operations
