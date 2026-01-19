@@ -63,17 +63,6 @@ class SnykTaskQueueService(val project: Project) {
             waitUntilCliDownloadedIfNeeded()
 
             it.checkCanceled()
-            // Verify CLI is actually available before proceeding
-            if (!isCliInstalled()) {
-                logger.warn("CLI not available after download attempt, cannot start scan")
-                SnykBalloonNotificationHelper.showError(
-                    "Snyk CLI is not available. Please check your network connection and try again.",
-                    project
-                )
-                return@runInBackground
-            }
-
-            it.checkCanceled()
             it.text = "Snyk: triggering scan in language server"
             LanguageServerWrapper.getInstance(project).sendScanCommand()
         }
@@ -138,27 +127,11 @@ class SnykTaskQueueService(val project: Project) {
                 publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsStarted() }
                 if (project.isDisposed) return@runInBackground
 
-                indicator.checkCanceled()
-                val cliInstalled = isCliInstalled()
-                logger.debug("CLI check: isCliInstalled=$cliInstalled, force=$force")
-                if (!cliInstalled) {
-                    logger.debug("CLI not installed, triggering download")
-                    cliDownloader.downloadLatestRelease(indicator, project)
-                } else {
-                    // Verify CLI integrity before using it
-                    val integrityOk = cliDownloader.verifyCliIntegrity(project)
-                    logger.debug("CLI integrity check: integrityOk=$integrityOk")
-                    if (force || !integrityOk) {
-                        logger.debug("Triggering download due to force=$force or integrity failure")
-                        cliDownloader.downloadLatestRelease(indicator, project)
-                    } else {
-                        logger.debug("CLI installed and verified, checking for updates")
-                        cliDownloader.cliSilentAutoUpdate(indicator, project, force)
-                    }
-                }
-            } finally {
-                logger.debug("CLI check finished, isCliInstalled=${isCliInstalled()}")
-                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
+            indicator.checkCanceled()
+            if (!isCliInstalled()) {
+                cliDownloader.downloadLatestRelease(indicator, project)
+            } else {
+                cliDownloader.cliSilentAutoUpdate(indicator, project, force)
             }
         }
     }

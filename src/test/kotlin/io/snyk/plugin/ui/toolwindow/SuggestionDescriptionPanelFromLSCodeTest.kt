@@ -15,6 +15,7 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.waitForPanelInit
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import org.eclipse.lsp4j.Position
