@@ -361,7 +361,7 @@ class HTMLSettingsPanel(
 
             if (manageBinariesToggled || cliPathChanged) {
                 // Download latest release if necessary, then restart
-                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true, forceRestart = true)
             }
 
             executePostApplySettings(project)

@@ -25,11 +25,6 @@ class LanguageServerRestartListener(val project: Project) : Disposable {
                     super.restartCLI()
                     LanguageServerWrapper.getInstance(project).restart()
                 }
-
-                override fun cliDownloadFinished(succeed: Boolean) {
-                    super.cliDownloadFinished(succeed)
-                    LanguageServerWrapper.getInstance(project).restart()
-                }
             })
     }
 }

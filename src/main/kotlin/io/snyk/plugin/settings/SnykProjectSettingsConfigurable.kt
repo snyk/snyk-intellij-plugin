@@ -129,7 +129,7 @@ class SnykProjectSettingsConfigurable(
         if (settingsStateService.cliPath != newCliPath) {
             settingsStateService.cliPath = newCliPath
             runBackgroundableTask("Process CLI path changes", project, true) {
-                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true, forceRestart = true)
             }
         }
 

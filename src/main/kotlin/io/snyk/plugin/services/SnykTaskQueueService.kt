@@ -115,7 +115,7 @@ class SnykTaskQueueService(val project: Project) {
         }
     }
 
-    fun downloadLatestRelease(force: Boolean = false) {
+    fun downloadLatestRelease(force: Boolean = false, forceRestart: Boolean = false) {
         // abort even before submitting a task
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
         val cliDownloader = getSnykCliDownloaderService()
@@ -131,6 +131,9 @@ class SnykTaskQueueService(val project: Project) {
             cliDownloader.stopCliDownload()
             // Signal completion so waitUntilCliDownloadedIfNeeded() doesn't wait indefinitely
             publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
+            if (forceRestart) {
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { restartCLI() }
+            }
             return
         }
 
