@@ -10,6 +10,7 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.events.SnykSettingsListener
+import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
@@ -192,9 +193,9 @@ class SaveConfigHandler(
 
         config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
 
-        // In all other cases, use the provided cliPath if present
+        // Use the provided cliPath from the config if present, or the default CLI path if not.
         config.cliPath?.let { path ->
-            settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
+            settings.cliPath = path.ifEmpty { getDefaultCliPath() }
         }
 
         config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
