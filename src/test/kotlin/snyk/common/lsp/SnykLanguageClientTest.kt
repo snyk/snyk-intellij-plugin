@@ -45,6 +45,8 @@ import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 
 class SnykLanguageClientTest {
@@ -242,14 +244,26 @@ class SnykLanguageClientTest {
 
     @Test
     fun `showDocument should only be intercepted for Snyk AI Fix URIs`() {
-
         fun checkShowDocument(url: String, expectIntercept: Boolean, expectedNotifications: Int = 0) {
             val mockListener = mockk<SnykShowIssueDetailListener>()
-            every { mockListener.onShowIssueDetail(any()) } returns Unit
-            every { messageBusMock.syncPublisher(SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC) } returns mockListener
+            val latch = if (expectedNotifications > 0) CountDownLatch(expectedNotifications) else null
+
+            every { mockListener.onShowIssueDetail(any()) } answers {
+                latch?.countDown()
+            }
+            every {
+                messageBusMock.syncPublisher(SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)
+            } returns mockListener
 
             if (expectIntercept) {
                 assertEquals(cut.showDocument(ShowDocumentParams(url)).get().isSuccess, expectedNotifications > 0)
+                // Wait for async publishAsync to complete if we expect notifications
+                if (expectedNotifications > 0) {
+                    assertTrue(
+                        "Async publish should complete within timeout",
+                        latch!!.await(2, TimeUnit.SECONDS)
+                    )
+                }
             } else {
                 assertThrows(UnsupportedOperationException::class.java) { cut.showDocument(ShowDocumentParams(url)) }
             }
@@ -258,27 +272,35 @@ class SnykLanguageClientTest {
 
         // HTTP URL should bypass Snyk handler.
         checkShowDocument(
-            "http:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel", expectIntercept = false)
+            "http:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
+            expectIntercept = false
+        )
 
         // Snyk URL with invalid action should bypass Snyk Handler.
         checkShowDocument(
-            "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=eatPizza", expectIntercept = false)
+            "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=eatPizza",
+            expectIntercept = false
+        )
 
         // Snyk URL with non-code product should bypass Snyk handler.
         checkShowDocument(
-            "snyk:///temp/test.txt?product=Snyk+IaC&issueId=12345&action=showInDetailPanel", expectIntercept = false)
+            "snyk:///temp/test.txt?product=Snyk+IaC&issueId=12345&action=showInDetailPanel",
+            expectIntercept = false
+        )
 
         // Snyk URL with no issue ID should be handled but not trigger notifications.
         checkShowDocument(
             "snyk:///temp/test.txt?product=Snyk+Code&action=showInDetailPanel",
             expectIntercept = true,
-            expectedNotifications = 0)
+            expectedNotifications = 0
+        )
 
         // Valid Snyk URL should invoke Snyk handler.
         checkShowDocument(
             "snyk:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
             expectIntercept = true,
-            expectedNotifications = 1)
+            expectedNotifications = 1
+        )
     }
 
     private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
