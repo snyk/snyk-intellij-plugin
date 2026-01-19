@@ -359,12 +359,9 @@ class HTMLSettingsPanel(
             val manageBinariesToggled = settings.manageBinariesAutomatically != previousManageBinariesAutomatically
             val cliPathChanged = settings.cliPath != previousCliPath
 
-            if (manageBinariesToggled && settings.manageBinariesAutomatically) {
-                // Toggled to auto-manage: trigger CLI download, LanguageServerRestartListener will restart LS after download
+            if (manageBinariesToggled || cliPathChanged) {
+                // Download latest release if necessary, then restart
                 getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
-            } else if (manageBinariesToggled || cliPathChanged) {
-                // Toggled to manual or changed CLI path: restart LS immediately
-                LanguageServerWrapper.getInstance(project).restart()
             }
 
             executePostApplySettings(project)

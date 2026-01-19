@@ -124,7 +124,15 @@ class SnykProjectSettingsConfigurable(
         settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()
 
         settingsStateService.manageBinariesAutomatically = snykSettingsDialog.manageBinariesAutomatically()
-        settingsStateService.cliPath = snykSettingsDialog.getCliPath().trim()
+
+        val newCliPath = snykSettingsDialog.getCliPath().trim()
+        if (settingsStateService.cliPath != newCliPath) {
+            runBackgroundableTask("Process CLI path changes", project, true) {
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
+            }
+            settingsStateService.cliPath = newCliPath
+        }
+
         settingsStateService.cliBaseDownloadURL = snykSettingsDialog.getCliBaseDownloadURL().trim()
 
         settingsStateService.scanOnSave = snykSettingsDialog.isScanOnSaveEnabled()
@@ -152,17 +160,23 @@ class SnykProjectSettingsConfigurable(
             )
         }
 
-        runBackgroundableTask("Processing config changes", project, true) {
-            if (snykSettingsDialog.getCliReleaseChannel().trim() != pluginSettings().cliReleaseChannel) {
-                settingsStateService.cliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+        val newCliReleaseChannel = snykSettingsDialog.getCliReleaseChannel().trim()
+        if (settingsStateService.cliReleaseChannel != newCliReleaseChannel) {
+            runBackgroundableTask("Processing CLI release channel changes", project, true) {
                 handleReleaseChannelChange(project)
             }
+            settingsStateService.cliReleaseChannel = newCliReleaseChannel
+        }
 
-            if (snykSettingsDialog.getDisplayIssuesSelection() != pluginSettings().issuesToDisplay) {
-                settingsStateService.issuesToDisplay = snykSettingsDialog.getDisplayIssuesSelection()
+        val newDisplayIssuesSelection = snykSettingsDialog.getDisplayIssuesSelection()
+        if (settingsStateService.issuesToDisplay != newDisplayIssuesSelection) {
+            runBackgroundableTask("Processing display issue selection changes", project, true) {
                 handleDeltaFindingsChange(project)
             }
+            settingsStateService.issuesToDisplay = newCliReleaseChannel
+        }
 
+        runBackgroundableTask("Execute post apply settings", project, true) {
             executePostApplySettings(project)
         }
 

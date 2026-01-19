@@ -190,22 +190,13 @@ class SaveConfigHandler(
     private fun applyGlobalSettings(config: SaveConfigRequest, settings: SnykApplicationSettingsStateService) {
         val isFallback = config.isFallbackForm == true
 
-        // CLI Settings - always persist for both fallback and full forms
-        val defaultCliPath = getPluginPath() + separator + Platform.current().snykWrapperFileName
-        val wasManagingAutomatically = settings.manageBinariesAutomatically
-
         config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
 
-        // Handle cliPath based on manageBinariesAutomatically state
-        if (config.manageBinariesAutomatically == true && !wasManagingAutomatically) {
-            // Toggling from manual to auto-managed: reset to default path
-            settings.cliPath = defaultCliPath
-        } else {
-            // In all other cases, use the provided cliPath if present
-            config.cliPath?.let { path ->
-                settings.cliPath = path.ifEmpty { settings.cliPath }
-            }
+        // In all other cases, use the provided cliPath if present
+        config.cliPath?.let { path ->
+            settings.cliPath = path.ifEmpty { getPluginPath() + separator + Platform.current().snykWrapperFileName }
         }
+
         config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
         config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
         config.insecure?.let { settings.ignoreUnknownCA = it }
