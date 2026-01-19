@@ -6,11 +6,6 @@
 - Ensure the Snyk Language Server Protocol version is correct in the plugin. 
   - `requiredLsProtocolVersion`  in  `kotlin/io/snyk/plugin/services/SnykApplicationSettingsStateService.kt`  
 
-**Update Changelog**
-
-- In the plugin/extension repo, make sure the the Changelog is updated with the correct version to be released and the correct changes in the release.
-  - Make sure Early Access are specified correctly for new feature.
-
 **Testing**
 
 - Ensure all tests for the latest commit have passed before proceeding with the release.
