@@ -23,8 +23,8 @@ class LanguageServerRestartListener(val project: Project) : Disposable {
             .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
                 override fun checkCliExistsFinished() {
                     super.checkCliExistsFinished()
-                        LanguageServerWrapper.getInstance(project).restart()
-                    }
+                    LanguageServerWrapper.getInstance(project).restart()
+                }
             })
     }
 }
