@@ -129,7 +129,7 @@ class SnykProjectSettingsConfigurable(
         if (settingsStateService.cliPath != newCliPath) {
             settingsStateService.cliPath = newCliPath
             runBackgroundableTask("Process CLI path changes", project, true) {
-                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true, forceRestart = true)
+                getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
             }
         }
 
@@ -261,8 +261,11 @@ fun executePostApplySettings(project: Project) {
 /**
  * Handles release channel change by prompting user to download new CLI.
  * Shared between old dialog and new HTML settings panel.
+ * Only prompts if manageBinariesAutomatically is enabled, since manual mode users manage their own CLI.
  */
 fun handleReleaseChannelChange(project: Project) {
+    if (!pluginSettings().manageBinariesAutomatically) return
+
     ApplicationManager.getApplication().invokeLater {
         @Suppress("CanBeVal")
         var notification: Notification? = null
