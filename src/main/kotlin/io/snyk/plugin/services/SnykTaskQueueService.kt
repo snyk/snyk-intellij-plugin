@@ -9,9 +9,10 @@ import com.intellij.openapi.project.Project
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykCliDownloaderService
-import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
+import io.snyk.plugin.publishAsyncApp
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import org.jetbrains.concurrency.runAsync
@@ -29,12 +30,6 @@ class SnykTaskQueueService(val project: Project) {
     private companion object {
         private val WAIT_FOR_CLI_DOWNLOAD_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(20)
     }
-
-    private val cliDownloadPublisher
-        get() = ApplicationManager.getApplication().messageBus.syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
-
-    private val taskQueuePublisher
-        get() = getSyncPublisher(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC)
 
     fun connectProjectToLanguageServer(project: Project) {
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
@@ -68,14 +63,27 @@ class SnykTaskQueueService(val project: Project) {
             waitUntilCliDownloadedIfNeeded()
 
             it.checkCanceled()
+            // Verify CLI is actually available before proceeding
+            if (!isCliInstalled()) {
+                logger.warn("CLI not available after download attempt, cannot start scan")
+                getSnykCliDownloaderService().errorHandler.showErrorWithRetryAndContactAction(
+                    "Snyk CLI is not available. The download may have failed or the CLI could not be installed. " +
+                        "Please retry or contact support if the problem persists.",
+                    project
+                )
+                return@runInBackground
+            }
+
+            it.checkCanceled()
             it.text = "Snyk: triggering scan in language server"
             LanguageServerWrapper.getInstance(project).sendScanCommand()
         }
     }
 
     fun waitUntilCliDownloadedIfNeeded() {
-        if (!pluginSettings().manageBinariesAutomatically) return
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
+        // Don't skip when manageBinariesAutomatically is false - downloadLatestRelease()
+        // handles that case and shows an appropriate notification if CLI is missing
 
         val completed = CompletableFuture<Unit>()
         val connection = ApplicationManager.getApplication().messageBus.connect(project)
@@ -120,32 +128,51 @@ class SnykTaskQueueService(val project: Project) {
             }
             // no need to cancel the indicator here, as isCliInstalled() will return false
             cliDownloader.stopCliDownload()
+            // Signal completion so waitUntilCliDownloadedIfNeeded() doesn't wait indefinitely
+            publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
             return
         }
 
         runInBackground("Snyk: Check CLI presence", project, true) { indicator ->
-            indicator.checkCanceled()
-            cliDownloadPublisher.checkCliExistsStarted()
-            if (project.isDisposed) return@runInBackground
+            try {
+                indicator.checkCanceled()
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsStarted() }
+                if (project.isDisposed) return@runInBackground
 
-            indicator.checkCanceled()
-            if (!isCliInstalled()) {
-                cliDownloader.downloadLatestRelease(indicator, project)
-            } else {
-                cliDownloader.cliSilentAutoUpdate(indicator, project, force)
+                indicator.checkCanceled()
+                val cliInstalled = isCliInstalled()
+                logger.debug("CLI check: isCliInstalled=$cliInstalled, force=$force")
+                if (!cliInstalled) {
+                    logger.debug("CLI not installed, triggering download")
+                    cliDownloader.downloadLatestRelease(indicator, project)
+                } else {
+                    // Verify CLI integrity before using it
+                    val integrityOk = cliDownloader.verifyCliIntegrity(project)
+                    logger.debug("CLI integrity check: integrityOk=$integrityOk")
+                    if (force || !integrityOk) {
+                        logger.debug("Triggering CLI download: forceUpdate=$force, integrityCheckFailed=${!integrityOk}")
+                        cliDownloader.downloadLatestRelease(indicator, project)
+                    } else {
+                        logger.debug("CLI installed and verified, checking for updates")
+                        cliDownloader.cliSilentAutoUpdate(indicator, project, force)
+                    }
+                }
+            } finally {
+                logger.debug("CLI check finished, isCliInstalled=${isCliInstalled()}")
+                publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { checkCliExistsFinished() }
             }
-            cliDownloadPublisher.checkCliExistsFinished()
         }
     }
 
     fun stopScan() {
+        logger.debug("stopScan called")
         val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
         if (languageServerWrapper.isInitialized) {
             languageServerWrapper.languageClient.progressManager.cancelProgresses()
             ScanState.scanInProgress.clear()
         }
-        taskQueuePublisher?.stopped()
+        publishAsync(project, SnykTaskQueueListener.TASK_QUEUE_TOPIC) { stopped() }
     }
 
 }

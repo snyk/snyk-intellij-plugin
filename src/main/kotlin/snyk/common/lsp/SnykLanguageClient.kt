@@ -23,6 +23,7 @@ import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -95,17 +96,20 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
         val filePath = diagnosticsParams.uri
 
-        try {
-            getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.let {
-                updateCache(
-                    project,
-                    filePath,
-                    diagnosticsParams,
-                    it
-                )
+        // Run async to avoid blocking the LSP message thread
+        org.jetbrains.concurrency.runAsync {
+            try {
+                getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.let {
+                    updateCache(
+                        project,
+                        filePath,
+                        diagnosticsParams,
+                        it
+                    )
+                }
+            } catch (e: Exception) {
+                logger.error("Error publishing the new diagnostics", e)
             }
-        } catch (e: Exception) {
-            logger.error("Error publishing the new diagnostics", e)
         }
     }
 
@@ -202,6 +206,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             }
 
             try {
+                // Already in runAsync, so just use sync publisher here
                 getSyncPublisher(project, SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
                     ?.folderConfigsChanged(folderConfigs.isNotEmpty())
             } catch (e: Exception) {
@@ -213,11 +218,14 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     @JsonNotification(value = "$/snyk.scan")
     fun snykScan(snykScan: SnykScanParams) {
         if (disposed) return
-        try {
-            getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
-                ?.let { processSnykScan(snykScan, it) }
-        } catch (e: Exception) {
-            logger.error("Error processing snyk scan", e)
+        // Run async to avoid blocking the LSP message thread
+        org.jetbrains.concurrency.runAsync {
+            try {
+                getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)
+                    ?.let { processSnykScan(snykScan, it) }
+            } catch (e: Exception) {
+                logger.error("Error processing snyk scan", e)
+            }
         }
     }
 
@@ -269,7 +277,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     @JsonNotification(value = "$/snyk.scanSummary")
     fun snykScanSummary(summaryParams: SnykScanSummaryParams) {
         if (disposed) return
-        getSyncPublisher(project, SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC)?.onSummaryReceived(summaryParams)
+        publishAsync(project, SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC) { onSummaryReceived(summaryParams) }
     }
 
     @JsonNotification(value = "$/snyk.hasAuthenticated")
@@ -301,7 +309,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         logger.info("force-saved settings")
 
         // Notify listeners that settings have changed (including token update)
-        getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)?.settingsChanged()
+        publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
 
         if (oldToken.isBlank() && !param.token.isNullOrBlank() && pluginSettings().scanOnSave) {
             wrapper.sendScanCommand()
@@ -437,9 +445,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             uri.queryParameters["issueId"]?.let { issueId ->
                 val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
                 logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
-                getSyncPublisher(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)?.onShowIssueDetail(
-                    aiFixParams
-                )
+                publishAsync(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC) {
+                    onShowIssueDetail(aiFixParams)
+                }
                 success = true
             } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
             CompletableFuture.completedFuture(ShowDocumentResult(success))

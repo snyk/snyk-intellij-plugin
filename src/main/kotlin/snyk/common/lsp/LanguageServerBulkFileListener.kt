@@ -6,7 +6,6 @@ import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.openapi.vfs.readText
 import com.intellij.util.TestRuntimeUtil
 import io.snyk.plugin.SnykBulkFileListener
@@ -114,11 +113,9 @@ class LanguageServerBulkFileListener(project: Project) : SnykBulkFileListener(pr
             iacCache.remove(it)
         }
 
-        try {
-            VirtualFileManager.getInstance().asyncRefresh()
-        } catch (e: Exception) {
-            // VFS refresh can fail on edge cases (remote files, deleted files, etc.)
-        }
+        // Note: Avoid VirtualFileManager.asyncRefresh() as it refreshes ALL files including
+        // remote/HTTP files, which can cause NPE in RemoteFileInfoImpl when localFile is null.
+        // The DaemonCodeAnalyzer restart below handles annotation updates for open files.
         invokeLater {
             if (project.isDisposed || SnykPluginDisposable.getInstance(project).isDisposed()) return@invokeLater
             DaemonCodeAnalyzer.getInstance(project).restart()

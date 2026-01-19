@@ -6,7 +6,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
 import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.showSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -66,7 +66,7 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
                 if (!state && isLastScanTypeDisabling(e)) return
 
                 setResultsTreeFiltering(state)
-                getSyncPublisher(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC)?.filtersChanged()
+                publishAsync(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
             }
         }
     }

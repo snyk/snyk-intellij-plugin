@@ -7,3 +7,19 @@ repos:
       - id: ggshield
         language_version: python3
         stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: verifyPlugin
+        name: verifyPlugin
+        entry: ./gradlew verifyPlugin
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+      - id: test
+        name: test
+        entry: ./gradlew test -x detekt
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
+

@@ -94,7 +94,11 @@ fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateSer
 
 fun getCliFile() = File(pluginSettings().cliPath)
 
-fun isCliInstalled(): Boolean = ApplicationManager.getApplication().isUnitTestMode || getCliFile().exists()
+fun isCliInstalled(): Boolean {
+    if (ApplicationManager.getApplication().isUnitTestMode) return true
+    val cliFile = getCliFile()
+    return cliFile.exists() && cliFile.canExecute()
+}
 
 fun pluginSettings(): SnykApplicationSettingsStateService = ApplicationManager.getApplication().service()
 
@@ -121,6 +125,51 @@ fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
     val messageBus = project.messageBus
     if (messageBus.isDisposed) return null
     return messageBus.syncPublisher(topic)
+}
+
+/**
+ * Publishes an event asynchronously to avoid blocking the calling thread.
+ * This prevents potential deadlocks when listeners try to access EDT while the caller holds locks.
+ *
+ * @param project The project context
+ * @param topic The message bus topic
+ * @param action The action to perform on the publisher
+ */
+fun <L : Any> publishAsync(project: Project, topic: Topic<L>, action: L.() -> Unit) {
+    org.jetbrains.concurrency.runAsync {
+        try {
+            if (!project.isDisposed) {
+                val messageBus = project.messageBus
+                if (!messageBus.isDisposed) {
+                    messageBus.syncPublisher(topic).action()
+                }
+            }
+        } catch (e: Exception) {
+            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+                .warn("Error publishing async event to topic $topic", e)
+        }
+    }
+}
+
+/**
+ * Publishes an event asynchronously on the application message bus.
+ * This prevents potential deadlocks when listeners try to access EDT while the caller holds locks.
+ *
+ * @param topic The message bus topic
+ * @param action The action to perform on the publisher
+ */
+fun <L : Any> publishAsyncApp(topic: Topic<L>, action: L.() -> Unit) {
+    org.jetbrains.concurrency.runAsync {
+        try {
+            val app = ApplicationManager.getApplication()
+            if (!app.isDisposed) {
+                app.messageBus.syncPublisher(topic).action()
+            }
+        } catch (e: Exception) {
+            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+                .warn("Error publishing async app event to topic $topic", e)
+        }
+    }
 }
 
 val <T> List<T>.head: T
@@ -257,12 +306,9 @@ private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
 fun refreshAnnotationsForOpenFiles(project: Project) {
     runAsync {
         if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
-        try {
-            VirtualFileManager.getInstance().asyncRefresh()
-        } catch (e: Exception) {
-            // VFS refresh can fail on edge cases (remote files, deleted files, etc.)
-            Logger.getInstance("SnykUtils").debug("VFS async refresh failed", e)
-        }
+        // Note: Avoid VirtualFileManager.asyncRefresh() as it refreshes ALL files including
+        // remote/HTTP files, which can cause NPE in RemoteFileInfoImpl when localFile is null.
+        // Instead, we only refresh specific open files below.
 
         val openFiles = FileEditorManager.getInstance(project).openFiles
 
@@ -498,7 +544,7 @@ fun VirtualFile.isInContent(project: Project): Boolean {
         return if (project.isDisposed) false
         else ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
     }
-    
+
     // Not on EDT and no read access - this shouldn't block EDT
     return app.runReadAction<Boolean> {
         if (project.isDisposed) false

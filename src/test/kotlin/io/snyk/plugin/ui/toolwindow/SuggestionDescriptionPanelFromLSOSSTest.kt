@@ -5,6 +5,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
@@ -14,6 +15,7 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
+import io.snyk.plugin.waitForPanelInit
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import snyk.UIComponentFinder.getJLabelByText
@@ -63,6 +65,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.cvssV3() } returns "cvssScore"
         every { issue.cvssScore() } returns "cvssScore"
         every { issue.id() } returns "id"
+        every { issue.id } returns "test-issue-id"
         every { issue.ruleId() } returns "ruleId"
         every { issue.filterableIssueType } returns ScanIssue.OPEN_SOURCE
         every { issue.additionalData.name } returns "Test name"
@@ -86,6 +89,7 @@ class SuggestionDescriptionPanelFromLSOSSTest : BasePlatformTestCase() {
         every { issue.details(any()) } returns "<html>HTML message</html>"
 
         cut = SuggestionDescriptionPanel(project, issue)
+        waitForPanelInit(cut)
 
         val actual = getJLabelByText(cut, "<html>Test message</html>")
         assertNull(actual)

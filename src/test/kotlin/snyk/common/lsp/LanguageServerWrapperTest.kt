@@ -446,6 +446,24 @@ class LanguageServerWrapperTest {
         assertEquals(expectedTrustedFolders, actual.trustedFolders)
     }
 
+    @Test
+    fun `getSettings should include manageBinariesAutomatically when true`() {
+        settings.manageBinariesAutomatically = true
+
+        val actual = cut.getSettings()
+
+        assertEquals("true", actual.manageBinariesAutomatically)
+    }
+
+    @Test
+    fun `getSettings should include manageBinariesAutomatically when false`() {
+        settings.manageBinariesAutomatically = false
+
+        val actual = cut.getSettings()
+
+        assertEquals("false", actual.manageBinariesAutomatically)
+    }
+
     private fun simulateRunningLS() {
         cut.languageClient = mockk(relaxed = true)
         val processMock = mockk<Process>(relaxed = true)
