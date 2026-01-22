@@ -16,7 +16,8 @@ object RangeConverter {
     ): TextRange? {
         return try {
             convertToTextRangeInternal(document, range)
-        } catch (_: IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to convert range to text range: $range", e)
             null
         }
     }
