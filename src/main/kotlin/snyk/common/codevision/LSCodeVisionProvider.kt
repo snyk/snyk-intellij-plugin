@@ -24,6 +24,7 @@ import org.eclipse.lsp4j.CodeLensParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.RangeConverter
 import java.awt.event.MouseEvent
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -80,10 +81,7 @@ class LSCodeVisionProvider : CodeVisionProvider<Unit>, CodeVisionGroupSettingPro
         }
 
         codeLenses.forEach { codeLens ->
-            val range = TextRange(
-                document.getLineStartOffset(codeLens.range.start.line) + codeLens.range.start.character,
-                document.getLineEndOffset(codeLens.range.end.line) + codeLens.range.end.character
-            )
+            val range = RangeConverter.convertToTextRange(document, codeLens.range) ?: return@forEach
 
             val entry = ClickableTextCodeVisionEntry(
                 text = codeLens.command.title,
