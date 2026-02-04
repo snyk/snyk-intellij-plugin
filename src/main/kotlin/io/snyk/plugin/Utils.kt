@@ -230,7 +230,7 @@ fun isScanRunning(project: Project): Boolean =
 fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
 // check sastEnablement in a loop with rising timeout
-private val alarm = Alarm()
+private val alarm by lazy { Alarm() }
 
 fun controlExternalProcessWithProgressIndicator(
     indicator: ProgressIndicator,
