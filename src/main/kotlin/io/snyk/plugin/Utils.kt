@@ -45,6 +45,7 @@ import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowFactory
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import org.apache.commons.lang3.SystemUtils
@@ -230,7 +231,7 @@ fun isScanRunning(project: Project): Boolean =
 fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
 // check sastEnablement in a loop with rising timeout
-private val alarm = Alarm()
+private val alarm by lazy { Alarm(SnykPluginDisposable.getInstance()) }
 
 fun controlExternalProcessWithProgressIndicator(
     indicator: ProgressIndicator,
