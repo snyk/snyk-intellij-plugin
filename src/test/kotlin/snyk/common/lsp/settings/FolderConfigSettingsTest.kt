@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.junit.After
@@ -697,5 +698,347 @@ class FolderConfigSettingsTest {
 
         val result2 = settings.getPreferredOrg(projectMock)
         assertEquals("Should return empty string after clearing", "", result2)
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs removes nested folder configs with same values silently`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        // Workspace folder is the parent
+        val workspacePath = "/test/project"
+        val nestedPath = "/test/project/submodule"
+        val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath = Paths.get(nestedPath).normalize().toAbsolutePath().toString()
+
+        // Add both configs with SAME values (nested has default/same values as parent)
+        val workspaceConfig = FolderConfig(folderPath = workspacePath, baseBranch = "main")
+        val nestedConfig = FolderConfig(folderPath = nestedPath, baseBranch = "main") // Same as parent
+        settings.addFolderConfig(workspaceConfig)
+        settings.addFolderConfig(nestedConfig)
+
+        assertEquals("Should have 2 configs before migration", 2, settings.getAll().size)
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedWorkspacePath.fromPathToUriString()
+            name = "project"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+
+        // Run migration - should remove silently without prompting (same values)
+        val removedCount = settings.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should have removed 1 nested config", 1, removedCount)
+        assertEquals("Should have 1 config after migration", 1, settings.getAll().size)
+        assertTrue("Workspace folder config should remain", settings.getAll().containsKey(normalizedWorkspacePath))
+        assertFalse("Nested folder config should be removed", settings.getAll().containsKey(normalizedNestedPath))
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs keeps non-nested configs`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        // Two separate workspace folders (not nested)
+        val path1 = "/test/project1"
+        val path2 = "/test/project2"
+        val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+        val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
+
+        val config1 = FolderConfig(folderPath = path1, baseBranch = "main")
+        val config2 = FolderConfig(folderPath = path2, baseBranch = "develop")
+        settings.addFolderConfig(config1)
+        settings.addFolderConfig(config2)
+
+        assertEquals("Should have 2 configs before migration", 2, settings.getAll().size)
+
+        val workspaceFolder1 = WorkspaceFolder().apply {
+            uri = normalizedPath1.fromPathToUriString()
+            name = "project1"
+        }
+        val workspaceFolder2 = WorkspaceFolder().apply {
+            uri = normalizedPath2.fromPathToUriString()
+            name = "project2"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder1, workspaceFolder2)
+
+        // Run migration
+        val removedCount = settings.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should not remove any configs", 0, removedCount)
+        assertEquals("Should still have 2 configs after migration", 2, settings.getAll().size)
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs does nothing when no workspace folders`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        val path = "/test/project"
+        settings.addFolderConfig(FolderConfig(folderPath = path, baseBranch = "main"))
+
+        assertEquals("Should have 1 config before migration", 1, settings.getAll().size)
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns emptySet()
+
+        val removedCount = settings.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should not remove any configs when no workspace folders", 0, removedCount)
+        assertEquals("Should still have 1 config after migration", 1, settings.getAll().size)
+    }
+
+    @Test
+    fun `getAllForProject returns only workspace folder configs not nested`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        val workspacePath = "/test/project"
+        val nestedPath = "/test/project/submodule"
+        val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+
+        // Add both configs
+        settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath, baseBranch = "develop"))
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedWorkspacePath.fromPathToUriString()
+            name = "project"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
+
+        // getAllForProject should only return workspace folder configs (not nested)
+        val result = settings.getAllForProject(projectMock)
+
+        assertEquals("Should only return 1 config (workspace folder only)", 1, result.size)
+        assertEquals("Should return workspace folder config", normalizedWorkspacePath, result[0].folderPath)
+    }
+
+    @Test
+    fun `hasNonDefaultValues returns true when config differs from parent`() {
+        val parentConfig = FolderConfig(folderPath = "/parent", baseBranch = "main")
+        val childConfig = FolderConfig(folderPath = "/child", baseBranch = "develop")
+
+        assertTrue("Should detect different baseBranch", settings.hasNonDefaultValues(childConfig, parentConfig))
+    }
+
+    @Test
+    fun `hasNonDefaultValues returns false when config matches parent`() {
+        val parentConfig = FolderConfig(folderPath = "/parent", baseBranch = "main")
+        val childConfig = FolderConfig(folderPath = "/child", baseBranch = "main")
+
+        assertFalse("Should not detect differences when configs match", settings.hasNonDefaultValues(childConfig, parentConfig))
+    }
+
+    @Test
+    fun `hasConflictingConfigs returns true when configs differ`() {
+        val config1 = FolderConfig(folderPath = "/path1", baseBranch = "main")
+        val config2 = FolderConfig(folderPath = "/path2", baseBranch = "develop")
+
+        assertTrue("Should detect conflicting configs", settings.hasConflictingConfigs(listOf(config1, config2)))
+    }
+
+    @Test
+    fun `hasConflictingConfigs returns false when configs match`() {
+        val config1 = FolderConfig(folderPath = "/path1", baseBranch = "main")
+        val config2 = FolderConfig(folderPath = "/path2", baseBranch = "main")
+
+        assertFalse("Should not detect conflicts when configs match", settings.hasConflictingConfigs(listOf(config1, config2)))
+    }
+
+    @Test
+    fun `mergeConfigs copies sub-config values into parent`() {
+        val parentConfig = FolderConfig(
+            folderPath = "/parent",
+            baseBranch = "main",
+            referenceFolderPath = "/old/ref",
+            additionalParameters = listOf("--old")
+        )
+        val subConfig = FolderConfig(
+            folderPath = "/child",
+            baseBranch = "develop",
+            referenceFolderPath = "/new/ref",
+            additionalParameters = listOf("--new")
+        )
+
+        val merged = settings.mergeConfigs(parentConfig, subConfig)
+
+        assertEquals("Should keep parent folderPath", "/parent", merged.folderPath)
+        assertEquals("Should use sub-config baseBranch", "develop", merged.baseBranch)
+        assertEquals("Should use sub-config referenceFolderPath", "/new/ref", merged.referenceFolderPath)
+        assertEquals("Should use sub-config additionalParameters", listOf("--new"), merged.additionalParameters)
+    }
+
+    @Test
+    fun `isPathNestedUnder correctly identifies nested paths`() {
+        assertTrue(settings.isPathNestedUnder("/parent/child", "/parent"))
+        assertTrue(settings.isPathNestedUnder("/parent/child/deep", "/parent"))
+        assertFalse(settings.isPathNestedUnder("/parent", "/parent"))
+        assertFalse(settings.isPathNestedUnder("/other/path", "/parent"))
+        assertFalse(settings.isPathNestedUnder("/parentExtra/child", "/parent"))
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs with custom sub-config merges when user chooses merge`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        val workspacePath = "/test/project"
+        val nestedPath = "/test/project/submodule"
+        val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath = Paths.get(nestedPath).normalize().toAbsolutePath().toString()
+
+        // Parent and nested have DIFFERENT values
+        settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath, baseBranch = "develop", referenceFolderPath = "/custom/ref"))
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedWorkspacePath.fromPathToUriString()
+            name = "project"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+
+        // Use spyk to mock the prompt method
+        val settingsSpy = spyk(settings)
+        every { settingsSpy.promptForSingleSubConfigMigration(any(), any(), any()) } returns FolderConfigSettings.MigrationChoice.MERGE_INTO_PARENT
+
+        val removedCount = settingsSpy.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should have removed 1 nested config", 1, removedCount)
+        assertEquals("Should have 1 config after migration", 1, settingsSpy.getAll().size)
+
+        // Verify parent was updated with sub-config values
+        val parentConfig = settingsSpy.getAll()[normalizedWorkspacePath]
+        assertEquals("Parent should have merged baseBranch", "develop", parentConfig?.baseBranch)
+        assertEquals("Parent should have merged referenceFolderPath", "/custom/ref", parentConfig?.referenceFolderPath)
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs with custom sub-config discards when user chooses discard`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        val workspacePath = "/test/project"
+        val nestedPath = "/test/project/submodule"
+        val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath = Paths.get(nestedPath).normalize().toAbsolutePath().toString()
+
+        // Parent and nested have DIFFERENT values
+        settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath, baseBranch = "develop"))
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedWorkspacePath.fromPathToUriString()
+            name = "project"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+
+        // Use spyk to mock the prompt method
+        val settingsSpy = spyk(settings)
+        every { settingsSpy.promptForSingleSubConfigMigration(any(), any(), any()) } returns FolderConfigSettings.MigrationChoice.USE_PARENT_VALUES
+
+        val removedCount = settingsSpy.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should have removed 1 nested config", 1, removedCount)
+        assertEquals("Should have 1 config after migration", 1, settingsSpy.getAll().size)
+
+        // Verify parent was NOT updated
+        val parentConfig = settingsSpy.getAll()[normalizedWorkspacePath]
+        assertEquals("Parent should keep original baseBranch", "main", parentConfig?.baseBranch)
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs with multiple conflicting sub-configs removes parent when user chooses`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        val workspacePath = "/test/project"
+        val nestedPath1 = "/test/project/sub1"
+        val nestedPath2 = "/test/project/sub2"
+        val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath1 = Paths.get(nestedPath1).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath2 = Paths.get(nestedPath2).normalize().toAbsolutePath().toString()
+
+        // Parent and two nested configs with DIFFERENT values from each other
+        settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath1, baseBranch = "develop"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath2, baseBranch = "feature"))
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedWorkspacePath.fromPathToUriString()
+            name = "project"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+
+        // Use spyk to mock the prompt method
+        val settingsSpy = spyk(settings)
+        every { settingsSpy.promptForMultipleConflictingMigration(any(), any(), any()) } returns FolderConfigSettings.MigrationChoice.REMOVE_PARENT
+
+        val removedCount = settingsSpy.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should have removed 1 config (the parent)", 1, removedCount)
+        assertEquals("Should have 2 configs after migration (the sub-configs)", 2, settingsSpy.getAll().size)
+        assertFalse("Parent config should be removed", settingsSpy.getAll().containsKey(normalizedWorkspacePath))
+        assertTrue("Sub-config 1 should remain", settingsSpy.getAll().containsKey(normalizedNestedPath1))
+        assertTrue("Sub-config 2 should remain", settingsSpy.getAll().containsKey(normalizedNestedPath2))
+    }
+
+    @Test
+    fun `migrateNestedFolderConfigs with multiple conflicting sub-configs keeps all when user chooses`() {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        val workspacePath = "/test/project"
+        val nestedPath1 = "/test/project/sub1"
+        val nestedPath2 = "/test/project/sub2"
+        val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath1 = Paths.get(nestedPath1).normalize().toAbsolutePath().toString()
+        val normalizedNestedPath2 = Paths.get(nestedPath2).normalize().toAbsolutePath().toString()
+
+        // Parent and two nested configs with DIFFERENT values from each other
+        settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath1, baseBranch = "develop"))
+        settings.addFolderConfig(FolderConfig(folderPath = nestedPath2, baseBranch = "feature"))
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedWorkspacePath.fromPathToUriString()
+            name = "project"
+        }
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+
+        // Use spyk to mock the prompt method
+        val settingsSpy = spyk(settings)
+        every { settingsSpy.promptForMultipleConflictingMigration(any(), any(), any()) } returns FolderConfigSettings.MigrationChoice.KEEP_ALL
+
+        val removedCount = settingsSpy.migrateNestedFolderConfigs(projectMock)
+
+        assertEquals("Should not have removed any configs", 0, removedCount)
+        assertEquals("Should have 3 configs after migration", 3, settingsSpy.getAll().size)
+        assertTrue("Parent config should remain", settingsSpy.getAll().containsKey(normalizedWorkspacePath))
+        assertTrue("Sub-config 1 should remain", settingsSpy.getAll().containsKey(normalizedNestedPath1))
+        assertTrue("Sub-config 2 should remain", settingsSpy.getAll().containsKey(normalizedNestedPath2))
     }
 }

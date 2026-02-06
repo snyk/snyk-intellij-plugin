@@ -6,7 +6,10 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
 import io.mockk.CapturingSlot
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.fromPathToUriString
@@ -26,11 +29,16 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     private val lsMock: LanguageServer = mockk(relaxed = true)
     private lateinit var folderConfig: FolderConfig
     private lateinit var cut: ReferenceChooserDialog
+    private lateinit var workspaceFolder: WorkspaceFolder
+    private lateinit var languageServerWrapper: LanguageServerWrapper
 
     override fun setUp() {
         super.setUp()
         unmockkAll()
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+
+        // Get the real instance and wrap it with spyk to mock specific methods
+        val realWrapper = LanguageServerWrapper.getInstance(project)
+        languageServerWrapper = spyk(realWrapper)
         languageServerWrapper.isInitialized = true
         languageServerWrapper.languageServer = lsMock
 
@@ -42,14 +50,23 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
             folderConfig = FolderConfig(absolutePathString, baseBranch = "testBranch", localBranches = listOf("main", "dev"))
             service<FolderConfigSettings>().addFolderConfig(folderConfig)
 
-            languageServerWrapper.configuredWorkspaceFolders.add(
-                WorkspaceFolder(
-                    absolutePathString.fromPathToUriString(),
-                    "test"
-                )
+            // Create workspace folder and add to configured folders
+            workspaceFolder = WorkspaceFolder(
+                absolutePathString.fromPathToUriString(),
+                "test"
             )
+            languageServerWrapper.configuredWorkspaceFolders.add(workspaceFolder)
             languageServerWrapper.updateFolderConfigRefresh(absolutePathString, true)
         }
+
+        // Mock getInstance to return our spyk wrapper
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(project) } returns languageServerWrapper
+
+        // Mock getWorkspaceFoldersFromRoots to return the same WorkspaceFolder objects
+        // that are in configuredWorkspaceFolders, ensuring getFolderConfigs filter works
+        every { languageServerWrapper.getWorkspaceFoldersFromRoots(any(), any()) } returns setOf(workspaceFolder)
+
         cut = ReferenceChooserDialog(project)
 
         // Initialize the dialog's internal state to match the test setup
