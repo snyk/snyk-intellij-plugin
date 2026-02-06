@@ -6,6 +6,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.roots.ProjectRootManager
+import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -13,6 +14,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
+import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -462,6 +464,34 @@ class LanguageServerWrapperTest {
         val actual = cut.getSettings()
 
         assertEquals("false", actual.manageBinariesAutomatically)
+    }
+
+    @Test
+    fun `getWorkspaceFoldersFromRoots should return URIs without trailing slashes`() {
+        // Create a real temporary directory to test with
+        val tempDir = java.nio.file.Files.createTempDirectory("snyk-test-workspace")
+        try {
+            val pathString = tempDir.toAbsolutePath().toString()
+            val virtualFile = mockk<VirtualFile>()
+            every { virtualFile.path } returns pathString
+            every { virtualFile.name } returns "snyk-test-workspace"
+            every { virtualFile.isValid } returns true
+            every { virtualFile.toNioPath() } returns tempDir
+
+            // Mock UtilsKt extension and project methods
+            every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
+            every { projectMock.basePath } returns pathString
+            every { trustServiceMock.isPathTrusted(tempDir) } returns true
+
+            val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+
+            assertEquals(1, workspaceFolders.size)
+            val uri = workspaceFolders.first().uri
+            assertFalse("URI should not end with slash: $uri", uri.endsWith("/"))
+            assertTrue("URI should start with file:", uri.startsWith("file:"))
+        } finally {
+            java.nio.file.Files.deleteIfExists(tempDir)
+        }
     }
 
     private fun simulateRunningLS() {

@@ -57,6 +57,7 @@ import snyk.common.isSnykTenant
 import snyk.common.lsp.ScanInProgressKey
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
+import snyk.common.removeSuffix
 import java.io.File
 import java.io.File.separator
 import java.io.FileNotFoundException
@@ -470,7 +471,7 @@ fun String.toVirtualFile(): VirtualFile {
             throw FileNotFoundException("Remote files not supported: $this")
         }
         !this.startsWith("file:") -> {
-            StandardFileSystems.local().refreshAndFindFileByPath(this) ?: throw FileNotFoundException(this)
+            StandardFileSystems.local().refreshAndFindFileByPath(this.removeSuffix(separator)) ?: throw FileNotFoundException(this)
         }
         else -> {
             val filePath = fromUriToPath()
@@ -481,7 +482,7 @@ fun String.toVirtualFile(): VirtualFile {
 }
 
 fun String.fromUriToPath(): Path {
-    val filePath = Paths.get(URI.create(this))
+    val filePath = Paths.get(URI.create(this.removeSuffix(separator)))
     return filePath.normalize()
 }
 
@@ -498,7 +499,7 @@ fun VirtualFile.toLanguageServerURI(): String {
 }
 
 fun String.fromPathToUriString(): String {
-    return Paths.get(this).normalize().toUri().toASCIIString()
+    return Paths.get(this).normalize().toUri().toASCIIString().removeSuffix()
 }
 
 private fun String.startsWithWindowsDriveLetter(): Boolean {
