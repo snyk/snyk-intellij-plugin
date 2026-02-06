@@ -150,7 +150,7 @@ fun <L : Any> publishAsync(project: Project, topic: Topic<L>, action: L.() -> Un
                 }
             }
         } catch (e: Exception) {
-            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+            Logger.getInstance("io.snyk.plugin.Utils")
                 .warn("Error publishing async event to topic $topic", e)
         }
     }
@@ -171,7 +171,7 @@ fun <L : Any> publishAsyncApp(topic: Topic<L>, action: L.() -> Unit) {
                 app.messageBus.syncPublisher(topic).action()
             }
         } catch (e: Exception) {
-            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+            Logger.getInstance("io.snyk.plugin.Utils")
                 .warn("Error publishing async app event to topic $topic", e)
         }
     }
