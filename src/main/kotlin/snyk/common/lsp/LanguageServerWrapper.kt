@@ -69,7 +69,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.lsp.settings.LanguageServerSettings
 import snyk.common.lsp.settings.SeverityFilter
-import snyk.common.removeTrailingSlashesIfPresent
+import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
@@ -84,7 +84,6 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Level
 import java.util.logging.Logger.getLogger
-import kotlin.io.path.exists
 
 private const val INITIALIZATION_TIMEOUT = 20L
 
@@ -482,8 +481,8 @@ class LanguageServerWrapper(
         if (notAuthenticated()) return
         if (DumbService.getInstance(project).isDumb) return
         try {
-            val folderUri = Paths.get(folder).toUri().toASCIIString().removeTrailingSlashesIfPresent()
-            if (!configuredWorkspaceFolders.any { it.uri.removeTrailingSlashesIfPresent() == folderUri }) return
+            val folderUri = Paths.get(folder).toUri().toASCIIString().removeSuffix()
+            if (!configuredWorkspaceFolders.any { it.uri.removeSuffix() == folderUri }) return
             val param = ExecuteCommandParams()
             param.command = COMMAND_WORKSPACE_FOLDER_SCAN
             param.arguments = listOf(folder)

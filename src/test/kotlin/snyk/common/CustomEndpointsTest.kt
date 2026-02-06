@@ -74,7 +74,7 @@ class CustomEndpointsTest {
 
     @Test
     fun `removeTrailingSlashesIfPresent do not return malformed(syntactically incorrect) url`() {
-        val endpointWithNoHost = "http:/".removeTrailingSlashesIfPresent()
+        val endpointWithNoHost = "http:/".removeSuffix()
 
         assertEquals("http:/", endpointWithNoHost)
     }

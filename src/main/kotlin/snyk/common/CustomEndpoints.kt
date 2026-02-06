@@ -13,7 +13,7 @@ fun getEndpointUrl(): String {
     }
     val customEndpointUrl = resolveCustomEndpoint(endpointUrl)
     // we need to set v1 here, to make the sast-enabled calls work in LS
-    return customEndpointUrl.removeTrailingSlashesIfPresent()
+    return customEndpointUrl.removeSuffix()
 }
 
 /**
@@ -28,7 +28,7 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
         normalizedEndpointURL
     } else {
         val normalizedEndpointURL = endpointUrl
-            .removeTrailingSlashesIfPresent()
+            .removeSuffix()
             .removeSuffix("/api")
             .replace("https://snyk.io", "https://api.snyk.io")
             .replace("https://app.", "https://api.")
@@ -57,12 +57,15 @@ fun URI.isDev() = isSnykDomain() && host.lowercase().startsWith("dev.")
 fun URI.isAnalyticsPermitted() = host != null &&
     (host.lowercase() == "api.snyk.io" || host.lowercase() == "api.us.snyk.io" || host.lowercase() == "snyk.io")
 
-internal fun String.removeTrailingSlashesIfPresent(): String {
-    val candidate = this.replace(Regex("/+$"), "")
-    return try {
+internal fun String.removeSuffix(suffix: String = "/"): String {
+    var candidate = this
+    while (candidate.endsWith(suffix)) {
+        candidate = candidate.substring(0, candidate.length - suffix.length)
+    }
+    try {
         URI(candidate)
-        candidate
+        return candidate
     } catch (_: URISyntaxException) {
-        this
+        return this
     }
 }

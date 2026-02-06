@@ -60,6 +60,23 @@ class UtilsKtTest {
 
 
     @Test
+    fun `toLanguageServerURI removes trailing slashes`() {
+        unmockkAll()
+        val tempDir = java.nio.file.Files.createTempDirectory("snyk-test-dir")
+        try {
+            val path = tempDir.toAbsolutePath().toString()
+            val virtualFile = mockk<VirtualFile>()
+            every { virtualFile.path } returns path
+
+            val uri = virtualFile.toLanguageServerURI()
+            assertFalse("URI should not end with slash: $uri", uri.endsWith("/"))
+            assertTrue("URI should start with file:", uri.startsWith("file:"))
+        } finally {
+            java.nio.file.Files.deleteIfExists(tempDir)
+        }
+    }
+
+    @Test
     fun isAdditionalParametersValid() {
         assertFalse(isAdditionalParametersValid("-d"))
         assertTrue(isAdditionalParametersValid("asdf"))
@@ -211,7 +228,7 @@ class UtilsKtTest {
 
         val project = mockk<Project>(relaxed = true)
         val messageBus = mockk<MessageBus>(relaxed = true)
-        val listener = mockk<TestListener>(relaxed = true)
+        mockk<TestListener>(relaxed = true)
 
         every { project.isDisposed } returns true
         every { project.messageBus } returns messageBus
