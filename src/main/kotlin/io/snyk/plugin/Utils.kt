@@ -142,7 +142,7 @@ fun <L : Any> getSyncPublisher(project: Project, topic: Topic<L>): L? {
  * @param action The action to perform on the publisher
  */
 fun <L : Any> publishAsync(project: Project, topic: Topic<L>, action: L.() -> Unit) {
-    org.jetbrains.concurrency.runAsync {
+    runAsync {
         try {
             if (!project.isDisposed) {
                 val messageBus = project.messageBus
@@ -165,14 +165,14 @@ fun <L : Any> publishAsync(project: Project, topic: Topic<L>, action: L.() -> Un
  * @param action The action to perform on the publisher
  */
 fun <L : Any> publishAsyncApp(topic: Topic<L>, action: L.() -> Unit) {
-    org.jetbrains.concurrency.runAsync {
+    runAsync {
         try {
             val app = ApplicationManager.getApplication()
             if (!app.isDisposed) {
                 app.messageBus.syncPublisher(topic).action()
             }
         } catch (e: Exception) {
-            com.intellij.openapi.diagnostic.Logger.getInstance("io.snyk.plugin.Utils")
+            Logger.getInstance("io.snyk.plugin.Utils")
                 .warn("Error publishing async app event to topic $topic", e)
         }
     }

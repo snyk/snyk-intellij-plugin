@@ -228,7 +228,7 @@ class UtilsKtTest {
 
         val project = mockk<Project>(relaxed = true)
         val messageBus = mockk<MessageBus>(relaxed = true)
-        val listener = mockk<TestListener>(relaxed = true)
+        mockk<TestListener>(relaxed = true)
 
         every { project.isDisposed } returns true
         every { project.messageBus } returns messageBus
