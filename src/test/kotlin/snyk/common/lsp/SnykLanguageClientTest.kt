@@ -17,7 +17,9 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
+import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForFile
@@ -41,6 +43,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.IssueViewOptions
+import snyk.common.lsp.settings.SeverityFilter
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 import java.nio.file.Files
@@ -85,6 +89,7 @@ class SnykLanguageClientTest {
         every { projectMock.messageBus} returns messageBusMock
         every { messageBusMock.isDisposed } returns false
         every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockk(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykSettingsListener.SNYK_SETTINGS_TOPIC) } returns mockk(relaxed = true)
         every { dumbServiceMock.isDumb } returns false
 
         every { pluginSettings() } returns settings
@@ -301,6 +306,104 @@ class SnykLanguageClientTest {
             expectIntercept = true,
             expectedNotifications = 1
         )
+    }
+
+    @Test
+    fun `snykConfiguration does not run when disposed`() {
+        every { projectMock.isDisposed } returns true
+
+        val param = SnykConfigurationParam(
+            activateSnykOpenSource = "false",
+            organization = "test-org"
+        )
+        cut.snykConfiguration(param)
+
+        // Settings should not be changed when disposed
+        assertEquals(true, settings.ossScanEnable)
+        assertEquals(null, settings.organization)
+    }
+
+    @Test
+    fun `snykConfiguration updates global settings from LS`() {
+        val latch = CountDownLatch(1)
+        val settingsListener = mockk<SnykSettingsListener>(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykSettingsListener.SNYK_SETTINGS_TOPIC) } returns settingsListener
+        every { settingsListener.settingsChanged() } answers { latch.countDown() }
+
+        val param = SnykConfigurationParam(
+            token = "test-token",
+            endpoint = "https://api.snyk.io",
+            organization = "my-org",
+            authenticationMethod = "oauth",
+            activateSnykOpenSource = "false",
+            activateSnykCodeSecurity = "true",
+            activateSnykIac = "false",
+            scanningMode = "manual",
+            insecure = "true",
+            riskScoreThreshold = 500,
+            enableDeltaFindings = "true",
+            filterSeverity = SeverityFilter(critical = true, high = true, medium = false, low = false),
+            issueViewOptions = IssueViewOptions(openIssues = true, ignoredIssues = true),
+        )
+
+        cut.snykConfiguration(param)
+        assertTrue("Settings change should complete within timeout", latch.await(5, TimeUnit.SECONDS))
+
+        assertEquals("test-token", settings.token)
+        assertEquals("https://api.snyk.io", settings.customEndpointUrl)
+        assertEquals("my-org", settings.organization)
+        assertEquals(AuthenticationType.OAUTH2, settings.authenticationType)
+        assertEquals(false, settings.ossScanEnable)
+        assertEquals(true, settings.snykCodeSecurityIssuesScanEnable)
+        assertEquals(false, settings.iacScanEnabled)
+        assertEquals(false, settings.scanOnSave)
+        assertEquals(true, settings.ignoreUnknownCA)
+        assertEquals(500, settings.riskScoreThreshold)
+        assertEquals(true, settings.criticalSeverityEnabled)
+        assertEquals(true, settings.highSeverityEnabled)
+        assertEquals(false, settings.mediumSeverityEnabled)
+        assertEquals(false, settings.lowSeverityEnabled)
+        assertEquals(true, settings.openIssuesEnabled)
+        assertEquals(true, settings.ignoredIssuesEnabled)
+    }
+
+    @Test
+    fun `snykConfiguration only updates fields that are present`() {
+        val latch = CountDownLatch(1)
+        val settingsListener = mockk<SnykSettingsListener>(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykSettingsListener.SNYK_SETTINGS_TOPIC) } returns settingsListener
+        every { settingsListener.settingsChanged() } answers { latch.countDown() }
+
+        // Set initial values
+        settings.ossScanEnable = true
+        settings.organization = "original-org"
+        settings.criticalSeverityEnabled = true
+
+        // Only send organization - other fields should remain unchanged
+        val param = SnykConfigurationParam(
+            organization = "new-org"
+        )
+
+        cut.snykConfiguration(param)
+        assertTrue("Settings change should complete within timeout", latch.await(5, TimeUnit.SECONDS))
+
+        assertEquals("new-org", settings.organization)
+        assertEquals(true, settings.ossScanEnable) // unchanged
+        assertEquals(true, settings.criticalSeverityEnabled) // unchanged
+    }
+
+    @Test
+    fun `snykConfiguration with null param does not crash`() {
+        val latch = CountDownLatch(1)
+        val settingsListener = mockk<SnykSettingsListener>(relaxed = true)
+        every { messageBusMock.syncPublisher(SnykSettingsListener.SNYK_SETTINGS_TOPIC) } returns settingsListener
+        every { settingsListener.settingsChanged() } answers { latch.countDown() }
+
+        cut.snykConfiguration(null)
+        assertTrue("Settings change should complete within timeout", latch.await(5, TimeUnit.SECONDS))
+
+        // Settings should remain at defaults
+        assertEquals(true, settings.ossScanEnable)
     }
 
     private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {

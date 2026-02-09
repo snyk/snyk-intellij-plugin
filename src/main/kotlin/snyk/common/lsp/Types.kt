@@ -13,6 +13,7 @@ import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
 import snyk.common.ProductType
+import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.lsp.settings.SeverityFilter
 import java.util.Date
 import java.util.Locale
@@ -572,6 +573,24 @@ data class OssIdentifiers(
 
 data class FolderConfigsParam(
     @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>?,
+)
+
+data class SnykConfigurationParam(
+    @SerializedName("token") val token: String? = null,
+    @SerializedName("endpoint") val endpoint: String? = null,
+    @SerializedName("organization") val organization: String? = null,
+    @SerializedName("authenticationMethod") val authenticationMethod: String? = null,
+    @SerializedName("cliPath") val cliPath: String? = null,
+    @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: String? = null,
+    @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: String? = null,
+    @SerializedName("activateSnykCodeSecurity") val activateSnykCodeSecurity: String? = null,
+    @SerializedName("activateSnykIac") val activateSnykIac: String? = null,
+    @SerializedName("scanningMode") val scanningMode: String? = null,
+    @SerializedName("filterSeverity") val filterSeverity: SeverityFilter? = null,
+    @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
+    @SerializedName("issueViewOptions") val issueViewOptions: IssueViewOptions? = null,
+    @SerializedName("insecure") val insecure: String? = null,
+    @SerializedName("enableDeltaFindings") val enableDeltaFindings: String? = null,
 )
 
 /**

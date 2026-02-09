@@ -16,6 +16,7 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykFolderConfigListener
+import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -212,6 +213,50 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             } catch (e: Exception) {
                 logger.error("Error processing snyk folder configs", e)
             }
+        }
+    }
+
+    @JsonNotification(value = "$/snyk.configuration")
+    fun snykConfiguration(configParam: SnykConfigurationParam?) {
+        if (disposed) return
+        runAsync {
+            try {
+                configParam?.let { applyGlobalConfigFromLS(it) }
+                getSyncPublisher(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC)
+                    ?.settingsChanged()
+            } catch (e: Exception) {
+                logger.error("Error processing snyk configuration", e)
+            }
+        }
+    }
+
+    private fun applyGlobalConfigFromLS(config: SnykConfigurationParam) {
+        val settings = pluginSettings()
+        config.token?.let { settings.token = it }
+        config.endpoint?.let { settings.customEndpointUrl = it }
+        config.organization?.let { settings.organization = it }
+        config.authenticationMethod?.let { methodName ->
+            AuthenticationType.entries.find { it.languageServerSettingsName == methodName }
+                ?.let { settings.authenticationType = it }
+        }
+        config.cliPath?.let { settings.cliPath = it }
+        config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it.toBoolean() }
+        config.activateSnykOpenSource?.let { settings.ossScanEnable = it.toBoolean() }
+        config.activateSnykCodeSecurity?.let { settings.snykCodeSecurityIssuesScanEnable = it.toBoolean() }
+        config.activateSnykIac?.let { settings.iacScanEnabled = it.toBoolean() }
+        config.scanningMode?.let { settings.scanOnSave = (it != "manual") }
+        config.insecure?.let { settings.ignoreUnknownCA = it.toBoolean() }
+        config.riskScoreThreshold?.let { settings.riskScoreThreshold = it }
+        config.enableDeltaFindings?.let { settings.setDeltaEnabled(it.toBoolean()) }
+        config.filterSeverity?.let { severity ->
+            severity.critical?.let { settings.criticalSeverityEnabled = it }
+            severity.high?.let { settings.highSeverityEnabled = it }
+            severity.medium?.let { settings.mediumSeverityEnabled = it }
+            severity.low?.let { settings.lowSeverityEnabled = it }
+        }
+        config.issueViewOptions?.let { options ->
+            options.openIssues?.let { settings.openIssuesEnabled = it }
+            options.ignoredIssues?.let { settings.ignoredIssuesEnabled = it }
         }
     }
 
