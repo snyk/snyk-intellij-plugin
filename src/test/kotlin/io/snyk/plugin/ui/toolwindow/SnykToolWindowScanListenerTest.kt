@@ -600,4 +600,238 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
             labels.any { it.contains("2 issues") }
         )
     }
+
+    fun `test root node postfix does not include critical for Code Security`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().treeFiltering.codeSecurityResults = true
+
+        // Enable all severities
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = true
+        pluginSettings().treeFiltering.lowSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create issues with all severities including critical
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.CODE_SECURITY, id = "critical-1").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.CODE_SECURITY, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.CODE_SECURITY, id = "medium-1").first(),
+            mockScanIssuesWithSeverity(Severity.LOW, filterableType = ScanIssue.CODE_SECURITY, id = "low-1").first(),
+        )
+
+        cut.displaySnykCodeResults(mapOf(snykFile to issues.toSet()))
+
+        // Get the panel's actual root Code Security node
+        val panelRootCodeNode = snykToolWindowPanel.getRootSecurityIssuesTreeNode()
+        val rootNodeText = panelRootCodeNode.userObject.toString()
+        
+        // Code Security should NOT show critical severity count
+        assertFalse(
+            "Expected root node NOT to contain 'critical' but got: $rootNodeText",
+            rootNodeText.contains("critical")
+        )
+        // But should still show other severities
+        assertTrue(
+            "Expected root node to contain '1 high' but got: $rootNodeText",
+            rootNodeText.contains("1 high")
+        )
+        assertTrue(
+            "Expected root node to contain '1 medium' but got: $rootNodeText",
+            rootNodeText.contains("1 medium")
+        )
+        assertTrue(
+            "Expected root node to contain '1 low' but got: $rootNodeText",
+            rootNodeText.contains("1 low")
+        )
+    }
+
+    fun `test root node postfix includes critical for OSS`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = true
+
+        // Enable all severities
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = true
+        pluginSettings().treeFiltering.lowSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create issues with all severities
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "critical-1").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-1").first(),
+            mockScanIssuesWithSeverity(Severity.LOW, filterableType = ScanIssue.OPEN_SOURCE, id = "low-1").first(),
+        )
+
+        cut.displayOssResults(mapOf(snykFile to issues.toSet()))
+
+        // Get the panel's actual root OSS node
+        val panelRootOssNode = snykToolWindowPanel.getRootOssIssuesTreeNode()
+        val rootNodeText = panelRootOssNode.userObject.toString()
+        
+        // OSS should show critical severity count
+        assertTrue(
+            "Expected root node to contain '1 critical' but got: $rootNodeText",
+            rootNodeText.contains("1 critical")
+        )
+        assertTrue(
+            "Expected root node to contain '1 high' but got: $rootNodeText",
+            rootNodeText.contains("1 high")
+        )
+        assertTrue(
+            "Expected root node to contain '1 medium' but got: $rootNodeText",
+            rootNodeText.contains("1 medium")
+        )
+        assertTrue(
+            "Expected root node to contain '1 low' but got: $rootNodeText",
+            rootNodeText.contains("1 low")
+        )
+    }
+
+    fun `test root node postfix includes critical for IAC`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().iacScanEnabled = true
+        pluginSettings().treeFiltering.iacResults = true
+
+        // Enable all severities
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = true
+        pluginSettings().treeFiltering.lowSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create issues with all severities
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "critical-1").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "medium-1").first(),
+            mockScanIssuesWithSeverity(Severity.LOW, filterableType = ScanIssue.INFRASTRUCTURE_AS_CODE, id = "low-1").first(),
+        )
+
+        cut.displayIacResults(mapOf(snykFile to issues.toSet()))
+
+        // Get the panel's actual root IAC node
+        val panelRootIacNode = snykToolWindowPanel.getRootIacIssuesTreeNode()
+        val rootNodeText = panelRootIacNode.userObject.toString()
+        
+        // IAC should show critical severity count
+        assertTrue(
+            "Expected root node to contain '1 critical' but got: $rootNodeText",
+            rootNodeText.contains("1 critical")
+        )
+        assertTrue(
+            "Expected root node to contain '1 high' but got: $rootNodeText",
+            rootNodeText.contains("1 high")
+        )
+        assertTrue(
+            "Expected root node to contain '1 medium' but got: $rootNodeText",
+            rootNodeText.contains("1 medium")
+        )
+        assertTrue(
+            "Expected root node to contain '1 low' but got: $rootNodeText",
+            rootNodeText.contains("1 low")
+        )
+    }
+
+    fun `test severity postfix formatting without critical`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().snykCodeSecurityIssuesScanEnable = true
+        pluginSettings().treeFiltering.codeSecurityResults = true
+
+        // Enable all severities
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = true
+        pluginSettings().treeFiltering.lowSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create 2 high, 3 medium, 1 low (no critical to test formatting)
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.CODE_SECURITY, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.CODE_SECURITY, id = "high-2").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.CODE_SECURITY, id = "medium-1").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.CODE_SECURITY, id = "medium-2").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.CODE_SECURITY, id = "medium-3").first(),
+            mockScanIssuesWithSeverity(Severity.LOW, filterableType = ScanIssue.CODE_SECURITY, id = "low-1").first(),
+        )
+
+        cut.displaySnykCodeResults(mapOf(snykFile to issues.toSet()))
+
+        val panelRootCodeNode = snykToolWindowPanel.getRootSecurityIssuesTreeNode()
+        val rootNodeText = panelRootCodeNode.userObject.toString()
+        
+        // Verify proper formatting: should be ": 2 high, 3 medium, 1 low" (no critical)
+        assertTrue(
+            "Expected root node to contain '2 high' but got: $rootNodeText",
+            rootNodeText.contains("2 high")
+        )
+        assertTrue(
+            "Expected root node to contain '3 medium' but got: $rootNodeText",
+            rootNodeText.contains("3 medium")
+        )
+        assertTrue(
+            "Expected root node to contain '1 low' but got: $rootNodeText",
+            rootNodeText.contains("1 low")
+        )
+        // Ensure no double spaces or formatting issues from missing critical
+        assertFalse(
+            "Root node should not have double spaces: $rootNodeText",
+            rootNodeText.contains("  ")
+        )
+    }
+
+    fun `test severity postfix formatting with critical`() {
+        pluginSettings().token = "dummy"
+        pluginSettings().ossScanEnable = true
+        pluginSettings().treeFiltering.ossResults = true
+
+        // Enable all severities
+        pluginSettings().treeFiltering.criticalSeverity = true
+        pluginSettings().treeFiltering.highSeverity = true
+        pluginSettings().treeFiltering.mediumSeverity = true
+        pluginSettings().treeFiltering.lowSeverity = true
+
+        val snykFile = io.snyk.plugin.SnykFile(project, file)
+
+        // Create 3 critical, 2 high, 1 medium, 0 low
+        val issues = listOf(
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "critical-1").first(),
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "critical-2").first(),
+            mockScanIssuesWithSeverity(Severity.CRITICAL, filterableType = ScanIssue.OPEN_SOURCE, id = "critical-3").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-1").first(),
+            mockScanIssuesWithSeverity(Severity.HIGH, filterableType = ScanIssue.OPEN_SOURCE, id = "high-2").first(),
+            mockScanIssuesWithSeverity(Severity.MEDIUM, filterableType = ScanIssue.OPEN_SOURCE, id = "medium-1").first(),
+        )
+
+        cut.displayOssResults(mapOf(snykFile to issues.toSet()))
+
+        val panelRootOssNode = snykToolWindowPanel.getRootOssIssuesTreeNode()
+        val rootNodeText = panelRootOssNode.userObject.toString()
+        
+        // Verify proper formatting: should be ": 3 critical, 2 high, 1 medium, 0 low"
+        assertTrue(
+            "Expected root node to contain '3 critical' but got: $rootNodeText",
+            rootNodeText.contains("3 critical")
+        )
+        assertTrue(
+            "Expected root node to contain '2 high' but got: $rootNodeText",
+            rootNodeText.contains("2 high")
+        )
+        assertTrue(
+            "Expected root node to contain '1 medium' but got: $rootNodeText",
+            rootNodeText.contains("1 medium")
+        )
+        assertTrue(
+            "Expected root node to contain '0 low' but got: $rootNodeText",
+            rootNodeText.contains("0 low")
+        )
+    }
 }

@@ -187,7 +187,6 @@ class SnykToolWindowSnykScanListener(
             snykResults = snykResults,
             rootNode = this.rootSecurityIssuesTreeNode,
             securityIssuesCount = snykResults.values.flatten().distinct().size,
-            fixableIssuesCount = snykResults.values.flatten().distinct().count { it.hasAIFix() },
         )
     }
 
@@ -212,8 +211,7 @@ class SnykToolWindowSnykScanListener(
                     filterTree = filterTree,
                     snykResults = snykResults,
                     rootNode = rootNode,
-                    ossResultsCount = ossResultsCount,
-                    fixableIssuesCount = flattenedResults.count { it.additionalData.isUpgradable }
+                    ossResultsCount = ossResultsCount
                 )
             }
 
@@ -227,8 +225,7 @@ class SnykToolWindowSnykScanListener(
                     filterTree = filterTree,
                     snykResults = snykResults,
                     rootNode = rootNode,
-                    iacResultsCount = iacResultsCount,
-                    fixableIssuesCount = flattenedResults.count { it.additionalData.isUpgradable }
+                    iacResultsCount = iacResultsCount
                 )
             }
         }
@@ -270,7 +267,6 @@ class SnykToolWindowSnykScanListener(
         ossResultsCount: Int? = null,
         securityIssuesCount: Int? = null,
         iacResultsCount: Int? = null,
-        fixableIssuesCount: Int? = null,
     ) {
         val settings = pluginSettings()
 
@@ -302,14 +298,19 @@ class SnykToolWindowSnykScanListener(
 
             // Use filtered results for all counts and display
             val filteredIssues = resultsToDisplay.values.flatten().distinct()
-            rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredIssues)
 
             // Update counts to reflect filtered results
+            var showCritical = true
             when (filterableIssueType) {
                 ScanIssue.OPEN_SOURCE -> filteredOssResultsCount = filteredIssues.size
-                ScanIssue.CODE_SECURITY -> filteredSecurityIssuesCount = filteredIssues.size
+                ScanIssue.CODE_SECURITY -> {
+                    filteredSecurityIssuesCount = filteredIssues.size
+                    showCritical = false
+                }
                 ScanIssue.INFRASTRUCTURE_AS_CODE -> filteredIacResultsCount = filteredIssues.size
             }
+
+            rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredIssues, showCritical)
 
             val filteredFixableCount = when (filterableIssueType) {
                 ScanIssue.CODE_SECURITY -> filteredIssues.count { it.hasAIFix() }
@@ -525,11 +526,16 @@ class SnykToolWindowSnykScanListener(
         expandTreeNodeRecursively(snykToolWindowPanel.vulnerabilitiesTree, rootNode)
     }
 
-    private fun buildSeveritiesPostfixForFileNode(results: List<ScanIssue>): String {
-        val critical = results.count { it.getSeverityAsEnum() == Severity.CRITICAL }
-        val high = results.count { it.getSeverityAsEnum() == Severity.HIGH }
-        val medium = results.count { it.getSeverityAsEnum() == Severity.MEDIUM }
-        val low = results.count { it.getSeverityAsEnum() == Severity.LOW }
-        return ": $critical critical, $high high, $medium medium, $low low"
+    private fun buildSeveritiesPostfixForFileNode(results: List<ScanIssue>, showCritical: Boolean = true): String {
+        val critical = if (showCritical) {
+            "" + results.count { it.getSeverityAsEnum() == Severity.CRITICAL } + " critical, "
+        } else {
+            ""
+        }
+
+        val high = "" + results.count { it.getSeverityAsEnum() == Severity.HIGH } + " high, "
+        val medium = "" + results.count { it.getSeverityAsEnum() == Severity.MEDIUM } + " medium, "
+        val low = "" + results.count { it.getSeverityAsEnum() == Severity.LOW } + " low"
+        return ": $critical$high$medium$low"
     }
 }
