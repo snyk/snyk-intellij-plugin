@@ -13,6 +13,7 @@ import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import org.eclipse.lsp4j.Range
 import snyk.common.ProductType
+import snyk.common.lsp.settings.SeverityFilter
 import java.util.Date
 import java.util.Locale
 import javax.swing.Icon
@@ -595,6 +596,15 @@ data class FolderConfig(
     @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
     @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
     @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
+    @SerializedName("snykOssEnabled") val snykOssEnabled: Boolean? = null,
+    @SerializedName("snykCodeEnabled") val snykCodeEnabled: Boolean? = null,
+    @SerializedName("snykIacEnabled") val snykIacEnabled: Boolean? = null,
+    @SerializedName("scanAutomatic") val scanAutomatic: Boolean? = null,
+    @SerializedName("scanNetNew") val scanNetNew: Boolean? = null,
+    @SerializedName("enabledSeverities") val enabledSeverities: SeverityFilter? = null,
+    @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
+    @SerializedName("issueViewOpenIssues") val issueViewOpenIssues: Boolean? = null,
+    @SerializedName("issueViewIgnoredIssues") val issueViewIgnoredIssues: Boolean? = null,
 ) : Comparable<FolderConfig> {
     override fun compareTo(other: FolderConfig): Int {
         return this.folderPath.compareTo(other.folderPath)

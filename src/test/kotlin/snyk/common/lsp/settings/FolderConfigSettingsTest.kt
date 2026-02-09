@@ -698,4 +698,105 @@ class FolderConfigSettingsTest {
         val result2 = settings.getPreferredOrg(projectMock)
         assertEquals("Should return empty string after clearing", "", result2)
     }
+
+    @Test
+    fun `addFolderConfig stores and retrieves org-scope fields`() {
+        val path = "/test/project"
+        val severityFilter = SeverityFilter(critical = true, high = true, medium = false, low = false)
+        val config = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+            snykOssEnabled = true,
+            snykCodeEnabled = false,
+            snykIacEnabled = true,
+            scanAutomatic = true,
+            scanNetNew = false,
+            enabledSeverities = severityFilter,
+            riskScoreThreshold = 500,
+            issueViewOpenIssues = true,
+            issueViewIgnoredIssues = false,
+        )
+
+        settings.addFolderConfig(config)
+
+        val retrieved = settings.getFolderConfig(path)
+        assertNotNull("Retrieved config should not be null", retrieved)
+        assertEquals("snykOssEnabled should match", true, retrieved.snykOssEnabled)
+        assertEquals("snykCodeEnabled should match", false, retrieved.snykCodeEnabled)
+        assertEquals("snykIacEnabled should match", true, retrieved.snykIacEnabled)
+        assertEquals("scanAutomatic should match", true, retrieved.scanAutomatic)
+        assertEquals("scanNetNew should match", false, retrieved.scanNetNew)
+        assertEquals("enabledSeverities should match", severityFilter, retrieved.enabledSeverities)
+        assertEquals("riskScoreThreshold should match", 500, retrieved.riskScoreThreshold)
+        assertEquals("issueViewOpenIssues should match", true, retrieved.issueViewOpenIssues)
+        assertEquals("issueViewIgnoredIssues should match", false, retrieved.issueViewIgnoredIssues)
+    }
+
+    @Test
+    fun `org-scope fields default to null when not specified`() {
+        val path = "/test/project"
+        val config = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+        )
+
+        settings.addFolderConfig(config)
+
+        val retrieved = settings.getFolderConfig(path)
+        assertNotNull("Retrieved config should not be null", retrieved)
+        assertEquals("snykOssEnabled should default to null", null, retrieved.snykOssEnabled)
+        assertEquals("snykCodeEnabled should default to null", null, retrieved.snykCodeEnabled)
+        assertEquals("snykIacEnabled should default to null", null, retrieved.snykIacEnabled)
+        assertEquals("scanAutomatic should default to null", null, retrieved.scanAutomatic)
+        assertEquals("scanNetNew should default to null", null, retrieved.scanNetNew)
+        assertEquals("enabledSeverities should default to null", null, retrieved.enabledSeverities)
+        assertEquals("riskScoreThreshold should default to null", null, retrieved.riskScoreThreshold)
+        assertEquals("issueViewOpenIssues should default to null", null, retrieved.issueViewOpenIssues)
+        assertEquals("issueViewIgnoredIssues should default to null", null, retrieved.issueViewIgnoredIssues)
+    }
+
+    @Test
+    fun `addFolderConfig overwrites org-scope fields when config is updated`() {
+        val path = "/test/project"
+        val config1 = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+            snykOssEnabled = true,
+            riskScoreThreshold = 300,
+        )
+        settings.addFolderConfig(config1)
+
+        val retrieved1 = settings.getFolderConfig(path)
+        assertEquals("snykOssEnabled should be true", true, retrieved1.snykOssEnabled)
+        assertEquals("riskScoreThreshold should be 300", 300, retrieved1.riskScoreThreshold)
+
+        val config2 = FolderConfig(
+            folderPath = path,
+            baseBranch = "main",
+            snykOssEnabled = false,
+            riskScoreThreshold = 700,
+        )
+        settings.addFolderConfig(config2)
+
+        val retrieved2 = settings.getFolderConfig(path)
+        assertEquals("snykOssEnabled should be updated to false", false, retrieved2.snykOssEnabled)
+        assertEquals("riskScoreThreshold should be updated to 700", 700, retrieved2.riskScoreThreshold)
+    }
+
+    @Test
+    fun `getFolderConfig creates new config with null org-scope fields by default`() {
+        val path = "/new/project"
+
+        val newConfig = settings.getFolderConfig(path)
+        assertNotNull("New config should not be null", newConfig)
+        assertEquals("New config snykOssEnabled should be null", null, newConfig.snykOssEnabled)
+        assertEquals("New config snykCodeEnabled should be null", null, newConfig.snykCodeEnabled)
+        assertEquals("New config snykIacEnabled should be null", null, newConfig.snykIacEnabled)
+        assertEquals("New config scanAutomatic should be null", null, newConfig.scanAutomatic)
+        assertEquals("New config scanNetNew should be null", null, newConfig.scanNetNew)
+        assertEquals("New config enabledSeverities should be null", null, newConfig.enabledSeverities)
+        assertEquals("New config riskScoreThreshold should be null", null, newConfig.riskScoreThreshold)
+        assertEquals("New config issueViewOpenIssues should be null", null, newConfig.issueViewOpenIssues)
+        assertEquals("New config issueViewIgnoredIssues should be null", null, newConfig.issueViewIgnoredIssues)
+    }
 }
