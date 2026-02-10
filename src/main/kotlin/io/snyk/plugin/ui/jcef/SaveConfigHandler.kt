@@ -15,7 +15,6 @@ import io.snyk.plugin.getPluginPath
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
@@ -191,60 +190,21 @@ class SaveConfigHandler(
     private fun applyGlobalSettings(config: SaveConfigRequest, settings: SnykApplicationSettingsStateService) {
         val isFallback = config.isFallbackForm == true
 
-        config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
-
         // Use the provided cliPath from the config if present, or the default CLI path if not.
         config.cliPath?.let { path ->
             settings.cliPath = path.ifEmpty { getDefaultCliPath() }
         }
 
+        // SaveConfigRequest-specific fields not in SnykConfigurationParam
         config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
         config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
-        config.insecure?.let { settings.ignoreUnknownCA = it }
+
+        // Apply common global settings via shared logic
+        // Fallback forms only apply a subset (manageBinariesAutomatically, cliPath, insecure)
+        val commonConfig = config.toSnykConfigurationParam(isFallback)
+        commonConfig.applyToSettings(settings)
 
         if (!isFallback) {
-            settings.ossScanEnable = config.activateSnykOpenSource ?: false
-            settings.snykCodeSecurityIssuesScanEnable = config.activateSnykCode ?: false
-            settings.iacScanEnabled = config.activateSnykIac ?: false
-
-            // Scanning mode
-            config.scanningMode?.let { settings.scanOnSave = (it == "auto") }
-
-            // Connection settings
-            config.organization?.let { settings.organization = it }
-            config.endpoint?.let { settings.customEndpointUrl = it }
-            config.token?.let { settings.token = it }
-
-            // Authentication method
-            config.authenticationMethod?.let { method ->
-                settings.authenticationType = when (method) {
-                    "oauth" -> AuthenticationType.OAUTH2
-                    "token" -> AuthenticationType.API_TOKEN
-                    "pat" -> AuthenticationType.PAT
-                    else -> AuthenticationType.OAUTH2
-                }
-            }
-
-            // Severity filters
-            config.filterSeverity?.let { severity ->
-                severity.critical?.let { settings.criticalSeverityEnabled = it }
-                severity.high?.let { settings.highSeverityEnabled = it }
-                severity.medium?.let { settings.mediumSeverityEnabled = it }
-                severity.low?.let { settings.lowSeverityEnabled = it }
-            }
-
-            // Issue view options
-            config.issueViewOptions?.let { options ->
-                options.openIssues?.let { settings.openIssuesEnabled = it }
-                options.ignoredIssues?.let { settings.ignoredIssuesEnabled = it }
-            }
-
-            // Delta findings
-            config.enableDeltaFindings?.let { settings.setDeltaEnabled(it) }
-
-            // Risk score threshold
-            config.riskScoreThreshold?.let { settings.riskScoreThreshold = it }
-
             // Trusted folders - sync the list (add new, remove missing)
             config.trustedFolders?.let { folders ->
                 val trustService = service<WorkspaceTrustService>()

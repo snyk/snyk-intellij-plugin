@@ -8,6 +8,9 @@ import com.google.gson.annotations.SerializedName
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
+import snyk.common.lsp.SnykConfigurationParam
+import snyk.common.lsp.settings.IssueViewOptions
+import snyk.common.lsp.settings.SeverityFilter
 import java.lang.reflect.Type
 
 /**
@@ -73,8 +76,8 @@ data class SaveConfigRequest(
     @SerializedName("authenticationMethod") val authenticationMethod: String? = null,
 
     // Filters
-    @SerializedName("filterSeverity") val filterSeverity: SeverityFilterConfig? = null,
-    @SerializedName("issueViewOptions") val issueViewOptions: IssueViewOptionsConfig? = null,
+    @SerializedName("filterSeverity") val filterSeverity: SeverityFilter? = null,
+    @SerializedName("issueViewOptions") val issueViewOptions: IssueViewOptions? = null,
     @SerializedName("enableDeltaFindings") val enableDeltaFindings: Boolean? = null,
     @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
 
@@ -92,19 +95,32 @@ data class SaveConfigRequest(
 
     // Form Type Indicator
     @SerializedName("isFallbackForm") val isFallbackForm: Boolean? = null
-)
-
-data class SeverityFilterConfig(
-    @SerializedName("critical") val critical: Boolean? = null,
-    @SerializedName("high") val high: Boolean? = null,
-    @SerializedName("medium") val medium: Boolean? = null,
-    @SerializedName("low") val low: Boolean? = null
-)
-
-data class IssueViewOptionsConfig(
-    @SerializedName("openIssues") val openIssues: Boolean? = null,
-    @SerializedName("ignoredIssues") val ignoredIssues: Boolean? = null
-)
+) {
+    fun toSnykConfigurationParam(isFallback: Boolean): SnykConfigurationParam {
+        if (isFallback) {
+            return SnykConfigurationParam(
+                manageBinariesAutomatically = manageBinariesAutomatically?.toString(),
+                insecure = insecure?.toString(),
+            )
+        }
+        return SnykConfigurationParam(
+            token = token,
+            endpoint = endpoint,
+            organization = organization,
+            authenticationMethod = authenticationMethod,
+            manageBinariesAutomatically = manageBinariesAutomatically?.toString(),
+            activateSnykOpenSource = (activateSnykOpenSource ?: false).toString(),
+            activateSnykCodeSecurity = (activateSnykCode ?: false).toString(),
+            activateSnykIac = (activateSnykIac ?: false).toString(),
+            scanningMode = scanningMode,
+            insecure = insecure?.toString(),
+            riskScoreThreshold = riskScoreThreshold,
+            enableDeltaFindings = enableDeltaFindings?.toString(),
+            filterSeverity = filterSeverity,
+            issueViewOptions = issueViewOptions,
+        )
+    }
+}
 
 data class FolderConfigData(
     @SerializedName("folderPath") val folderPath: String,

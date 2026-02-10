@@ -8,6 +8,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
+import io.snyk.plugin.services.AuthenticationType
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
@@ -591,7 +593,36 @@ data class SnykConfigurationParam(
     @SerializedName("issueViewOptions") val issueViewOptions: IssueViewOptions? = null,
     @SerializedName("insecure") val insecure: String? = null,
     @SerializedName("enableDeltaFindings") val enableDeltaFindings: String? = null,
-)
+) {
+    fun applyToSettings(settings: SnykApplicationSettingsStateService) {
+        token?.let { settings.token = it }
+        endpoint?.let { settings.customEndpointUrl = it }
+        organization?.let { settings.organization = it }
+        authenticationMethod?.let { methodName ->
+            AuthenticationType.entries.find { it.languageServerSettingsName == methodName }
+                ?.let { settings.authenticationType = it }
+        }
+        cliPath?.let { settings.cliPath = it }
+        manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it.toBoolean() }
+        activateSnykOpenSource?.let { settings.ossScanEnable = it.toBoolean() }
+        activateSnykCodeSecurity?.let { settings.snykCodeSecurityIssuesScanEnable = it.toBoolean() }
+        activateSnykIac?.let { settings.iacScanEnabled = it.toBoolean() }
+        scanningMode?.let { settings.scanOnSave = (it != "manual") }
+        insecure?.let { settings.ignoreUnknownCA = it.toBoolean() }
+        riskScoreThreshold?.let { settings.riskScoreThreshold = it }
+        enableDeltaFindings?.let { settings.setDeltaEnabled(it.toBoolean()) }
+        filterSeverity?.let { severity ->
+            severity.critical?.let { settings.criticalSeverityEnabled = it }
+            severity.high?.let { settings.highSeverityEnabled = it }
+            severity.medium?.let { settings.mediumSeverityEnabled = it }
+            severity.low?.let { settings.lowSeverityEnabled = it }
+        }
+        issueViewOptions?.let { options ->
+            options.openIssues?.let { settings.openIssuesEnabled = it }
+            options.ignoredIssues?.let { settings.ignoredIssuesEnabled = it }
+        }
+    }
+}
 
 /**
  * FolderConfig stores the configuration for a workspace folder
