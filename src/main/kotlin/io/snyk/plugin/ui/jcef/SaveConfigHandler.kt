@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
@@ -184,6 +185,25 @@ class SaveConfigHandler(
         val isFallback = config.isFallbackForm == true
         if (!isFallback) {
             config.folderConfigs?.let { applyFolderConfigs(it) }
+            forwardFolderConfigPatches(jsonString)
+        }
+    }
+
+    private fun forwardFolderConfigPatches(jsonString: String) {
+        val lsWrapper = LanguageServerWrapper.getInstance(project)
+        try {
+            val root = JsonParser.parseString(jsonString).asJsonObject
+            val folderConfigsArray = root.getAsJsonArray("folderConfigs") ?: return
+            for (element in folderConfigsArray) {
+                val rawEntry = element.asJsonObject
+                val folderPath = rawEntry.get("folderPath")?.asString ?: continue
+                val patch = extractFolderConfigPatch(rawEntry)
+                if (patch.isNotEmpty()) {
+                    lsWrapper.sendFolderConfigPatch(folderPath, patch)
+                }
+            }
+        } catch (e: Exception) {
+            logger.warn("Error forwarding folder config patches to LS", e)
         }
     }
 

@@ -494,6 +494,60 @@ class LanguageServerWrapperTest {
         }
     }
 
+    @Test
+    fun `sendFolderConfigPatch sends correct structure with changed fields`() {
+        simulateRunningLS()
+        val capturedParams = mutableListOf<DidChangeConfigurationParams>()
+        justRun { lsMock.workspaceService.didChangeConfiguration(capture(capturedParams)) }
+
+        val changes = mapOf<String, Any?>(
+            "snykOssEnabled" to true,
+            "snykIacEnabled" to false,
+        )
+        cut.sendFolderConfigPatch("/path/to/folder", changes)
+
+        assertEquals(1, capturedParams.size)
+        @Suppress("UNCHECKED_CAST")
+        val settings = capturedParams[0].settings as Map<String, Any?>
+        val folderConfigs = settings["folderConfigs"] as List<Map<String, Any?>>
+        assertEquals(1, folderConfigs.size)
+        val entry = folderConfigs[0]
+        assertEquals("/path/to/folder", entry["folderPath"])
+        assertEquals(true, entry["snykOssEnabled"])
+        assertEquals(false, entry["snykIacEnabled"])
+        assertFalse("Absent fields should not be present", entry.containsKey("snykCodeEnabled"))
+    }
+
+    @Test
+    fun `sendFolderConfigPatch supports null values for clearing overrides`() {
+        simulateRunningLS()
+        val capturedParams = mutableListOf<DidChangeConfigurationParams>()
+        justRun { lsMock.workspaceService.didChangeConfiguration(capture(capturedParams)) }
+
+        val changes = mapOf<String, Any?>(
+            "snykOssEnabled" to null,
+        )
+        cut.sendFolderConfigPatch("/path/to/folder", changes)
+
+        assertEquals(1, capturedParams.size)
+        @Suppress("UNCHECKED_CAST")
+        val settings = capturedParams[0].settings as Map<String, Any?>
+        val folderConfigs = settings["folderConfigs"] as List<Map<String, Any?>>
+        val entry = folderConfigs[0]
+        assertTrue("Null field should be present in map", entry.containsKey("snykOssEnabled"))
+        assertEquals(null, entry["snykOssEnabled"])
+    }
+
+    @Test
+    fun `sendFolderConfigPatch should not run when disposed`() {
+        every { applicationMock.isDisposed } returns true
+        simulateRunningLS()
+
+        cut.sendFolderConfigPatch("/path/to/folder", mapOf("snykOssEnabled" to true))
+
+        verify(exactly = 0) { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
+    }
+
     private fun simulateRunningLS() {
         cut.languageClient = mockk(relaxed = true)
         val processMock = mockk<Process>(relaxed = true)

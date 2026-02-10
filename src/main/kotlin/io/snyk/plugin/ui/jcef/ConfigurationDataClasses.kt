@@ -1,8 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
-import com.google.gson.JsonDeserializationContext
-import com.google.gson.JsonDeserializer
-import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import com.google.gson.TypeAdapter
 import com.google.gson.annotations.SerializedName
 import com.google.gson.stream.JsonReader
@@ -11,7 +9,6 @@ import com.google.gson.stream.JsonWriter
 import snyk.common.lsp.SnykConfigurationParam
 import snyk.common.lsp.settings.IssueViewOptions
 import snyk.common.lsp.settings.SeverityFilter
-import java.lang.reflect.Type
 
 /**
  * Type adapter that handles additionalParameters as either a string or an array of strings.
@@ -133,6 +130,43 @@ data class FolderConfigData(
     @SerializedName("orgSetByUser") val orgSetByUser: Boolean? = null,
     @SerializedName("scanCommandConfig") val scanCommandConfig: Map<String, ScanCommandConfigData>? = null
 )
+
+// Extracts all fields except folderPath from a raw folder config JSON entry.
+// folderPath is excluded because it is passed separately to sendFolderConfigPatch,
+// which prepends it to the map as the identifier for the target folder.
+fun extractFolderConfigPatch(rawEntry: JsonObject): Map<String, Any?> {
+    val patch = mutableMapOf<String, Any?>()
+    for ((key, element) in rawEntry.entrySet()) {
+        if (key == "folderPath") continue
+        patch[key] = jsonElementToValue(element)
+    }
+    return patch
+}
+
+private fun jsonElementToValue(element: com.google.gson.JsonElement): Any? {
+    return when {
+        element.isJsonNull -> null
+        element.isJsonObject -> {
+            val map = mutableMapOf<String, Any?>()
+            for ((key, value) in element.asJsonObject.entrySet()) {
+                map[key] = jsonElementToValue(value)
+            }
+            map
+        }
+        element.isJsonArray -> {
+            element.asJsonArray.map { jsonElementToValue(it) }
+        }
+        element.isJsonPrimitive -> {
+            val prim = element.asJsonPrimitive
+            when {
+                prim.isBoolean -> prim.asBoolean
+                prim.isNumber -> prim.asNumber
+                else -> prim.asString
+            }
+        }
+        else -> element
+    }
+}
 
 data class ScanCommandConfigData(
     @SerializedName("preScanCommand") val preScanCommand: String? = null,

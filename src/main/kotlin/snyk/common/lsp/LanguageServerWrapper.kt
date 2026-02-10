@@ -568,6 +568,18 @@ class LanguageServerWrapper(
         }
     }
 
+    fun sendFolderConfigPatch(folderPath: String, changes: Map<String, Any?>) {
+        if (!ensureLanguageServerInitialized()) return
+        val folderConfigEntry = mutableMapOf<String, Any?>("folderPath" to folderPath).apply {
+            putAll(changes)
+        }
+        val settingsMap = mapOf(
+            "folderConfigs" to listOf(folderConfigEntry)
+        )
+        val params = DidChangeConfigurationParams(settingsMap)
+        languageServer.workspaceService.didChangeConfiguration(params)
+    }
+
     fun getAuthenticatedUser(): String? {
         if (notAuthenticated()) return null
 
