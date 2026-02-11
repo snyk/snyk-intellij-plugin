@@ -225,8 +225,8 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       }
     } catch (e: Exception) {
       logger.error("Initialization of Snyk Language Server for ${project.name} failed", e)
-      if (processIsAlive()) process.destroyForcibly()
       isInitialized = false
+      if (processIsAlive()) process.destroyForcibly()
     }
   }
 
