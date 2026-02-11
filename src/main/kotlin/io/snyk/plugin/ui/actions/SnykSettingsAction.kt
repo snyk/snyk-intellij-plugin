@@ -17,8 +17,8 @@ class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
 
     ApplicationManager.getApplication().invokeLater {
       if (project.isDisposed) return@invokeLater
-      ShowSettingsUtil.getInstance()
-        .showSettingsDialog(project, "io.snyk.plugin.settings.SnykProjectSettingsConfigurable")
+      // showSettingsDialog(Project, String) expects configurable display name, not id
+      ShowSettingsUtil.getInstance().showSettingsDialog(project, "Snyk")
     }
   }
 

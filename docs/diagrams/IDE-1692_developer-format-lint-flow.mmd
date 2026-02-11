@@ -1,0 +1,12 @@
+flowchart LR
+  subgraph Local["Developer Local"]
+    A[Edit .kt/.kts] --> B[Pre-commit: spotlessCheck ktlintCheck]
+    B --> C{Pass?}
+    C -->|No| D[spotlessApply / fix lint]
+    D --> B
+    C -->|Yes| E[Commit]
+  end
+  subgraph IDE["IntelliJ"]
+    F[ktfmt plugin] --> G[Google Style]
+    G --> A
+  end
