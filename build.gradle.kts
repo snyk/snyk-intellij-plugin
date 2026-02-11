@@ -16,7 +16,7 @@ plugins {
   id("org.jetbrains.kotlin.jvm") version "2.1.21"
   id("org.jetbrains.kotlinx.kover") version "0.9.4"
   id("com.diffplug.spotless") version "8.2.1"
-  id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
+  id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
   id("pl.allegro.tech.build.axion-release") version "1.21.1"
 }
 
