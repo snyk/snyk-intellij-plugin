@@ -5,9 +5,9 @@ import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import snyk.common.SnykError
 
-class RootSecurityIssuesTreeNode(
-    project: Project
-) : RootTreeNodeBase(SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT, project) {
+class RootSecurityIssuesTreeNode(project: Project) :
+  RootTreeNodeBase(SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT, project) {
 
-    override fun getSnykError(): SnykError? = getSnykCachedResults(project)?.currentSnykCodeError?.toSnykError(project.basePath ?: "")
+  override fun getSnykError(): SnykError? =
+    getSnykCachedResults(project)?.currentSnykCodeError?.toSnykError(project.basePath ?: "")
 }

@@ -13,40 +13,43 @@ import snyk.common.lsp.LanguageServerWrapper
 
 class ApplyAiFixEditHandler(private val project: Project) {
 
-    val logger = Logger.getInstance(this::class.java).apply {
-        // tie log level to language server log level
-        val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-        if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
-        if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
+  val logger =
+    Logger.getInstance(this::class.java).apply {
+      // tie log level to language server log level
+      val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+      if (languageServerWrapper.logger.isDebugEnabled) this.setLevel(LogLevel.DEBUG)
+      if (languageServerWrapper.logger.isTraceEnabled) this.setLevel(LogLevel.TRACE)
     }
 
-    fun generateApplyAiFixEditCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
-        val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
+  fun generateApplyAiFixEditCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
+    val applyFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
-        applyFixQuery.addHandler { value ->
-            logger.debug("Generate ApplAiFixEditCommand for fix $value")
-            // Avoid blocking the UI thread
-            runInBackground("Snyk: Send command to apply AI fix edit...") {
-                LanguageServerWrapper.getInstance(project).sendCodeApplyAiFixEditCommand(value)
-            }
+    applyFixQuery.addHandler { value ->
+      logger.debug("Generate ApplAiFixEditCommand for fix $value")
+      // Avoid blocking the UI thread
+      runInBackground("Snyk: Send command to apply AI fix edit...") {
+        LanguageServerWrapper.getInstance(project).sendCodeApplyAiFixEditCommand(value)
+      }
 
-            return@addHandler JBCefJSQuery.Response("success")
-        }
+      return@addHandler JBCefJSQuery.Response("success")
+    }
 
-        return object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
-                if (frame.isMain) {
-                    val script = """
+    return object : CefLoadHandlerAdapter() {
+      override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+        if (frame.isMain) {
+          val script =
+            """
                     (function() {
                         if (window.applyFixQuery) {
                             return;
                         }
                         window.applyFixQuery = function(value) { ${applyFixQuery.inject("value")} };
                     })();
-                    """.trimIndent()
-                    browser.executeJavaScript(script, browser.url, 0)
-                }
-            }
+                    """
+              .trimIndent()
+          browser.executeJavaScript(script, browser.url, 0)
         }
+      }
     }
+  }
 }

@@ -11,30 +11,32 @@ import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 
 class ToggleDeltaHandler(val project: Project) {
-    fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
-        val toggleDeltaQuery = JBCefJSQuery.create(jbCefBrowser)
-        toggleDeltaQuery.addHandler {deltaEnabled ->
-            runInBackground("Snyk: updating configuration") {
-                pluginSettings().setDeltaEnabled(deltaEnabled.toBoolean())
-                LanguageServerWrapper.getInstance(project).updateConfiguration()
-            }
-            return@addHandler JBCefJSQuery.Response("success")
-        }
+  fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
+    val toggleDeltaQuery = JBCefJSQuery.create(jbCefBrowser)
+    toggleDeltaQuery.addHandler { deltaEnabled ->
+      runInBackground("Snyk: updating configuration") {
+        pluginSettings().setDeltaEnabled(deltaEnabled.toBoolean())
+        LanguageServerWrapper.getInstance(project).updateConfiguration()
+      }
+      return@addHandler JBCefJSQuery.Response("success")
+    }
 
-        return object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
-                if (frame.isMain) {
-                    val script = """
+    return object : CefLoadHandlerAdapter() {
+      override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+        if (frame.isMain) {
+          val script =
+            """
                     (function() {
                         if (window.toggleDeltaQuery) {
                             return;
                         }
                         window.toggleDeltaQuery = function(isEnabled) { ${toggleDeltaQuery.inject("isEnabled")} };
                     })()
-                    """.trimIndent()
-                    browser.executeJavaScript(script, browser.url, 0)
-                }
-            }
+                    """
+              .trimIndent()
+          browser.executeJavaScript(script, browser.url, 0)
         }
+      }
     }
+  }
 }

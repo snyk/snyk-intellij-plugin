@@ -1,0 +1,85 @@
+{
+  "ticket": "XXXX",
+  "description": "Add IntelliJ Platform UI tests (Remote Robot)",
+  "lastUpdated": "2026-01-27",
+  "lastSession": {
+    "date": "2026-01-27",
+    "sessionNumber": 1,
+    "completedSteps": [],
+    "currentStep": "1.1 Requirements Analysis",
+    "nextStep": "1.2 Schema Design"
+  },
+  "testSuites": {
+    "unit": {
+      "ui_test_infrastructure": {
+        "status": "pending",
+        "scenarios": [
+          {
+            "id": "XXXX-001",
+            "name": "uiTest_task_launches_IDE",
+            "description": "UI test task launches IDE with Remote Robot server",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-002",
+            "name": "uiTest_source_set_compiles",
+            "description": "uiTest source set compiles with Remote Robot dependencies",
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    "integration": {
+      "ui_usage_scenarios": {
+        "status": "pending",
+        "scenarios": [
+          {
+            "id": "XXXX-010",
+            "name": "scan_button_triggers_scan",
+            "description": "Clicking Scan triggers scan and tool window updates",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-011",
+            "name": "clear_cache_resets_ui",
+            "description": "Clearing cache resets UI state and results",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-012",
+            "name": "annotations_render_after_scan",
+            "description": "Annotations render in editor after scan",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-013",
+            "name": "code_vision_lenses_render",
+            "description": "Code Vision lenses appear and update for issues",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-014",
+            "name": "issue_tree_node_shows_details",
+            "description": "Clicking issue tree node shows detail information",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-015",
+            "name": "issue_node_navigates_to_file",
+            "description": "Clicking issue node navigates to file and location",
+            "status": "pending"
+          },
+          {
+            "id": "XXXX-016",
+            "name": "filtering_and_sorting",
+            "description": "Filtering and sorting update issue list correctly",
+            "status": "pending"
+          }
+        ]
+      }
+    },
+    "regression": {
+      "scenarios": []
+    }
+  }
+}

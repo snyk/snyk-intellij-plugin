@@ -13,63 +13,81 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.IOException
 
 class CliDownloaderErrorHandler {
-    fun showErrorWithRetryAndContactAction(message: String, project: Project) {
-        SnykBalloonNotificationHelper.showError(message, project,
-            NotificationAction.createSimple("Retry CLI download") {
-                runBackgroundableTask("Retry Snyk CLI Download", project, true) {
-                    getSnykCliDownloaderService().downloadLatestRelease(it, project)
-                }
-            },
-            NotificationAction.createSimple("Contact support...") {
-                BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
-            })
-    }
-
-    fun handleIOException(exception: IOException, cliVersion: String, indicator: ProgressIndicator, project: Project) {
-        retryDownload(project, cliVersion, indicator, getNetworkErrorNotificationMessage(exception))
-    }
-
-    private fun retryDownload(project: Project, cliVersion: String, indicator: ProgressIndicator, message: String) {
-        if (cliVersion.isEmpty()) return
-        runBackgroundableTask("Retry Snyk CLI Download", project, false) {
-            val cliDownloaderService = getSnykCliDownloaderService()
-            try {
-                // not using the service here to not causing an endless recursion (the service triggers a retry)
-                val downloader = cliDownloaderService.downloader
-                downloader.downloadFile(getCliFile(), cliVersion, indicator)
-            } catch (throwable: Throwable) { // we must catch throwable as IntelliJ could throw AssertionError
-                // IntelliJ throws an exception if we log an error, and in this case it is just the retry that failed
-                logger<CliDownloaderErrorHandler>().warn("Retry of downloading the Snyk CLI failed.", throwable)
-                showErrorWithRetryAndContactAction(message, project)
-            }
+  fun showErrorWithRetryAndContactAction(message: String, project: Project) {
+    SnykBalloonNotificationHelper.showError(
+      message,
+      project,
+      NotificationAction.createSimple("Retry CLI download") {
+        runBackgroundableTask("Retry Snyk CLI Download", project, true) {
+          getSnykCliDownloaderService().downloadLatestRelease(it, project)
         }
+      },
+      NotificationAction.createSimple("Contact support...") {
+        BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
+      },
+    )
+  }
+
+  fun handleIOException(
+    exception: IOException,
+    cliVersion: String,
+    indicator: ProgressIndicator,
+    project: Project,
+  ) {
+    retryDownload(project, cliVersion, indicator, getNetworkErrorNotificationMessage(exception))
+  }
+
+  private fun retryDownload(
+    project: Project,
+    cliVersion: String,
+    indicator: ProgressIndicator,
+    message: String,
+  ) {
+    if (cliVersion.isEmpty()) return
+    runBackgroundableTask("Retry Snyk CLI Download", project, false) {
+      val cliDownloaderService = getSnykCliDownloaderService()
+      try {
+        // not using the service here to not causing an endless recursion (the service triggers a
+        // retry)
+        val downloader = cliDownloaderService.downloader
+        downloader.downloadFile(getCliFile(), cliVersion, indicator)
+      } catch (
+        throwable: Throwable) { // we must catch throwable as IntelliJ could throw AssertionError
+        // IntelliJ throws an exception if we log an error, and in this case it is just the retry
+        // that failed
+        logger<CliDownloaderErrorHandler>()
+          .warn("Retry of downloading the Snyk CLI failed.", throwable)
+        showErrorWithRetryAndContactAction(message, project)
+      }
     }
+  }
 
-    fun getNetworkErrorNotificationMessage(exception: IOException) =
-        "The download of the Snyk CLI was interrupted by an error (${exception.localizedMessage}). " +
-            "Do you want to try again?"
+  fun getNetworkErrorNotificationMessage(exception: IOException) =
+    "The download of the Snyk CLI was interrupted by an error (${exception.localizedMessage}). " +
+      "Do you want to try again?"
 
-    fun handleHttpStatusException(exception: HttpRequests.HttpStatusException, project: Project) {
-        SnykBalloonNotificationHelper.showError(
-            getHttpStatusErrorNotificationMessage(exception),
-            project,
-            NotificationAction.createSimple("Contact support...") {
-                BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
-            })
-    }
+  fun handleHttpStatusException(exception: HttpRequests.HttpStatusException, project: Project) {
+    SnykBalloonNotificationHelper.showError(
+      getHttpStatusErrorNotificationMessage(exception),
+      project,
+      NotificationAction.createSimple("Contact support...") {
+        BrowserUtil.browse("https://snyk.io/contact-us/?utm_source=JETBRAINS_IDE")
+      },
+    )
+  }
 
-    fun getHttpStatusErrorNotificationMessage(exception: HttpRequests.HttpStatusException) =
-        "The download request of the current Snyk CLI was not successful (${exception.localizedMessage})."
+  fun getHttpStatusErrorNotificationMessage(exception: HttpRequests.HttpStatusException) =
+    "The download request of the current Snyk CLI was not successful (${exception.localizedMessage})."
 
-    fun handleChecksumVerificationException(
-        e: ChecksumVerificationException,
-        cliVersion: String,
-        indicator: ProgressIndicator,
-        project: Project
-    ) {
-        retryDownload(project, cliVersion, indicator, getChecksumFailedNotificationMessage(e))
-    }
+  fun handleChecksumVerificationException(
+    e: ChecksumVerificationException,
+    cliVersion: String,
+    indicator: ProgressIndicator,
+    project: Project,
+  ) {
+    retryDownload(project, cliVersion, indicator, getChecksumFailedNotificationMessage(e))
+  }
 
-    fun getChecksumFailedNotificationMessage(exception: ChecksumVerificationException) =
-        "The download of the Snyk CLI was not successful. The integrity check failed (${exception.localizedMessage})."
+  fun getChecksumFailedNotificationMessage(exception: ChecksumVerificationException) =
+    "The download of the Snyk CLI was not successful. The integrity check failed (${exception.localizedMessage})."
 }

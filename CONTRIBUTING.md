@@ -41,6 +41,13 @@ We can instruct you on what to add to the CHANGELOG.md, so please ask.
 ### Dependencies (macOS)
 - install a JDK into the path specified in `.snyk.env.darwin`. Else the snyk scan may fail 
 
+### How to Format
+
+Code is formatted with **ktfmt** (Google Style) via Spotless. Use the same style locally to avoid noisy diffs:
+
+1. **IntelliJ**: Install the [ktfmt](https://plugins.jetbrains.com/plugin/16137-ktfmt) plugin and set the code style to **Google Style** in the plugin settings.
+2. **Apply formatting**: Run `./gradlew spotlessApply` before committing. CI runs `./gradlew spotlessCheck` and `./gradlew ktlintCheck`; fix any reported issues locally.
+
 ### Build and deploy
 
 Build process happens through Gradle (as well as all dependency's connection). Managed in `build.gradle.kts` root file, parametrised by `gradle.properties` file.
