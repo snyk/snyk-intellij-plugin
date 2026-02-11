@@ -11,8 +11,10 @@ import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.getSnykCachedResults
+import com.intellij.openapi.components.service
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import snyk.common.lsp.settings.FolderConfigSettings
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.CODE_SECURITY_ROOT_TEXT
 import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.IAC_ROOT_TEXT
@@ -179,10 +181,11 @@ class SnykToolWindowSnykScanListener(
         if (disposed) return
 
         val settings = pluginSettings()
+        val fcs = service<FolderConfigSettings>()
 
         displayIssues(
             filterableIssueType = ScanIssue.CODE_SECURITY,
-            enabledInSettings = settings.snykCodeSecurityIssuesScanEnable,
+            enabledInSettings = fcs.isSnykCodeEnabled(project),
             filterTree = settings.treeFiltering.codeSecurityResults,
             snykResults = snykResults,
             rootNode = this.rootSecurityIssuesTreeNode,
@@ -235,10 +238,11 @@ class SnykToolWindowSnykScanListener(
         if (disposed) return
 
         val settings = pluginSettings()
+        val fcs = service<FolderConfigSettings>()
 
         displayResults(
             snykResults,
-            settings.ossScanEnable,
+            fcs.isOssScanEnabled(project),
             settings.treeFiltering.ossResults,
             this.rootOssIssuesTreeNode,
             ScanIssue.OPEN_SOURCE
@@ -249,9 +253,10 @@ class SnykToolWindowSnykScanListener(
         if (disposed) return
 
         val settings = pluginSettings()
+        val fcs = service<FolderConfigSettings>()
         displayResults(
             snykResults,
-            settings.iacScanEnabled,
+            fcs.isIacScanEnabled(project),
             settings.treeFiltering.iacResults,
             this.rootIacIssuesTreeNode,
             ScanIssue.INFRASTRUCTURE_AS_CODE,

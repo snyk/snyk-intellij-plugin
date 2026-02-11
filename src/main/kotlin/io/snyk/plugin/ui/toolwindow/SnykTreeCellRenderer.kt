@@ -1,6 +1,8 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.icons.AllIcons
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
 import com.intellij.ui.ColoredTreeCellRenderer
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.ui.UIUtil
@@ -27,7 +29,7 @@ import javax.swing.tree.DefaultMutableTreeNode
 
 private const val MAX_FILE_TREE_NODE_LENGTH = 60
 
-class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
+class SnykTreeCellRenderer(private val project: Project) : ColoredTreeCellRenderer() {
     @Suppress("UNCHECKED_CAST")
     override fun customizeCellRenderer(
         tree: JTree,
@@ -94,7 +96,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
             is RootOssTreeNode -> {
                 val settings = pluginSettings()
-                if (settings.ossScanEnable && settings.treeFiltering.ossResults) {
+                val fcs = service<snyk.common.lsp.settings.FolderConfigSettings>()
+                val ossEnabled = fcs.isOssScanEnabled(project)
+                if (ossEnabled && settings.treeFiltering.ossResults) {
                     nodeIcon = SnykIcons.OPEN_SOURCE_SECURITY
                     attributes = SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES
                 } else {
@@ -102,7 +106,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                 }
                 text =
-                    if (settings.ossScanEnable) {
+                    if (ossEnabled) {
                         value.userObject.toString()
                     } else {
                         SnykToolWindowPanel.OSS_ROOT_TEXT + DISABLED_SUFFIX
@@ -111,7 +115,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
             is RootSecurityIssuesTreeNode -> {
                 val settings = pluginSettings()
-                if (settings.snykCodeSecurityIssuesScanEnable && settings.treeFiltering.codeSecurityResults) {
+                val fcs = service<snyk.common.lsp.settings.FolderConfigSettings>()
+                val codeEnabled = fcs.isSnykCodeEnabled(project)
+                if (codeEnabled && settings.treeFiltering.codeSecurityResults) {
                     nodeIcon = SnykIcons.SNYK_CODE
                     attributes = SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES
                 } else {
@@ -119,7 +125,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                 }
                 text =
-                    if (settings.snykCodeSecurityIssuesScanEnable) {
+                    if (codeEnabled) {
                         value.userObject.toString()
                     } else {
                         SnykToolWindowPanel.CODE_SECURITY_ROOT_TEXT +
@@ -130,7 +136,9 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
 
             is RootIacIssuesTreeNode -> {
                 val settings = pluginSettings()
-                if (settings.iacScanEnabled && settings.treeFiltering.iacResults) {
+                val fcs = service<snyk.common.lsp.settings.FolderConfigSettings>()
+                val iacEnabled = fcs.isIacScanEnabled(project)
+                if (iacEnabled && settings.treeFiltering.iacResults) {
                     nodeIcon = SnykIcons.IAC
                     attributes = SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES
                 } else {
@@ -138,7 +146,7 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
                     attributes = SimpleTextAttributes.GRAYED_ATTRIBUTES
                 }
                 text =
-                    if (settings.iacScanEnabled) {
+                    if (iacEnabled) {
                         value.userObject.toString()
                     } else {
                         SnykToolWindowPanel.IAC_ROOT_TEXT + DISABLED_SUFFIX

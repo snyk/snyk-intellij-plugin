@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.junit.After
@@ -798,5 +799,189 @@ class FolderConfigSettingsTest {
         assertEquals("New config riskScoreThreshold should be null", null, newConfig.riskScoreThreshold)
         assertEquals("New config issueViewOpenIssues should be null", null, newConfig.issueViewOpenIssues)
         assertEquals("New config issueViewIgnoredIssues should be null", null, newConfig.issueViewIgnoredIssues)
+    }
+
+    // --- Per-folder settings with global fallback tests ---
+
+    private fun setupProjectWithFolderConfig(
+        folderConfig: FolderConfig
+    ): Project {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+        val path = folderConfig.folderPath
+        val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
+
+        val workspaceFolder = WorkspaceFolder().apply {
+            uri = normalizedPath.fromPathToUriString()
+            name = "project"
+        }
+
+        settings.addFolderConfig(folderConfig)
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns setOf(workspaceFolder)
+        every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
+
+        return projectMock
+    }
+
+    private fun setupProjectWithNoFolderConfigs(): Project {
+        val projectMock = mockk<Project>(relaxed = true)
+        val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+        mockkObject(LanguageServerWrapper.Companion)
+        every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+        every { lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false) } returns emptySet()
+        every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
+
+        return projectMock
+    }
+
+    @Test
+    fun `isOssScanEnabled falls back to global when no folder config`() {
+        val projectMock = setupProjectWithNoFolderConfigs()
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.ossScanEnable } returns true
+
+        assertTrue("Should fall back to global setting", settings.isOssScanEnabled(projectMock))
+    }
+
+    @Test
+    fun `isOssScanEnabled falls back to global when folder value is null`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", snykOssEnabled = null)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.ossScanEnable } returns true
+
+        assertTrue("Should fall back to global when folder value is null", settings.isOssScanEnabled(projectMock))
+    }
+
+    @Test
+    fun `isOssScanEnabled uses folder override when set`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", snykOssEnabled = false)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.ossScanEnable } returns true
+
+        assertFalse("Should use folder override (false) over global (true)", settings.isOssScanEnabled(projectMock))
+    }
+
+    @Test
+    fun `isSnykCodeEnabled uses folder override when set`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", snykCodeEnabled = true)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.snykCodeSecurityIssuesScanEnable } returns false
+
+        assertTrue("Should use folder override (true) over global (false)", settings.isSnykCodeEnabled(projectMock))
+    }
+
+    @Test
+    fun `isIacScanEnabled uses folder override when set`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", snykIacEnabled = false)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.iacScanEnabled } returns true
+
+        assertFalse("Should use folder override", settings.isIacScanEnabled(projectMock))
+    }
+
+    @Test
+    fun `isCriticalSeverityEnabled uses folder override from enabledSeverities`() {
+        val severities = SeverityFilter(critical = false, high = true, medium = true, low = true)
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", enabledSeverities = severities)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.criticalSeverityEnabled } returns true
+
+        assertFalse("Should use folder override (false) over global (true)", settings.isCriticalSeverityEnabled(projectMock))
+        assertTrue("High should use folder override", settings.isHighSeverityEnabled(projectMock))
+    }
+
+    @Test
+    fun `severity helpers fall back to global when enabledSeverities is null`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", enabledSeverities = null)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.criticalSeverityEnabled } returns true
+        every { globalSettings.highSeverityEnabled } returns false
+        every { globalSettings.mediumSeverityEnabled } returns true
+        every { globalSettings.lowSeverityEnabled } returns false
+
+        assertTrue("Critical should fall back to global", settings.isCriticalSeverityEnabled(projectMock))
+        assertFalse("High should fall back to global", settings.isHighSeverityEnabled(projectMock))
+        assertTrue("Medium should fall back to global", settings.isMediumSeverityEnabled(projectMock))
+        assertFalse("Low should fall back to global", settings.isLowSeverityEnabled(projectMock))
+    }
+
+    @Test
+    fun `getRiskScoreThreshold uses folder override when set`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", riskScoreThreshold = 800)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.riskScoreThreshold } returns 300
+
+        assertEquals("Should use folder override", 800, settings.getRiskScoreThreshold(projectMock))
+    }
+
+    @Test
+    fun `isOpenIssuesEnabled and isIgnoredIssuesEnabled use folder overrides`() {
+        val config = FolderConfig(
+            folderPath = "/test/project", baseBranch = "main",
+            issueViewOpenIssues = false, issueViewIgnoredIssues = true
+        )
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.openIssuesEnabled } returns true
+        every { globalSettings.ignoredIssuesEnabled } returns false
+
+        assertFalse("openIssues should use folder override", settings.isOpenIssuesEnabled(projectMock))
+        assertTrue("ignoredIssues should use folder override", settings.isIgnoredIssuesEnabled(projectMock))
+    }
+
+    @Test
+    fun `isScanAutomatic and isScanNetNew use folder overrides`() {
+        val config = FolderConfig(
+            folderPath = "/test/project", baseBranch = "main",
+            scanAutomatic = false, scanNetNew = true
+        )
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.scanOnSave } returns true
+        every { globalSettings.isDeltaFindingsEnabled() } returns false
+
+        assertFalse("scanAutomatic should use folder override", settings.isScanAutomatic(projectMock))
+        assertTrue("scanNetNew should use folder override", settings.isScanNetNew(projectMock))
     }
 }

@@ -336,7 +336,7 @@ class SnykLanguageClientTest {
             organization = "my-org",
             authenticationMethod = "oauth",
             activateSnykOpenSource = "false",
-            activateSnykCodeSecurity = "true",
+            activateSnykCode = "true",
             activateSnykIac = "false",
             scanningMode = "manual",
             insecure = "true",

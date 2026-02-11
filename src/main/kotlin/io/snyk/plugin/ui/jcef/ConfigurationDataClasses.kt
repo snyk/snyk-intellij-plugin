@@ -107,7 +107,7 @@ data class SaveConfigRequest(
             authenticationMethod = authenticationMethod,
             manageBinariesAutomatically = manageBinariesAutomatically?.toString(),
             activateSnykOpenSource = (activateSnykOpenSource ?: false).toString(),
-            activateSnykCodeSecurity = (activateSnykCode ?: false).toString(),
+            activateSnykCode = (activateSnykCode ?: false).toString(),
             activateSnykIac = (activateSnykIac ?: false).toString(),
             scanningMode = scanningMode,
             insecure = insecure?.toString(),

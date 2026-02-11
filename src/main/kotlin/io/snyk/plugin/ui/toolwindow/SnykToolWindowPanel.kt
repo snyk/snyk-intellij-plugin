@@ -196,7 +196,7 @@ class SnykToolWindowPanel(
 
         rootTreeNode.info = rootNodeText
 
-        vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer()
+        vulnerabilitiesTree.cellRenderer = SnykTreeCellRenderer(project)
         layout = BorderLayout()
 
         // convertor interface seems to be still used in TreeSpeedSearch, although it's marked obsolete
@@ -781,21 +781,21 @@ class SnykToolWindowPanel(
         iacResultsCount: Int? = null,
         addHMLPostfix: String = "",
     ) {
-        val settings = pluginSettings()
+        val fcs = service<FolderConfigSettings>()
 
         val realOssError =
             getSnykCachedResults(project)?.currentOssError != null && ossResultsCount != NODE_NOT_SUPPORTED_STATE
         val realIacError =
             getSnykCachedResults(project)?.currentIacError != null && iacResultsCount != NODE_NOT_SUPPORTED_STATE
 
-        val newOssTreeNodeText = getNewOssTreeNodeText(settings, realOssError, ossResultsCount, addHMLPostfix)
+        val newOssTreeNodeText = getNewOssTreeNodeText(fcs, realOssError, ossResultsCount, addHMLPostfix)
         newOssTreeNodeText?.let { rootOssTreeNode.userObject = it }
 
         val newSecurityIssuesNodeText =
-            getNewSecurityIssuesNodeText(settings, securityIssuesCount, addHMLPostfix)
+            getNewSecurityIssuesNodeText(fcs, securityIssuesCount, addHMLPostfix)
         newSecurityIssuesNodeText?.let { rootSecurityIssuesTreeNode.userObject = it }
 
-        val newIacTreeNodeText = getNewIacTreeNodeText(settings, realIacError, iacResultsCount, addHMLPostfix)
+        val newIacTreeNodeText = getNewIacTreeNodeText(fcs, realIacError, iacResultsCount, addHMLPostfix)
         newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
 
         val newRootTreeNodeText = getNewRootTreeNodeText()
@@ -812,7 +812,7 @@ class SnykToolWindowPanel(
     }
 
     private fun getNewIacTreeNodeText(
-        settings: SnykApplicationSettingsStateService,
+        fcs: FolderConfigSettings,
         realError: Boolean,
         iacResultsCount: Int?,
         addHMLPostfix: String
@@ -822,7 +822,7 @@ class SnykToolWindowPanel(
             "$IAC_ROOT_TEXT $errorSuffix"
         }
 
-        isIacRunning(project) && settings.iacScanEnabled -> "$IAC_ROOT_TEXT (scanning...)"
+        isIacRunning(project) && fcs.isIacScanEnabled(project) -> "$IAC_ROOT_TEXT (scanning...)"
         else ->
             iacResultsCount?.let { count ->
                 IAC_ROOT_TEXT +
@@ -837,7 +837,7 @@ class SnykToolWindowPanel(
     }
 
     private fun getNewSecurityIssuesNodeText(
-        settings: SnykApplicationSettingsStateService,
+        fcs: FolderConfigSettings,
         securityIssuesCount: Int?,
         addHMLPostfix: String
     ) = when {
@@ -847,7 +847,7 @@ class SnykToolWindowPanel(
         }
 
         isSnykCodeRunning(project) &&
-            settings.snykCodeSecurityIssuesScanEnable -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
+            fcs.isSnykCodeEnabled(project) -> "$CODE_SECURITY_ROOT_TEXT (scanning...)"
 
         else ->
             securityIssuesCount?.let { count ->
@@ -862,7 +862,7 @@ class SnykToolWindowPanel(
     }
 
     private fun getNewOssTreeNodeText(
-        settings: SnykApplicationSettingsStateService,
+        fcs: FolderConfigSettings,
         realError: Boolean,
         ossResultsCount: Int?,
         addHMLPostfix: String
@@ -872,7 +872,7 @@ class SnykToolWindowPanel(
             "$OSS_ROOT_TEXT $errorSuffix"
         }
 
-        isOssRunning(project) && settings.ossScanEnable -> "$OSS_ROOT_TEXT (scanning...)"
+        isOssRunning(project) && fcs.isOssScanEnabled(project) -> "$OSS_ROOT_TEXT (scanning...)"
 
         else ->
             ossResultsCount?.let { count ->

@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.components.service
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.pluginSettings
@@ -12,6 +13,7 @@ import io.snyk.plugin.showSettings
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.snykCodeAvailabilityPostfix
 import snyk.common.ProductType
+import snyk.common.lsp.settings.FolderConfigSettings
 
 /**
  * Build Snyk tree Scan Types filter actions.
@@ -31,9 +33,9 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
     }
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> = listOfNotNull(
-        createOssScanAction(),
-        createSecurityIssuesScanAction(),
-        createIacScanAction(),
+        createOssScanAction(e),
+        createSecurityIssuesScanAction(e),
+        createIacScanAction(e),
     ).toTypedArray()
 
     private fun createScanFilteringAction(
@@ -71,33 +73,53 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         }
     }
 
-    private fun createOssScanAction(): AnAction = createScanFilteringAction(
-        productType = ProductType.OSS,
-        scanTypeAvailable = settings.ossScanEnable,
-        resultsTreeFiltering = settings.treeFiltering.ossResults,
-        setResultsTreeFiltering = { settings.treeFiltering.ossResults = it }
-    )
+    private fun createOssScanAction(e: AnActionEvent?): AnAction {
+        val fcs = service<FolderConfigSettings>()
+        val project = e?.project
+        val scanTypeAvailable = if (project != null) fcs.isOssScanEnabled(project) else settings.ossScanEnable
+        return createScanFilteringAction(
+            productType = ProductType.OSS,
+            scanTypeAvailable = scanTypeAvailable,
+            resultsTreeFiltering = settings.treeFiltering.ossResults,
+            setResultsTreeFiltering = { settings.treeFiltering.ossResults = it }
+        )
+    }
 
-    private fun createSecurityIssuesScanAction(): AnAction = createScanFilteringAction(
-        productType = ProductType.CODE_SECURITY,
-        scanTypeAvailable = settings.snykCodeSecurityIssuesScanEnable,
-        resultsTreeFiltering = settings.treeFiltering.codeSecurityResults,
-        setResultsTreeFiltering = { settings.treeFiltering.codeSecurityResults = it },
-        availabilityPostfix = snykCodeAvailabilityPostfix()
-    )
+    private fun createSecurityIssuesScanAction(e: AnActionEvent?): AnAction {
+        val fcs = service<FolderConfigSettings>()
+        val project = e?.project
+        val scanTypeAvailable = if (project != null) fcs.isSnykCodeEnabled(project) else settings.snykCodeSecurityIssuesScanEnable
+        return createScanFilteringAction(
+            productType = ProductType.CODE_SECURITY,
+            scanTypeAvailable = scanTypeAvailable,
+            resultsTreeFiltering = settings.treeFiltering.codeSecurityResults,
+            setResultsTreeFiltering = { settings.treeFiltering.codeSecurityResults = it },
+            availabilityPostfix = snykCodeAvailabilityPostfix()
+        )
+    }
 
-    private fun createIacScanAction(): AnAction = createScanFilteringAction(
-        productType = ProductType.IAC,
-        scanTypeAvailable = settings.iacScanEnabled,
-        resultsTreeFiltering = settings.treeFiltering.iacResults,
-        setResultsTreeFiltering = { settings.treeFiltering.iacResults = it }
-    )
+    private fun createIacScanAction(e: AnActionEvent?): AnAction {
+        val fcs = service<FolderConfigSettings>()
+        val project = e?.project
+        val scanTypeAvailable = if (project != null) fcs.isIacScanEnabled(project) else settings.iacScanEnabled
+        return createScanFilteringAction(
+            productType = ProductType.IAC,
+            scanTypeAvailable = scanTypeAvailable,
+            resultsTreeFiltering = settings.treeFiltering.iacResults,
+            setResultsTreeFiltering = { settings.treeFiltering.iacResults = it }
+        )
+    }
 
     private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
+        val fcs = service<FolderConfigSettings>()
+        val project = e.project
+        val ossEnabled = if (project != null) fcs.isOssScanEnabled(project) else settings.ossScanEnable
+        val codeEnabled = if (project != null) fcs.isSnykCodeEnabled(project) else settings.snykCodeSecurityIssuesScanEnable
+        val iacEnabled = if (project != null) fcs.isIacScanEnabled(project) else settings.iacScanEnabled
         val onlyOneEnabled = arrayOf(
-            settings.ossScanEnable && settings.treeFiltering.ossResults,
-            settings.snykCodeSecurityIssuesScanEnable && settings.treeFiltering.codeSecurityResults,
-            settings.iacScanEnabled && settings.treeFiltering.iacResults
+            ossEnabled && settings.treeFiltering.ossResults,
+            codeEnabled && settings.treeFiltering.codeSecurityResults,
+            iacEnabled && settings.treeFiltering.iacResults
         ).count { it } == 1
         if (onlyOneEnabled) {
             val message = "At least one Scan type should be enabled and selected"

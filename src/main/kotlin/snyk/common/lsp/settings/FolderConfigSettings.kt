@@ -4,6 +4,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.pluginSettings
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
@@ -141,5 +142,70 @@ class FolderConfigSettings {
             val updatedConfig = folderConfig.copy(preferredOrg = organization ?: "")
             addFolderConfig(updatedConfig)
         }
+    }
+
+    // --- Per-folder settings with global fallback ---
+
+    private fun getActiveFolderConfig(project: Project): FolderConfig? =
+        getFolderConfigs(project).firstOrNull()
+
+    fun isOssScanEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.snykOssEnabled ?: pluginSettings().ossScanEnable
+    }
+
+    fun isSnykCodeEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.snykCodeEnabled ?: pluginSettings().snykCodeSecurityIssuesScanEnable
+    }
+
+    fun isIacScanEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.snykIacEnabled ?: pluginSettings().iacScanEnabled
+    }
+
+    fun isScanAutomatic(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.scanAutomatic ?: pluginSettings().scanOnSave
+    }
+
+    fun isScanNetNew(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.scanNetNew ?: pluginSettings().isDeltaFindingsEnabled()
+    }
+
+    fun isCriticalSeverityEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.enabledSeverities?.critical ?: pluginSettings().criticalSeverityEnabled
+    }
+
+    fun isHighSeverityEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.enabledSeverities?.high ?: pluginSettings().highSeverityEnabled
+    }
+
+    fun isMediumSeverityEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.enabledSeverities?.medium ?: pluginSettings().mediumSeverityEnabled
+    }
+
+    fun isLowSeverityEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.enabledSeverities?.low ?: pluginSettings().lowSeverityEnabled
+    }
+
+    fun getRiskScoreThreshold(project: Project): Int {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.riskScoreThreshold ?: pluginSettings().riskScoreThreshold ?: 0
+    }
+
+    fun isOpenIssuesEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.issueViewOpenIssues ?: pluginSettings().openIssuesEnabled
+    }
+
+    fun isIgnoredIssuesEnabled(project: Project): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        return folderConfig?.issueViewIgnoredIssues ?: pluginSettings().ignoredIssuesEnabled
     }
 }
