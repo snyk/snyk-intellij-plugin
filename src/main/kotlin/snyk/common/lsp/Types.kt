@@ -38,13 +38,12 @@ data class PresentableError(
   val treeNodeSuffix: String =
     "", // TreeNodeSuffix is an optional suffix message to be displayed in the tree node in IDEs
 ) {
-  fun toSnykError(defaultPath: String = ""): snyk.common.SnykError {
-    return snyk.common.SnykError(
+  fun toSnykError(defaultPath: String = ""): snyk.common.SnykError =
+    snyk.common.SnykError(
       message = error ?: treeNodeSuffix,
       path = path ?: defaultPath,
       code = code,
     )
-  }
 }
 
 // Define the SnykScanParams data class
@@ -74,10 +73,8 @@ enum class LsProduct(val longName: String, val shortName: String) {
   Unknown("", "");
 
   companion object {
-    fun getFor(name: String): LsProduct {
-      return entries.toTypedArray().firstOrNull { name in arrayOf(it.longName, it.shortName) }
-        ?: Unknown
-    }
+    fun getFor(name: String): LsProduct =
+      entries.toTypedArray().firstOrNull { name in arrayOf(it.longName, it.shortName) } ?: Unknown
   }
 }
 
@@ -178,8 +175,8 @@ data class ScanIssue(
     return if (offset > doc.textLength) doc.textLength else offset
   }
 
-  fun title(): String {
-    return when (this.filterableIssueType) {
+  fun title(): String =
+    when (this.filterableIssueType) {
       OPEN_SOURCE,
       INFRASTRUCTURE_AS_CODE -> this.title
       CODE_SECURITY -> {
@@ -187,7 +184,6 @@ data class ScanIssue(
       }
       else -> TODO()
     }
-  }
 
   fun longTitle(): String {
     return when (this.filterableIssueType) {
@@ -224,8 +220,8 @@ data class ScanIssue(
     }
   }
 
-  fun issueNaming(): String {
-    return when (this.filterableIssueType) {
+  fun issueNaming(): String =
+    when (this.filterableIssueType) {
       OPEN_SOURCE -> {
         if (this.additionalData.license != null) {
           "License"
@@ -237,10 +233,9 @@ data class ScanIssue(
       INFRASTRUCTURE_AS_CODE -> "Configuration Issue"
       else -> TODO()
     }
-  }
 
-  fun cwes(): List<String> {
-    return when (this.filterableIssueType) {
+  fun cwes(): List<String> =
+    when (this.filterableIssueType) {
       OPEN_SOURCE,
       INFRASTRUCTURE_AS_CODE -> {
         this.additionalData.identifiers?.CWE ?: emptyList()
@@ -250,10 +245,9 @@ data class ScanIssue(
       }
       else -> TODO()
     }
-  }
 
-  fun cves(): List<String> {
-    return when (this.filterableIssueType) {
+  fun cves(): List<String> =
+    when (this.filterableIssueType) {
       OPEN_SOURCE -> {
         this.additionalData.identifiers?.CVE ?: emptyList()
       }
@@ -261,64 +255,53 @@ data class ScanIssue(
       INFRASTRUCTURE_AS_CODE -> emptyList()
       else -> TODO()
     }
-  }
 
-  fun cvssScore(): String? {
-    return when (this.filterableIssueType) {
+  fun cvssScore(): String? =
+    when (this.filterableIssueType) {
       OPEN_SOURCE -> this.additionalData.cvssScore
       else -> null
     }
-  }
 
-  fun cvssV3(): String? {
-    return when (this.filterableIssueType) {
+  fun cvssV3(): String? =
+    when (this.filterableIssueType) {
       OPEN_SOURCE -> this.additionalData.CVSSv3
       else -> null
     }
-  }
 
-  fun id(): String? {
-    return when (this.filterableIssueType) {
+  fun id(): String? =
+    when (this.filterableIssueType) {
       OPEN_SOURCE,
       INFRASTRUCTURE_AS_CODE -> this.additionalData.ruleId
       else -> null
     }
-  }
 
-  fun ruleId(): String {
-    return this.additionalData.ruleId
-  }
+  fun ruleId(): String = this.additionalData.ruleId
 
-  fun icon(): Icon? {
-    return when (this.filterableIssueType) {
+  fun icon(): Icon? =
+    when (this.filterableIssueType) {
       OPEN_SOURCE -> getIcon(this.additionalData.packageManager.lowercase(Locale.getDefault()))
       else -> null
     }
-  }
 
-  fun details(project: Project): String {
-    return when (this.filterableIssueType) {
+  fun details(project: Project): String =
+    when (this.filterableIssueType) {
       OPEN_SOURCE,
       CODE_SECURITY -> getHtml(this.additionalData.details, project)
       INFRASTRUCTURE_AS_CODE -> getHtml(this.additionalData.customUIContent, project)
       else -> ""
     }
-  }
 
-  private fun getHtml(details: String?, project: Project): String {
-    return if (details.isNullOrEmpty() && this.id.isNotBlank()) {
+  private fun getHtml(details: String?, project: Project): String =
+    if (details.isNullOrEmpty() && this.id.isNotBlank()) {
       LanguageServerWrapper.getInstance(project).generateIssueDescription(this) ?: ""
     } else {
       details ?: ""
     }
-  }
 
-  override fun hashCode(): Int {
-    return this.id.hashCode()
-  }
+  override fun hashCode(): Int = this.id.hashCode()
 
-  fun annotationMessage(): String {
-    return when (this.filterableIssueType) {
+  fun annotationMessage(): String =
+    when (this.filterableIssueType) {
       OPEN_SOURCE -> this.title + " in " + this.additionalData.packageName + " id: " + this.ruleId()
       else ->
         this.title.ifBlank {
@@ -326,23 +309,19 @@ data class ScanIssue(
             " (Snyk)"
         }
     }
-  }
 
-  fun hasAIFix(): Boolean {
-    return this.additionalData.isUpgradable || this.additionalData.hasAIFix
-  }
+  fun hasAIFix(): Boolean = this.additionalData.isUpgradable || this.additionalData.hasAIFix
 
   fun isIgnored(): Boolean = this.isIgnored == true
 
-  fun getSeverityAsEnum(): Severity {
-    return when (severity) {
+  fun getSeverityAsEnum(): Severity =
+    when (severity) {
       "critical" -> Severity.CRITICAL
       "high" -> Severity.HIGH
       "medium" -> Severity.MEDIUM
       "low" -> Severity.LOW
       else -> Severity.UNKNOWN
     }
-  }
 
   fun isVisible(includeOpenedIssues: Boolean, includeIgnoredIssues: Boolean): Boolean {
     if (includeIgnoredIssues && includeOpenedIssues) {
@@ -522,9 +501,7 @@ data class IssueData(
     return this.key == other.key
   }
 
-  override fun hashCode(): Int {
-    return this.key.hashCode()
-  }
+  override fun hashCode(): Int = this.key.hashCode()
 }
 
 data class HasAuthenticatedParam(
@@ -597,9 +574,7 @@ data class FolderConfig(
   val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
   @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
 ) : Comparable<FolderConfig> {
-  override fun compareTo(other: FolderConfig): Int {
-    return this.folderPath.compareTo(other.folderPath)
-  }
+  override fun compareTo(other: FolderConfig): Int = this.folderPath.compareTo(other.folderPath)
 }
 
 data class ScanCommandConfig(

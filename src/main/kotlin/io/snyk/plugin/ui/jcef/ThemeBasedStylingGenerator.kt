@@ -31,8 +31,8 @@ class ThemeBasedStylingGenerator {
       html: String,
       varMap: Map<String, String>,
       declPrefixMap: Map<String, String>,
-    ): String {
-      return CSS_PATTERN.replace(html) { matchResult ->
+    ): String =
+      CSS_PATTERN.replace(html) { matchResult ->
         val varUsageName = matchResult.groupValues[1]
         val varFallback = matchResult.groupValues[2]
         val declName = matchResult.groupValues[3]
@@ -54,7 +54,6 @@ class ThemeBasedStylingGenerator {
           else -> matchResult.value
         }
       }
-    }
 
     /**
      * Lighten or darken a hex color.

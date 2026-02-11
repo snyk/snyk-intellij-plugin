@@ -21,10 +21,42 @@ ij_kotlin_packages_to_use_import_on_demand = ^
 ij_kotlin_name_count_to_use_star_import = 999
 ij_kotlin_name_count_to_use_star_import_for_members = 999
 ij_kotlin_imports_layout = *, java.**, javax.**, kotlin.**, ^
-# Ktlint: formatting handled by Spotless/ktfmt; standard rules disabled to avoid conflicts
-ktlint_standard = disabled
-ktlint_official = disabled
+# Ktlint: standard rules enabled; experimental disabled
 ktlint_experimental = disabled
+# Formatting rules explicitly disabled — ktfmt (Spotless) is the authoritative formatter.
+# Each rule below conflicts with ktfmt output and must stay disabled.
+ktlint_standard_indent = disabled
+ktlint_standard_string-template-indent = disabled
+ktlint_standard_import-ordering = disabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_annotation = disabled
+ktlint_standard_annotation-spacing = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_wrapping = disabled
+ktlint_standard_parameter-list-wrapping = disabled
+ktlint_standard_parameter-list-spacing = disabled
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_if-else-wrapping = disabled
+ktlint_standard_condition-wrapping = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_no-empty-first-line-in-class-body = disabled
+ktlint_standard_no-empty-first-line-in-method-block = disabled
+ktlint_standard_no-blank-line-in-list = disabled
+ktlint_standard_trailing-comma-on-call-site = disabled
+ktlint_standard_trailing-comma-on-declaration-site = disabled
+ktlint_standard_spacing-between-declarations-with-annotations = disabled
+ktlint_standard_spacing-between-declarations-with-comments = disabled
+ktlint_standard_try-catch-finally-spacing = disabled
+ktlint_standard_value-parameter-comment = disabled
+ktlint_standard_type-argument-comment = disabled
+ktlint_standard_type-parameter-comment = disabled
+ktlint_standard_kdoc-wrapping = disabled
+ktlint_standard_block-comment-initial-star-alignment = disabled
+
+[**/test/**/*.kt]
+# Backtick-quoted test names are idiomatic Kotlin
+ktlint_standard_function-naming = disabled
 
 [*.java]
 ij_java_names_count_to_use_import_on_demand = 999

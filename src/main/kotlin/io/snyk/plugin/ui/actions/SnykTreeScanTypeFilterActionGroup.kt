@@ -16,9 +16,7 @@ import snyk.common.ProductType
 /** Build Snyk tree Scan Types filter actions. */
 class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
 
-  override fun getActionUpdateThread(): ActionUpdateThread {
-    return ActionUpdateThread.BGT
-  }
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
   private val settings
     get() = pluginSettings()
@@ -45,9 +43,7 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
         availabilityPostfix.ifEmpty { if (scanTypeAvailable) "" else " (disabled in Settings)" }
     return object : ToggleAction(text) {
 
-      override fun getActionUpdateThread(): ActionUpdateThread {
-        return ActionUpdateThread.BGT
-      }
+      override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
       override fun isSelected(e: AnActionEvent): Boolean = resultsTreeFiltering
 

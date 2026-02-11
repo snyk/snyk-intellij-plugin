@@ -23,8 +23,8 @@ fun getEndpointUrl(): String {
  * If the [endpointUrl] is null or empty, then [https://api.snyk.io](https://api.snyk.io) will be
  * used.
  */
-internal fun resolveCustomEndpoint(endpointUrl: String?): String {
-  return if (endpointUrl.isNullOrEmpty()) {
+internal fun resolveCustomEndpoint(endpointUrl: String?): String =
+  if (endpointUrl.isNullOrEmpty()) {
     val normalizedEndpointURL = "https://api.snyk.io"
     pluginSettings().customEndpointUrl = normalizedEndpointURL
     normalizedEndpointURL
@@ -38,7 +38,6 @@ internal fun resolveCustomEndpoint(endpointUrl: String?): String {
     pluginSettings().customEndpointUrl = normalizedEndpointURL
     normalizedEndpointURL
   }
-}
 
 fun URI.isSnykTenant() =
   isSnykDomain() &&

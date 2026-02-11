@@ -25,14 +25,12 @@ class SnykPluginDisposable : Disposable, AppLifecycleListener {
 
   companion object {
     @NotNull
-    fun getInstance(): SnykPluginDisposable {
-      return ApplicationManager.getApplication().getService(SnykPluginDisposable::class.java)
-    }
+    fun getInstance(): SnykPluginDisposable =
+      ApplicationManager.getApplication().getService(SnykPluginDisposable::class.java)
 
     @NotNull
-    fun getInstance(@NotNull project: Project): SnykPluginDisposable {
-      return project.getService(SnykPluginDisposable::class.java)
-    }
+    fun getInstance(@NotNull project: Project): SnykPluginDisposable =
+      project.getService(SnykPluginDisposable::class.java)
   }
 
   init {

@@ -13,7 +13,6 @@ class SuggestionTreeNode(
   override val navigateToSource: () -> Unit,
 ) : DefaultMutableTreeNode(issue), NavigatableToSourceTreeNode, DescriptionHolderTreeNode {
 
-  override fun getDescriptionPanel(): SuggestionDescriptionPanel {
-    return SuggestionDescriptionPanel(project, issue)
-  }
+  override fun getDescriptionPanel(): SuggestionDescriptionPanel =
+    SuggestionDescriptionPanel(project, issue)
 }

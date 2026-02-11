@@ -189,11 +189,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
       // enable message logging
       val wrapper =
-        fun(wrapped: MessageConsumer): MessageConsumer {
-          return MessageConsumer { message ->
-            logger.trace(message.toString())
-            wrapped.consume(message)
-          }
+        fun(wrapped: MessageConsumer): MessageConsumer = MessageConsumer { message ->
+          logger.trace(message.toString())
+          wrapped.consume(message)
         }
 
       launcher =
@@ -286,8 +284,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     project: Project,
     promptForTrust: Boolean,
   ): MutableSet<VirtualFile> {
-    if (promptForTrust && !confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project))
+    if (promptForTrust && !confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) {
       return mutableSetOf()
+    }
 
     val contentRoots = project.getContentRootVirtualFiles()
     val trustService = service<WorkspaceTrustService>()
@@ -746,8 +745,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     ignoreReason: String,
     ignoreExpirationDate: String,
   ) {
-    if (!ensureLanguageServerInitialized())
+    if (!ensureLanguageServerInitialized()) {
       throw RuntimeException("couldn't initialize language server")
+    }
     try {
       val param = ExecuteCommandParams()
       param.command = COMMAND_SUBMIT_IGNORE_REQUEST
@@ -805,8 +805,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   }
 
   fun executeCLIScan(cmds: List<String>, path: String): String {
-    if (!ensureLanguageServerInitialized())
+    if (!ensureLanguageServerInitialized()) {
       throw RuntimeException("couldn't initialize language server")
+    }
     // this will fail on some multi-module projects, but we will move to explicit calls anyway
     // and this is just a stop gap
     val args: List<String> = mutableListOf(path, *cmds.toTypedArray())
@@ -842,9 +843,8 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     shutdown()
   }
 
-  fun getFolderConfigsRefreshed(): Map<String?, Boolean?> {
-    return Collections.unmodifiableMap(this.folderConfigsRefreshed)
-  }
+  fun getFolderConfigsRefreshed(): Map<String?, Boolean?> =
+    Collections.unmodifiableMap(this.folderConfigsRefreshed)
 
   fun updateFolderConfigRefresh(folderPath: String, refreshed: Boolean) {
     val path = Paths.get(folderPath).normalize().toAbsolutePath().toString()

@@ -357,8 +357,11 @@ class SnykToolWindowSnykScanListener(
       return OPEN_ISSUES_ARE_DISABLED
     }
 
-    return if (issuesCount == 0) CONGRATS_NO_ISSUES_FOUND
-    else "✋ $issuesCount issue${if (issuesCount == 1) "" else "s"}"
+    return if (issuesCount == 0) {
+      CONGRATS_NO_ISSUES_FOUND
+    } else {
+      "✋ $issuesCount issue${if (issuesCount == 1) "" else "s"}"
+    }
   }
 
   private fun getIssueFoundTextForCode(
@@ -434,13 +437,12 @@ class SnykToolWindowSnykScanListener(
   private fun getFixableIssuesText(
     fixableIssuesCount: Int,
     sayOpenIssues: Boolean = false,
-  ): String {
-    return if (fixableIssuesCount > 0) {
+  ): String =
+    if (fixableIssuesCount > 0) {
       "⚡ $fixableIssuesCount${if (sayOpenIssues) " open" else ""} issue${if (fixableIssuesCount == 1) " is" else "s are"} fixable automatically."
     } else {
       NO_FIXABLE_ISSUES
     }
-  }
 
   private fun getFixableIssuesTextForCode(fixableIssuesCount: Int): String? {
     if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
@@ -472,20 +474,29 @@ class SnykToolWindowSnykScanListener(
     val isCodeNode = filterableIssueType == ScanIssue.CODE_SECURITY
 
     val text =
-      if (!isCodeNode) getIssueFoundText(totalIssuesCount)
-      else getIssueFoundTextForCode(totalIssuesCount, openIssuesCount, ignoredIssuesCount)
+      if (!isCodeNode) {
+        getIssueFoundText(totalIssuesCount)
+      } else {
+        getIssueFoundTextForCode(totalIssuesCount, openIssuesCount, ignoredIssuesCount)
+      }
     rootNode.add(InfoTreeNode(text, project))
     if (totalIssuesCount == 0) {
       val ivoNode =
-        if (!isCodeNode) getNoIssueViewOptionsSelectedTreeNode()
-        else getNoIssueViewOptionsSelectedTreeNodeForCode()
+        if (!isCodeNode) {
+          getNoIssueViewOptionsSelectedTreeNode()
+        } else {
+          getNoIssueViewOptionsSelectedTreeNodeForCode()
+        }
       if (ivoNode != null) {
         rootNode.add(ivoNode)
       }
     } else if (fixableIssuesCount != null) {
       val fixableText =
-        if (!isCodeNode) getFixableIssuesText(fixableIssuesCount)
-        else getFixableIssuesTextForCode(fixableIssuesCount)
+        if (!isCodeNode) {
+          getFixableIssuesText(fixableIssuesCount)
+        } else {
+          getFixableIssuesTextForCode(fixableIssuesCount)
+        }
       if (fixableText != null) {
         rootNode.add(InfoTreeNode(fixableText, project))
       }

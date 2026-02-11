@@ -58,8 +58,8 @@ object SnykIcons {
   private val MEDIUM_SEVERITY_16 = getIcon("/icons/severity_medium_16.svg", SnykIcons::class.java)
   private val MEDIUM_SEVERITY_32 = getIcon("/icons/severity_medium_32.svg", SnykIcons::class.java)
 
-  fun getSeverityIcon(severity: Severity, iconSize: IconSize = IconSize.SIZE16): Icon {
-    return when (severity) {
+  fun getSeverityIcon(severity: Severity, iconSize: IconSize = IconSize.SIZE16): Icon =
+    when (severity) {
       Severity.CRITICAL ->
         when (iconSize) {
           IconSize.SIZE16 -> CRITICAL_SEVERITY_16
@@ -86,7 +86,6 @@ object SnykIcons {
           IconSize.SIZE32 -> VULNERABILITY_24
         }
     }
-  }
 
   enum class IconSize {
     SIZE16,

@@ -310,9 +310,8 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
   }
 
   @JsonRequest(value = "workspace/snyk.sdks")
-  fun getSdks(workspaceFolder: WorkspaceFolder): CompletableFuture<List<LsSdk>> {
-    return CompletableFuture.completedFuture(SdkHelper.getSdks(project))
-  }
+  fun getSdks(workspaceFolder: WorkspaceFolder): CompletableFuture<List<LsSdk>> =
+    CompletableFuture.completedFuture(SdkHelper.getSdks(project))
 
   @JsonNotification(value = "$/snyk.addTrustedFolders")
   fun addTrustedPaths(param: SnykTrustedFoldersParams) {
@@ -323,9 +322,8 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     }
   }
 
-  override fun createProgress(params: WorkDoneProgressCreateParams): CompletableFuture<Void> {
-    return progressManager.createProgress(params)
-  }
+  override fun createProgress(params: WorkDoneProgressCreateParams): CompletableFuture<Void> =
+    progressManager.createProgress(params)
 
   override fun logTrace(params: LogTraceParams?) {
     if (disposed) return
@@ -363,13 +361,12 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     }
   }
 
-  private fun cutMessage(messageParams: MessageParams): String {
-    return if (messageParams.message.length > 500) {
+  private fun cutMessage(messageParams: MessageParams): String =
+    if (messageParams.message.length > 500) {
       messageParams.message.substring(0, 500) + "..."
     } else {
       messageParams.message
     }
-  }
 
   override fun showMessageRequest(
     requestParams: ShowMessageRequestParams

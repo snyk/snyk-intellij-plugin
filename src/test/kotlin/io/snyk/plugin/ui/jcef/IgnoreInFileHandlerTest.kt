@@ -45,7 +45,7 @@ class IgnoreInFileHandlerTest : BasePlatformTestCase() {
 
     // Expected args for executeCommandParams
     val args: List<String> =
-      arrayListOf(projectBasePath, "ignore", "--id=SNYK-CC-TF-61", "--path=${filePath}")
+      arrayListOf(projectBasePath, "ignore", "--id=SNYK-CC-TF-61", "--path=$filePath")
 
     val executeCommandParams = ExecuteCommandParams(COMMAND_EXECUTE_CLI, args)
     verify { lsMock.workspaceService.executeCommand(executeCommandParams) }

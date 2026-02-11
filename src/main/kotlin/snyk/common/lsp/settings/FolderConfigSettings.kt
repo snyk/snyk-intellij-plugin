@@ -56,9 +56,7 @@ class FolderConfigSettings {
     return newConfig
   }
 
-  fun getAll(): Map<String, FolderConfig> {
-    return HashMap(configs)
-  }
+  fun getAll(): Map<String, FolderConfig> = HashMap(configs)
 
   fun clear() = configs.clear()
 
@@ -129,9 +127,8 @@ class FolderConfigSettings {
    * @param project the project to check
    * @return true if auto-organization is enabled
    */
-  fun isAutoOrganizationEnabled(project: Project): Boolean {
-    return getFolderConfigs(project).firstOrNull()?.orgSetByUser != true
-  }
+  fun isAutoOrganizationEnabled(project: Project): Boolean =
+    getFolderConfigs(project).firstOrNull()?.orgSetByUser != true
 
   /**
    * Sets the auto-organization setting for the given project.

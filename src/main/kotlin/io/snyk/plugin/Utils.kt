@@ -84,13 +84,12 @@ fun getSnykCachedResults(project: Project): SnykCachedResults? = project.service
 fun getSnykCachedResultsForProduct(
   project: Project,
   product: ProductType,
-): MutableMap<SnykFile, Set<ScanIssue>>? {
-  return when (product) {
+): MutableMap<SnykFile, Set<ScanIssue>>? =
+  when (product) {
     ProductType.OSS -> getSnykCachedResults(project)?.currentOSSResultsLS
     ProductType.IAC -> getSnykCachedResults(project)?.currentIacResultsLS
     ProductType.CODE_SECURITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
   }
-}
 
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? =
   project.serviceIfNotDisposed()
@@ -121,10 +120,8 @@ fun getDefaultCliPath() = getPluginPath() + separator + Platform.current().snykW
 
 fun isProjectSettingsAvailable(project: Project?) = nonNull(project) && !project!!.isDefault
 
-fun snykToolWindow(project: Project): ToolWindow? {
-  return ToolWindowManager.getInstance(project)
-    .getToolWindow(SnykToolWindowFactory.SNYK_TOOL_WINDOW)
-}
+fun snykToolWindow(project: Project): ToolWindow? =
+  ToolWindowManager.getInstance(project).getToolWindow(SnykToolWindowFactory.SNYK_TOOL_WINDOW)
 
 // see project.service<T>() in com.intellij.openapi.components
 private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
@@ -209,13 +206,10 @@ fun isUrlValid(url: String?): Boolean {
   }
 }
 
-fun URI.getDecodedParam(param: String?): String? {
-  return URLDecoder.decode(this.queryParameters[param], "UTF-8")
-}
+fun URI.getDecodedParam(param: String?): String? =
+  URLDecoder.decode(this.queryParameters[param], "UTF-8")
 
-fun isOssRunning(project: Project): Boolean {
-  return isProductScanRunning(project, ProductType.OSS)
-}
+fun isOssRunning(project: Project): Boolean = isProductScanRunning(project, ProductType.OSS)
 
 private fun isProductScanRunning(project: Project, productType: ProductType): Boolean {
   val lsRunning =
@@ -226,13 +220,10 @@ private fun isProductScanRunning(project: Project, productType: ProductType): Bo
   return lsRunning
 }
 
-fun isSnykCodeRunning(project: Project): Boolean {
-  return isProductScanRunning(project, ProductType.CODE_SECURITY)
-}
+fun isSnykCodeRunning(project: Project): Boolean =
+  isProductScanRunning(project, ProductType.CODE_SECURITY)
 
-fun isIacRunning(project: Project): Boolean {
-  return isProductScanRunning(project, ProductType.IAC)
-}
+fun isIacRunning(project: Project): Boolean = isProductScanRunning(project, ProductType.IAC)
 
 fun isScanRunning(project: Project): Boolean =
   isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
@@ -307,8 +298,9 @@ fun refreshAnnotationsForFile(project: Project, virtualFile: VirtualFile) {
 
 fun refreshAnnotationsForFile(psiFile: PsiFile) {
   invokeLater {
-    if (psiFile.project.isDisposed || ApplicationManager.getApplication().isDisposed)
+    if (psiFile.project.isDisposed || ApplicationManager.getApplication().isDisposed) {
       return@invokeLater
+    }
     DaemonCodeAnalyzer.getInstance(psiFile.project).restart(psiFile)
   }
 }
@@ -365,8 +357,9 @@ fun navigateToSource(
           .createNavigatable(project, virtualFile, selectionStartOffset)
       if (navigatable.canNavigateToSource()) {
         invokeLater {
-          if (project.isDisposed || !virtualFile.isValid || !navigatable.canNavigate())
+          if (project.isDisposed || !virtualFile.isValid || !navigatable.canNavigate()) {
             return@invokeLater
+          }
           navigatable.navigate(false)
         }
       }
@@ -499,30 +492,21 @@ fun String.toVirtualFile(): VirtualFile {
   }
 }
 
-fun String.fromUriToPath(): Path {
-  val filePath = Paths.get(URI.create(this.removeSuffix(separator)))
-  return filePath.normalize()
-}
+fun String.fromUriToPath(): Path = Paths.get(URI.create(this.removeSuffix(separator))).normalize()
 
-fun String.toVirtualFileOrNull(): VirtualFile? {
-  return try {
+fun String.toVirtualFileOrNull(): VirtualFile? =
+  try {
     this.toVirtualFile()
   } catch (e: FileNotFoundException) {
     null
   }
-}
 
-fun VirtualFile.toLanguageServerURI(): String {
-  return this.path.fromPathToUriString()
-}
+fun VirtualFile.toLanguageServerURI(): String = this.path.fromPathToUriString()
 
-fun String.fromPathToUriString(): String {
-  return Paths.get(this).normalize().toUri().toASCIIString().removeSuffix()
-}
+fun String.fromPathToUriString(): String =
+  Paths.get(this).normalize().toUri().toASCIIString().removeSuffix()
 
-private fun String.startsWithWindowsDriveLetter(): Boolean {
-  return this.matches(Regex("^[a-zA-Z]:.*$"))
-}
+private fun String.startsWithWindowsDriveLetter(): Boolean = this.matches(Regex("^[a-zA-Z]:.*$"))
 
 fun VirtualFile.getDocument(): Document? {
   if (ApplicationManager.getApplication().isDisposed) return null
@@ -531,11 +515,8 @@ fun VirtualFile.getDocument(): Document? {
   }
 }
 
-fun Project.getContentRootPaths(): SortedSet<Path> {
-  return getContentRootVirtualFiles()
-    .mapNotNull { it.path.toNioPathOrNull()?.normalize() }
-    .toSortedSet()
-}
+fun Project.getContentRootPaths(): SortedSet<Path> =
+  getContentRootVirtualFiles().mapNotNull { it.path.toNioPathOrNull()?.normalize() }.toSortedSet()
 
 @Suppress("UselessCallOnCollection")
 fun Project.getContentRootVirtualFiles(): Set<VirtualFile> {
@@ -566,14 +547,20 @@ fun VirtualFile.isInContent(project: Project): Boolean {
 
   // If we already have read access (e.g., on EDT), use it directly - no blocking
   if (app.isReadAccessAllowed) {
-    return if (project.isDisposed) false
-    else ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
+    return if (project.isDisposed) {
+      false
+    } else {
+      ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
+    }
   }
 
   // Not on EDT and no read access - this shouldn't block EDT
   return app.runReadAction<Boolean> {
-    if (project.isDisposed) false
-    else ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
+    if (project.isDisposed) {
+      false
+    } else {
+      ProjectFileIndex.getInstance(project).isInContent(vf) || isWhitelistedForInclusion()
+    }
   }
 }
 

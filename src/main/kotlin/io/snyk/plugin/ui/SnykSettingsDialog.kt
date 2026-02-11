@@ -1003,9 +1003,7 @@ class SnykSettingsDialog(
     )
   }
 
-  private fun isCliBaseDownloadUrlTextFieldValid(params: String?): Boolean {
-    return !params.isNullOrEmpty()
-  }
+  private fun isCliBaseDownloadUrlTextFieldValid(params: String?): Boolean = !params.isNullOrEmpty()
 
   private fun setupValidation(
     textField: JTextField,

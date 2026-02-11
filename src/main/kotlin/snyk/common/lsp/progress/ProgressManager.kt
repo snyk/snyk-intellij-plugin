@@ -117,9 +117,7 @@ class ProgressManager(val project: Project) : Disposable {
     }
   }
 
-  private fun isDone(progress: Progress): Boolean {
-    return progress.done || progress.cancelled || disposed
-  }
+  private fun isDone(progress: Progress): Boolean = progress.done || progress.cancelled || disposed
 
   private fun begin(begin: WorkDoneProgressBegin, progressIndicator: ProgressIndicator) {
     val percentage = begin.percentage
@@ -215,8 +213,7 @@ class ProgressManager(val project: Project) : Disposable {
   }
 
   companion object {
-    private fun getToken(token: Either<String, Int>): String {
-      return token.map(Function.identity()) { obj: Int -> obj.toString() }
-    }
+    private fun getToken(token: Either<String, Int>): String =
+      token.map(Function.identity()) { obj: Int -> obj.toString() }
   }
 }

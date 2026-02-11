@@ -11,9 +11,7 @@ import io.snyk.plugin.isScanRunning
 /** Stop scan project with Snyk action. */
 class SnykStopScanAction : AnAction(AllIcons.Actions.Suspend), DumbAware {
 
-  override fun getActionUpdateThread(): ActionUpdateThread {
-    return ActionUpdateThread.BGT
-  }
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
   override fun actionPerformed(actionEvent: AnActionEvent) {
     getSnykTaskQueueService(actionEvent.project!!)?.stopScan()

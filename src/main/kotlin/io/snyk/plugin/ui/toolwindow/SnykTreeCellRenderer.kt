@@ -144,9 +144,8 @@ class SnykTreeCellRenderer : ColoredTreeCellRenderer() {
     text?.let { append(it, attributes) }
   }
 
-  fun Set<ScanIssue>.issueIsContained(issue: ScanIssue): Boolean {
-    return this.isNotEmpty() && this.contains(issue)
-  }
+  fun Set<ScanIssue>.issueIsContained(issue: ScanIssue): Boolean =
+    this.isNotEmpty() && this.contains(issue)
 
   private fun updateTextTooltipAndIcon(
     file: SnykFile,

@@ -27,7 +27,7 @@ import org.apache.http.HttpStatus
 import org.junit.Assert.assertNotEquals
 import snyk.common.lsp.LanguageServerWrapper
 
-class CliDownloaderServiceIntegTest : LightPlatformTestCase() {
+class SnykCliDownloaderServiceIntegTest : LightPlatformTestCase() {
 
   private lateinit var indicator: EmptyProgressIndicator
   private lateinit var errorHandler: CliDownloaderErrorHandler

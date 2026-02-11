@@ -113,7 +113,7 @@ class OpenFileLoadHandlerGeneratorTest : BasePlatformTestCase() {
   }
 
   fun `test navigationSeparator constant should be pipe character`() {
-    assertEquals("|", navigationSeparator)
+    assertEquals("|", NAVIGATION_SEPARATOR)
   }
 
   fun `test openFile should handle zero-based indices`() {

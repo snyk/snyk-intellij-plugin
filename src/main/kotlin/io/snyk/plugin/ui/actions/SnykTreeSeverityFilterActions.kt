@@ -14,9 +14,7 @@ import io.snyk.plugin.ui.getDisabledIcon
 
 abstract class SnykTreeSeverityFilterActionBase(private val severity: Severity) : ToggleAction() {
 
-  override fun getActionUpdateThread(): ActionUpdateThread {
-    return ActionUpdateThread.BGT
-  }
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
   override fun update(e: AnActionEvent) {
     super.update(e)

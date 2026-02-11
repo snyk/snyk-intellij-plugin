@@ -36,19 +36,16 @@ class PanelHTMLUtils {
         val startIndex = nonceStartPosition + "nonce-".length
         val endIndex = startIndex + 24
         return html.substring(startIndex, endIndex).trim()
-      } else null
+      } else {
+        null
+      }
     }
 
-    private fun getGenerateAiFixScript(): String {
-      return "window.aiFixQuery(issueId);\n"
-    }
+    private fun getGenerateAiFixScript(): String = "window.aiFixQuery(issueId);\n"
 
-    private fun getApplyAiFixScript(): String {
-      return "window.applyFixQuery(fixId);\n"
-    }
+    private fun getApplyAiFixScript(): String = "window.applyFixQuery(fixId);\n"
 
-    private fun getSubmitIgnoreRequestScript(): String {
-      return "window.submitIgnoreRequest(issueId + '@|@' + ignoreType + '@|@' + ignoreExpirationDate + '@|@' + ignoreReason);\n"
-    }
+    private fun getSubmitIgnoreRequestScript(): String =
+      "window.submitIgnoreRequest(issueId + '@|@' + ignoreType + '@|@' + ignoreExpirationDate + '@|@' + ignoreReason);\n"
   }
 }

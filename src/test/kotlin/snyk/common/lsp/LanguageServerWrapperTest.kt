@@ -179,7 +179,9 @@ class LanguageServerWrapperTest {
     try {
       cut.ensureLanguageServerInitialized()
       fail("expected assertion error")
-    } catch (_: AssertionError) {}
+    } catch (_: AssertionError) {
+      // expected
+    }
   }
 
   @Test

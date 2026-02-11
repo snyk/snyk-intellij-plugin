@@ -25,16 +25,12 @@ import snyk.common.lsp.LanguageServerWrapper
 class SnykDocumentationTargetPointer(private val documentationTarget: DocumentationTarget) :
   Pointer<DocumentationTarget> {
 
-  override fun dereference(): DocumentationTarget {
-    return documentationTarget
-  }
+  override fun dereference(): DocumentationTarget = documentationTarget
 }
 
 class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
   private var disposed = false
-    get() {
-      return SnykPluginDisposable.getInstance().isDisposed() || field
-    }
+    get() = SnykPluginDisposable.getInstance().isDisposed() || field
 
   fun isDisposed() = disposed
 
@@ -44,8 +40,9 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
   ): MutableList<out DocumentationTarget> {
     val languageServerWrapper = LanguageServerWrapper.getInstance(file.project)
     val emptyReturnList = mutableListOf<DocumentationTarget>()
-    if (disposed || !languageServerWrapper.isInitialized || !isDocumentationHoverEnabled())
+    if (disposed || !languageServerWrapper.isInitialized || !isDocumentationHoverEnabled()) {
       return emptyReturnList
+    }
 
     val lineNumber = file.viewProvider.document.getLineNumber(offset)
     val lineStartOffset = file.viewProvider.document.getLineStartOffset(lineNumber)
@@ -93,13 +90,11 @@ class LSDocumentationTargetProvider : DocumentationTargetProvider, Disposable {
       return DocumentationResult.documentation(htmlText)
     }
 
-    override fun computePresentation(): TargetPresentation {
-      return TargetPresentation.builder("Snyk Security").icon(SnykIcons.TOOL_WINDOW).presentation()
-    }
+    override fun computePresentation(): TargetPresentation =
+      TargetPresentation.builder("Snyk Security").icon(SnykIcons.TOOL_WINDOW).presentation()
 
-    override fun createPointer(): Pointer<out DocumentationTarget> {
-      return SnykDocumentationTargetPointer(this)
-    }
+    override fun createPointer(): Pointer<out DocumentationTarget> =
+      SnykDocumentationTargetPointer(this)
   }
 
   override fun dispose() {

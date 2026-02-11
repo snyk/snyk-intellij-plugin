@@ -19,7 +19,5 @@ class SnykCleanScanAction : AnAction(AllIcons.Actions.GC), DumbAware {
     actionEvent.presentation.isEnabled = project != null && !project.isDisposed
   }
 
-  override fun getActionUpdateThread(): ActionUpdateThread {
-    return ActionUpdateThread.BGT
-  }
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 }

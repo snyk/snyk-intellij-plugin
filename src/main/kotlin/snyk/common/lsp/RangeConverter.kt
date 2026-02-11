@@ -10,14 +10,13 @@ object RangeConverter {
   private val logger = logger<RangeConverter>()
 
   /** Public for Tests only */
-  fun convertToTextRange(document: Document, range: Range): TextRange? {
-    return try {
+  fun convertToTextRange(document: Document, range: Range): TextRange? =
+    try {
       convertToTextRangeInternal(document, range)
     } catch (e: IllegalArgumentException) {
       logger.warn("Failed to convert range to text range: $range", e)
       null
     }
-  }
 
   /** Public for Tests only */
   fun convertToTextRange(psiFile: PsiFile, range: Range): TextRange? {

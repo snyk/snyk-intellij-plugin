@@ -107,8 +107,8 @@ abstract class SnykBulkFileListener(val project: Project) : BulkFileListener {
     eventToVirtualFileTransformer: (VFileEvent) -> VirtualFile?,
     classesOfEventsToFilter: Collection<Class<*>>,
     eventsFilter: (VFileEvent) -> Boolean = { (it as? VFilePropertyChangeEvent)?.isRename != false },
-  ): Set<VirtualFile> {
-    return events
+  ): Set<VirtualFile> =
+    events
       .asSequence()
       .filter { event -> instanceOf(event, classesOfEventsToFilter) }
       .filter { eventsFilter.invoke(it) }
@@ -116,7 +116,6 @@ abstract class SnykBulkFileListener(val project: Project) : BulkFileListener {
       .filter(VirtualFile::isValid)
       .filter(VirtualFile::isFile)
       .toSet()
-  }
 
   private fun instanceOf(obj: Any, classes: Collection<Class<*>>): Boolean {
     for (c in classes) {

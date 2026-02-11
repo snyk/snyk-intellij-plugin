@@ -11,14 +11,14 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 
 // "|" works also for separating in windows paths
-const val navigationSeparator = "|"
+const val NAVIGATION_SEPARATOR = "|"
 
 class OpenFileLoadHandlerGenerator(
   private val project: Project,
   private val virtualFiles: LinkedHashMap<String, VirtualFile?>,
 ) {
   fun openFile(value: String): JBCefJSQuery.Response {
-    val values = value.replace("\n", "").split(navigationSeparator)
+    val values = value.replace("\n", "").split(NAVIGATION_SEPARATOR)
     val filePath = values[0]
     val startLine = values[1].toInt()
     val endLine = values[2].toInt()
@@ -59,10 +59,10 @@ class OpenFileLoadHandlerGenerator(
 
                         function navigateToIssue(e, target) {
                             e.preventDefault();
-                            window.openFileQuery(target.getAttribute("file-path") + "$navigationSeparator" +
-                                 target.getAttribute("start-line") + "$navigationSeparator" +
-                                 target.getAttribute("end-line") + "$navigationSeparator" +
-                                 target.getAttribute("start-character") + "$navigationSeparator" +
+                            window.openFileQuery(target.getAttribute("file-path") + "$NAVIGATION_SEPARATOR" +
+                                 target.getAttribute("start-line") + "$NAVIGATION_SEPARATOR" +
+                                 target.getAttribute("end-line") + "$NAVIGATION_SEPARATOR" +
+                                 target.getAttribute("start-character") + "$NAVIGATION_SEPARATOR" +
                                  target.getAttribute("end-character"));
                         }
 

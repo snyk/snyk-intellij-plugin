@@ -94,14 +94,9 @@ object SnykBalloonNotificationHelper {
     message: String,
     component: Component,
     showAbove: Boolean = false,
-  ): Balloon {
-    return createBalloon(
-        message,
-        AllIcons.General.BalloonInformation,
-        MessageType.INFO.popupBackground,
-      )
+  ): Balloon =
+    createBalloon(message, AllIcons.General.BalloonInformation, MessageType.INFO.popupBackground)
       .apply { showBalloonForComponent(this, component, showAbove) }
-  }
 
   fun showWarnBalloonAtEventPlace(message: String, e: AnActionEvent, showAbove: Boolean = false) {
     val component =

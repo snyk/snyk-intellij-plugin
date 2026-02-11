@@ -124,8 +124,9 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
         (disposed || languageServerWrapper == null) ||
           !languageServerWrapper.isInitialized ||
           !hasResults
-      )
+      ) {
         return mutableSetOf()
+      }
 
       // Return cached value if available (non-blocking on EDT)
       val cachedText = inlineValueCache[line]

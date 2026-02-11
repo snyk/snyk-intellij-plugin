@@ -32,7 +32,7 @@ import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.trust.WorkspaceTrustSettings
 
-class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
+class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
   private lateinit var cut: SnykToolWindowSnykScanListener
   private lateinit var snykToolWindowPanel: SnykToolWindowPanel
   private lateinit var vulnerabilitiesTree: JTree
@@ -110,9 +110,7 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
   private fun mockScanIssues(
     isIgnored: Boolean? = false,
     hasAIFix: Boolean? = false,
-  ): List<ScanIssue> {
-    return mockScanIssuesWithSeverity(Severity.CRITICAL, isIgnored, hasAIFix)
-  }
+  ): List<ScanIssue> = mockScanIssuesWithSeverity(Severity.CRITICAL, isIgnored, hasAIFix)
 
   private fun mockScanIssuesWithSeverity(
     severity: Severity,
@@ -188,9 +186,8 @@ class SnykToolWindowScanListenerTest : BasePlatformTestCase() {
     return listOf(issue)
   }
 
-  private fun mapToLabels(treeNode: DefaultMutableTreeNode): List<String> {
-    return treeNode.children().toList().map { it.toString() }
-  }
+  private fun mapToLabels(treeNode: DefaultMutableTreeNode): List<String> =
+    treeNode.children().toList().map { it.toString() }
 
   fun `test root nodes are created`() {
     assertEquals(

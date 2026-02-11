@@ -27,7 +27,5 @@ class SnykSettingsAction : AnAction(AllIcons.General.Settings), DumbAware {
       actionEvent.project != null && !actionEvent.project!!.isDisposed
   }
 
-  override fun getActionUpdateThread(): ActionUpdateThread {
-    return ActionUpdateThread.BGT
-  }
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 }

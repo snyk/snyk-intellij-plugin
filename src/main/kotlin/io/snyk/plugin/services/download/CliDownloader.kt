@@ -30,10 +30,9 @@ class CliDownloader {
           pluginSettings().requiredLsProtocolVersion
   }
 
-  fun calculateSha256(bytes: ByteArray): String {
-    return DatatypeConverter.printHexBinary(MessageDigest.getInstance("SHA-256").digest(bytes))
+  fun calculateSha256(bytes: ByteArray): String =
+    DatatypeConverter.printHexBinary(MessageDigest.getInstance("SHA-256").digest(bytes))
       .lowercase(Locale.getDefault())
-  }
 
   @Throws(ChecksumVerificationException::class)
   fun verifyChecksum(expectedSha: String, bytes: ByteArray) {

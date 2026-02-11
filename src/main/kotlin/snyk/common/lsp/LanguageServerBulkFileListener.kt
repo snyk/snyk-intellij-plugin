@@ -36,8 +36,9 @@ class LanguageServerBulkFileListener(project: Project) : SnykBulkFileListener(pr
       if (DumbService.getInstance(project).isDumb) return@runAsync
 
       val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-      if (languageServerWrapper.isDisposed() || !languageServerWrapper.isInitialized)
+      if (languageServerWrapper.isDisposed() || !languageServerWrapper.isInitialized) {
         return@runAsync
+      }
 
       val languageServer = languageServerWrapper.languageServer
       val cache = getSnykCachedResults(project)?.currentSnykCodeResultsLS
@@ -108,8 +109,9 @@ class LanguageServerBulkFileListener(project: Project) : SnykBulkFileListener(pr
     // remote/HTTP files, which can cause NPE in RemoteFileInfoImpl when localFile is null.
     // The DaemonCodeAnalyzer restart below handles annotation updates for open files.
     invokeLater {
-      if (project.isDisposed || SnykPluginDisposable.getInstance(project).isDisposed())
+      if (project.isDisposed || SnykPluginDisposable.getInstance(project).isDisposed()) {
         return@invokeLater
+      }
       DaemonCodeAnalyzer.getInstance(project).restart()
     }
   }

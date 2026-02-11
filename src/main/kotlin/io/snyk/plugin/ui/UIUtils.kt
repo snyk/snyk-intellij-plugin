@@ -156,8 +156,8 @@ fun baseGridConstraints(
   maximumSize: Dimension? = null,
   indent: Int = 1,
   useParentLayout: Boolean = false,
-): GridConstraints {
-  return GridConstraints(
+): GridConstraints =
+  GridConstraints(
     row,
     column,
     rowSpan,
@@ -172,7 +172,6 @@ fun baseGridConstraints(
     indent,
     useParentLayout,
   )
-}
 
 fun baseGridConstraintsAnchorWest(
   row: Int,

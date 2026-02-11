@@ -288,9 +288,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     add(label, BorderLayout.CENTER)
   }
 
-  fun isModified(): Boolean {
-    return modified.get()
-  }
+  fun isModified(): Boolean = modified.get()
 
   fun reset() {
     // Reload HTML from language server to restore form to saved state

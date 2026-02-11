@@ -71,8 +71,8 @@ class CodeActionIntention(
     ProgressManager.getInstance().run(task)
   }
 
-  override fun getIcon(p0: Int): Icon {
-    return when (product) {
+  override fun getIcon(p0: Int): Icon =
+    when (product) {
       ProductType.OSS -> {
         if (this.codeAction.title.startsWith("Upgrade to")) {
           SnykIcons.CHECKMARK_GREEN
@@ -83,22 +83,19 @@ class CodeActionIntention(
       ProductType.IAC -> SnykIcons.IAC
       ProductType.CODE_SECURITY -> SnykIcons.SNYK_CODE
     }
-  }
 
-  override fun getPriority(): PriorityAction.Priority {
-    return when {
+  override fun getPriority(): PriorityAction.Priority =
+    when {
       codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
       codeAction.title.contains("Upgrade to", ignoreCase = true) -> PriorityAction.Priority.TOP
       codeAction.title.contains("Learn", ignoreCase = true) -> PriorityAction.Priority.BOTTOM
       else -> issue.getSeverityAsEnum().getQuickFixPriority()
     }
-  }
 
-  fun title(): String {
-    return when (product) {
+  fun title(): String =
+    when (product) {
       ProductType.OSS -> "Applying Snyk OpenSource Action"
       ProductType.IAC -> "Applying Snyk Infrastructure as Code Action"
       ProductType.CODE_SECURITY -> "Applying Snyk Code Action"
     }
-  }
 }

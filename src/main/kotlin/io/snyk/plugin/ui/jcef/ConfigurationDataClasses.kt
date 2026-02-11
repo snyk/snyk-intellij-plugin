@@ -21,8 +21,8 @@ class StringOrListTypeAdapter : TypeAdapter<List<String>?>() {
     }
   }
 
-  override fun read(reader: JsonReader): List<String>? {
-    return when (reader.peek()) {
+  override fun read(reader: JsonReader): List<String>? =
+    when (reader.peek()) {
       JsonToken.NULL -> {
         reader.nextNull()
         null
@@ -49,7 +49,6 @@ class StringOrListTypeAdapter : TypeAdapter<List<String>?>() {
         null
       }
     }
-  }
 }
 
 data class SaveConfigRequest(

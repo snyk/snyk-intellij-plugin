@@ -236,15 +236,14 @@ abstract class SnykAnnotator(private val product: ProductType) :
     return lineMarkerProviderDescriptor
   }
 
-  private fun getTextAttributeKeyBySeverity(severity: Severity): TextAttributesKey {
-    return when (severity) {
+  private fun getTextAttributeKeyBySeverity(severity: Severity): TextAttributesKey =
+    when (severity) {
       Severity.UNKNOWN -> unknown
       Severity.LOW -> low
       Severity.MEDIUM -> medium
       Severity.HIGH -> high
       Severity.CRITICAL -> critical
     }
-  }
 
   private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
     getSnykCachedResultsForProduct(psiFile.project, product)
@@ -259,17 +258,11 @@ abstract class SnykAnnotator(private val product: ProductType) :
       ?.toSet() ?: emptySet()
 
   class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIconRenderer() {
-    override fun equals(other: Any?): Boolean {
-      return annotation == other
-    }
+    override fun equals(other: Any?): Boolean = annotation == other
 
-    override fun hashCode(): Int {
-      return annotation.hashCode()
-    }
+    override fun hashCode(): Int = annotation.hashCode()
 
-    override fun getIcon(): Icon {
-      return SnykIcons.getSeverityIcon(annotation.issue.getSeverityAsEnum())
-    }
+    override fun getIcon(): Icon = SnykIcons.getSeverityIcon(annotation.issue.getSeverityAsEnum())
 
     override fun getClickAction(): AnAction? {
       val intention =
@@ -288,20 +281,12 @@ abstract class SnykAnnotator(private val product: ProductType) :
         }
       }
 
-    override fun getTooltipText(): String {
-      return annotation.annotationMessage
-    }
+    override fun getTooltipText(): String = annotation.annotationMessage
 
-    override fun getAccessibleName(): String {
-      return annotation.annotationMessage
-    }
+    override fun getAccessibleName(): String = annotation.annotationMessage
 
-    override fun isNavigateAction(): Boolean {
-      return true
-    }
+    override fun isNavigateAction(): Boolean = true
 
-    override fun isDumbAware(): Boolean {
-      return true
-    }
+    override fun isDumbAware(): Boolean = true
   }
 }
