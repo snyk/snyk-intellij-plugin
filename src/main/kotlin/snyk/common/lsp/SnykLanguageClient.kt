@@ -201,6 +201,10 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
       service.addAll(folderConfigs)
       folderConfigs.forEach { languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true) }
 
+      // Migrate any nested folder configs that may have been created by earlier plugin versions
+      // Only workspace folder paths (non-nested) should have folder configs
+      service.migrateNestedFolderConfigs(project)
+
       try {
         // Already in runAsync, so just use sync publisher here
         getSyncPublisher(project, SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)

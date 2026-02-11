@@ -16,6 +16,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.getDocument
@@ -45,6 +46,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 
@@ -301,6 +303,44 @@ class SnykLanguageClientTest {
       expectIntercept = true,
       expectedNotifications = 1,
     )
+  }
+
+  @Test
+  fun `folderConfig should call migrateNestedFolderConfigs after adding configs`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    val folderConfig = FolderConfig(folderPath = "/test/project", baseBranch = "main")
+    val param = FolderConfigsParam(listOf(folderConfig))
+
+    cut.folderConfig(param)
+
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(listOf(folderConfig)) }
+    verify(timeout = 5000) { folderConfigSettingsMock.migrateNestedFolderConfigs(projectMock) }
+  }
+
+  @Test
+  fun `folderConfig should not run when disposed`() {
+    every { projectMock.isDisposed } returns true
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val param = FolderConfigsParam(listOf(FolderConfig(folderPath = "/test", baseBranch = "main")))
+    cut.folderConfig(param)
+
+    verify(exactly = 0) { folderConfigSettingsMock.addAll(any()) }
   }
 
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
