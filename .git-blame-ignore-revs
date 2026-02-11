@@ -1,3 +1,4 @@
 # Ignore the ktfmt formatting migration commit for git blame.
 # Add the full SHA of the reformat commit as a single line below (no # prefix).
 # After committing the reformat: echo $(git rev-parse HEAD) >> .git-blame-ignore-revs
+a0e54fee64fb2025c215b7df9ff78439c836aa32
