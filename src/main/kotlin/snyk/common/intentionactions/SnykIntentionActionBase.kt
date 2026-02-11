@@ -9,13 +9,13 @@ import com.intellij.psi.PsiFile
 
 abstract class SnykIntentionActionBase : IntentionAction, Iconable, PriorityAction {
 
-    override fun startInWriteAction(): Boolean = true
+  override fun startInWriteAction(): Boolean = true
 
-    override fun getFamilyName(): String = DEFAULT_FAMILY_NAME
+  override fun getFamilyName(): String = DEFAULT_FAMILY_NAME
 
-    override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
+  override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean = true
 
-    companion object {
-        private const val DEFAULT_FAMILY_NAME = "Snyk"
-    }
+  companion object {
+    private const val DEFAULT_FAMILY_NAME = "Snyk"
+  }
 }

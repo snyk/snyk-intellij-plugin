@@ -6,14 +6,14 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 
 class RelativePathHelper {
-    private var relPathCached: String? = null
+  private var relPathCached: String? = null
 
-    fun getRelativePath(virtualFile: VirtualFile, project: Project): String? {
-        if (relPathCached == null) {
-            ApplicationManager.getApplication().runReadAction {
-                relPathCached = GotoFileCellRenderer.getRelativePath(virtualFile, project)
-            }
-        }
-        return relPathCached
+  fun getRelativePath(virtualFile: VirtualFile, project: Project): String? {
+    if (relPathCached == null) {
+      ApplicationManager.getApplication().runReadAction {
+        relPathCached = GotoFileCellRenderer.getRelativePath(virtualFile, project)
+      }
     }
+    return relPathCached
+  }
 }

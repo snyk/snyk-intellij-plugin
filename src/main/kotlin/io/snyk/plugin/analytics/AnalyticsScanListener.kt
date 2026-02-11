@@ -7,12 +7,12 @@ import snyk.common.lsp.analytics.AnalyticsEvent
 
 @Service(Service.Level.PROJECT)
 class AnalyticsScanListener(val project: Project) {
-    fun initScanListener() {
-        if (!pluginSettings().pluginInstalledSent) {
-            val event = AnalyticsEvent("plugin installed", listOf("install"))
-            AnalyticsSender.getInstance(project).logEvent(event) {
-                pluginSettings().pluginInstalledSent = true
-            }
-        }
+  fun initScanListener() {
+    if (!pluginSettings().pluginInstalledSent) {
+      val event = AnalyticsEvent("plugin installed", listOf("install"))
+      AnalyticsSender.getInstance(project).logEvent(event) {
+        pluginSettings().pluginInstalledSent = true
+      }
     }
+  }
 }

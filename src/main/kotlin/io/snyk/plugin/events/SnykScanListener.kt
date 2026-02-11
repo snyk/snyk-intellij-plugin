@@ -7,20 +7,19 @@ import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 
 interface SnykScanListener {
-    companion object {
-        val SNYK_SCAN_TOPIC =
-            Topic.create("Snyk scan LS", SnykScanListener::class.java)
-    }
+  companion object {
+    val SNYK_SCAN_TOPIC = Topic.create("Snyk scan LS", SnykScanListener::class.java)
+  }
 
-    fun scanningStarted(snykScan: SnykScanParams) {}
+  fun scanningStarted(snykScan: SnykScanParams) {}
 
-    fun scanningSnykCodeFinished()
+  fun scanningSnykCodeFinished()
 
-    fun scanningOssFinished()
+  fun scanningOssFinished()
 
-    fun scanningIacFinished()
+  fun scanningIacFinished()
 
-    fun scanningError(snykScan: SnykScanParams)
+  fun scanningError(snykScan: SnykScanParams)
 
-    fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>)
+  fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>)
 }

@@ -23,84 +23,93 @@ import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.boldLabel
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPaneFixedSize
 import io.snyk.plugin.ui.getStandardLayout
-import snyk.SnykBundle
-import snyk.trust.WorkspaceTrustService
 import java.awt.event.ActionEvent
 import javax.swing.AbstractAction
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
+import snyk.SnykBundle
+import snyk.trust.WorkspaceTrustService
 
 class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
 
-    init {
-        name = "authPanel"
-        val authButton = JButton(object : AbstractAction(TRUST_AND_SCAN_BUTTON_TEXT) {
+  init {
+    name = "authPanel"
+    val authButton =
+      JButton(
+          object : AbstractAction(TRUST_AND_SCAN_BUTTON_TEXT) {
             override fun actionPerformed(e: ActionEvent?) {
-                isEnabled = false
-                val waitingMessage = "Waiting for indexing to finish..."
-                val jButton = e?.source as JButton
-                jButton.text = waitingMessage
-                DumbService.getInstance(project).runWhenSmart {
-                    getSnykToolWindowPanel(project)?.cleanUiAndCaches()
+              isEnabled = false
+              val waitingMessage = "Waiting for indexing to finish..."
+              val jButton = e?.source as JButton
+              jButton.text = waitingMessage
+              DumbService.getInstance(project).runWhenSmart {
+                getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
-                    jButton.setText("Authenticating...")
-                    getSnykCliAuthenticationService(project)?.authenticate() ?: ""
+                jButton.setText("Authenticating...")
+                getSnykCliAuthenticationService(project)?.authenticate() ?: ""
 
-                    // explicitly add the project to workspace trusted paths, because
-                    // scan can be auto-triggered depending on "settings.pluginFirstRun" value
-                    jButton.setText("Trusting project paths...")
-                    val trustService = service<WorkspaceTrustService>()
-                    val paths = project.getContentRootPaths()
-                    for (path in paths) {
-                        trustService.addTrustedPath(path)
-                    }
-                    publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
+                // explicitly add the project to workspace trusted paths, because
+                // scan can be auto-triggered depending on "settings.pluginFirstRun" value
+                jButton.setText("Trusting project paths...")
+                val trustService = service<WorkspaceTrustService>()
+                val paths = project.getContentRootPaths()
+                for (path in paths) {
+                  trustService.addTrustedPath(path)
                 }
+                publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) {
+                  settingsChanged()
+                }
+              }
             }
-        }).apply {
-            isEnabled = !getSnykCliDownloaderService().isCliDownloading()
-        }
-
-        layout = getStandardLayout(1, 1)
-        val panel = addAndGetCenteredPanel(this, 4, 2)
-        panel.add(
-            boldLabel("Welcome to Snyk for JetBrains!"),
-            baseGridConstraints(row = 0, column = 1, anchor = ANCHOR_SOUTHWEST)
+          }
         )
-        panel.add(
-            JLabel(SnykIcons.LOGO),
-            baseGridConstraints(row = 1, column = 0, anchor = ANCHOR_EAST)
-        )
-        panel.add(
-            JLabel(descriptionLabelText()),
-            baseGridConstraints(row = 1, column = 1, anchor = ANCHOR_WEST)
-        )
-        panel.add(authButton, baseGridConstraints(row = 2, column = 1, anchor = ANCHOR_NORTHWEST))
+        .apply { isEnabled = !getSnykCliDownloaderService().isCliDownloading() }
 
-        panel.add(
-            getReadOnlyClickableHtmlJEditorPaneFixedSize(
-                messagePolicyAndTermsHtml,
-                font = io.snyk.plugin.ui.getFont(-1, 11, UIUtil.getLabelFont()) ?: UIUtil.getLabelFont()
-            ),
-            baseGridConstraints(row = 3, column = 1, anchor = ANCHOR_SOUTHWEST)
-        )
+    layout = getStandardLayout(1, 1)
+    val panel = addAndGetCenteredPanel(this, 4, 2)
+    panel.add(
+      boldLabel("Welcome to Snyk for JetBrains!"),
+      baseGridConstraints(row = 0, column = 1, anchor = ANCHOR_SOUTHWEST),
+    )
+    panel.add(
+      JLabel(SnykIcons.LOGO),
+      baseGridConstraints(row = 1, column = 0, anchor = ANCHOR_EAST),
+    )
+    panel.add(
+      JLabel(descriptionLabelText()),
+      baseGridConstraints(row = 1, column = 1, anchor = ANCHOR_WEST),
+    )
+    panel.add(authButton, baseGridConstraints(row = 2, column = 1, anchor = ANCHOR_NORTHWEST))
 
-        ApplicationManager.getApplication().messageBus.connect(this@SnykAuthPanel)
-            .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
-                override fun cliDownloadStarted() {
-                    authButton.isEnabled = false
-                }
+    panel.add(
+      getReadOnlyClickableHtmlJEditorPaneFixedSize(
+        messagePolicyAndTermsHtml,
+        font = io.snyk.plugin.ui.getFont(-1, 11, UIUtil.getLabelFont()) ?: UIUtil.getLabelFont(),
+      ),
+      baseGridConstraints(row = 3, column = 1, anchor = ANCHOR_SOUTHWEST),
+    )
 
-                override fun cliDownloadFinished(succeed: Boolean) {
-                    authButton.isEnabled = succeed
-                }
-            })
-    }
+    ApplicationManager.getApplication()
+      .messageBus
+      .connect(this@SnykAuthPanel)
+      .subscribe(
+        SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+        object : SnykCliDownloadListener {
+          override fun cliDownloadStarted() {
+            authButton.isEnabled = false
+          }
 
-    private fun descriptionLabelText(): String {
-        val trustWarningDescription = SnykBundle.message("snyk.panel.auth.trust.warning.text")
-        return """
+          override fun cliDownloadFinished(succeed: Boolean) {
+            authButton.isEnabled = succeed
+          }
+        },
+      )
+  }
+
+  private fun descriptionLabelText(): String {
+    val trustWarningDescription = SnykBundle.message("snyk.panel.auth.trust.warning.text")
+    return """
         |<html>
         |<ol>
         |  <li align="left">Authenticate to Snyk.io</li>
@@ -112,19 +121,21 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
         |<br>
         |<br>
         |</html>
-        """.trimMargin()
-    }
+        """
+      .trimMargin()
+  }
 
-    override fun dispose() {}
+  override fun dispose() {}
 
-    companion object {
-        const val TRUST_AND_SCAN_BUTTON_TEXT = "Trust project and scan"
-        val messagePolicyAndTermsHtml =
-            """
+  companion object {
+    const val TRUST_AND_SCAN_BUTTON_TEXT = "Trust project and scan"
+    val messagePolicyAndTermsHtml =
+      """
                 <br>
                 By connecting your account with Snyk, you agree to<br>
                 the Snyk <a href="https://snyk.io/policies/privacy/">Privacy Policy</a>,
                 and the Snyk <a href="https://snyk.io/policies/terms-of-service/">Terms of Service</a>.
-            """.trimIndent()
-    }
+            """
+        .trimIndent()
+  }
 }

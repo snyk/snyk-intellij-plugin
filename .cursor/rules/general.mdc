@@ -39,8 +39,8 @@ alwaysApply: true
 - USE TDD
 - I REPEAT: USE TDD
 - always write and update test cases before writing the implementation (Test Driven Development). iterate until they pass.
-- after changing .kt or .java files, run `./gradlew detekt` to check for linting errors. only continue, once they are fixed. The only acceptable outcome is 0 linting errors.
-- always verify if fixes worked by running `./gradlew test -x detekt`
+- after changing .kt or .java files, run `./gradlew spotlessCheck ktlintCheck` to check formatting and lint. only continue, once they pass.
+- always verify if fixes worked by running `./gradlew test`
 - do atomic commits, see committing section for details. ask before committing an atomic commit.
 - update current status in the implementation plan (in progress work, finished work, next steps)
 - Maintain existing code patterns and conventions
@@ -48,7 +48,7 @@ alwaysApply: true
 - Re-use mocks.
 - don't change code that does not need to be changed. only do the minimum changes.
 - don't comment what is done, instead comment why something is done if the code is not clear
-- use `./gradlew test -x detekt` to run tests.
+- use `./gradlew test` to run tests.
 - achieve 80% of test coverage. use `./gradlew koverXmlReport`
 - if files are not used or needed anymore, delete them instead of deprecating them.
 - ask the human, whether to maintain backwards compatibility or not

@@ -9,49 +9,67 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
+import javax.swing.JButton
+import javax.swing.JLabel
 import org.junit.Test
 import snyk.common.UIComponentFinder
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import javax.swing.JButton
-import javax.swing.JLabel
 
 class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
 
-    private val cliAuthenticationService = mockk<SnykCliAuthenticationService>(relaxed = true)
-    private val workspaceTrustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
+  private val cliAuthenticationService = mockk<SnykCliAuthenticationService>(relaxed = true)
+  private val workspaceTrustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
 
-    override fun setUp() {
-        super.setUp()
-        unmockkAll()
-        mockkStatic("snyk.trust.TrustedProjectsKt")
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
-        val application = ApplicationManager.getApplication()
-        application.replaceService(WorkspaceTrustService::class.java, workspaceTrustServiceMock, application)
-        project.replaceService(SnykCliAuthenticationService::class.java, cliAuthenticationService, project)
-    }
+  override fun setUp() {
+    super.setUp()
+    unmockkAll()
+    mockkStatic("snyk.trust.TrustedProjectsKt")
+    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+    val application = ApplicationManager.getApplication()
+    application.replaceService(
+      WorkspaceTrustService::class.java,
+      workspaceTrustServiceMock,
+      application,
+    )
+    project.replaceService(
+      SnykCliAuthenticationService::class.java,
+      cliAuthenticationService,
+      project,
+    )
+  }
 
-    override fun tearDown() {
-        unmockkAll()
-        val application = ApplicationManager.getApplication()
-        application.replaceService(WorkspaceTrustService::class.java, workspaceTrustServiceMock, application)
-        project.replaceService(SnykCliAuthenticationService::class.java, SnykCliAuthenticationService(project), project)
-        super.tearDown()
-    }
+  override fun tearDown() {
+    unmockkAll()
+    val application = ApplicationManager.getApplication()
+    application.replaceService(
+      WorkspaceTrustService::class.java,
+      workspaceTrustServiceMock,
+      application,
+    )
+    project.replaceService(
+      SnykCliAuthenticationService::class.java,
+      SnykCliAuthenticationService(project),
+      project,
+    )
+    super.tearDown()
+  }
 
-    @Test
-    fun `test authenticate button displays correct text`() {
-        val cut = SnykAuthPanel(project)
-        val authenticateButton = UIComponentFinder.getComponentByCondition(cut, JButton::class) {
-            it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
-        }
-        assertNotNull(authenticateButton)
-        assertEquals("Trust project and scan", authenticateButton!!.text)
-    }
+  @Test
+  fun `test authenticate button displays correct text`() {
+    val cut = SnykAuthPanel(project)
+    val authenticateButton =
+      UIComponentFinder.getComponentByCondition(cut, JButton::class) {
+        it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
+      }
+    assertNotNull(authenticateButton)
+    assertEquals("Trust project and scan", authenticateButton!!.text)
+  }
 
-    @Test
-    fun `test description label displays correct trust and scan information`() {
-        val expectedText = """
+  @Test
+  fun `test description label displays correct trust and scan information`() {
+    val expectedText =
+      """
         |<html>
         |<ol>
         |  <li align="left">Authenticate to Snyk.io</li>
@@ -63,13 +81,13 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
         |<br>
         |<br>
         |</html>
-        """.trimMargin()
+        """
+        .trimMargin()
 
-        val cut = SnykAuthPanel(project)
+    val cut = SnykAuthPanel(project)
 
-        val jLabel = UIComponentFinder.getComponentByCondition(cut, JLabel::class) {
-            it.text == expectedText
-        }
-        assertNotNull(jLabel)
-    }
+    val jLabel =
+      UIComponentFinder.getComponentByCondition(cut, JLabel::class) { it.text == expectedText }
+    assertNotNull(jLabel)
+  }
 }

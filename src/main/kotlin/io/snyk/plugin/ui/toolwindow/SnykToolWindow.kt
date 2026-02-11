@@ -18,94 +18,105 @@ import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.ui.expandTreeNodeRecursively
+import javax.swing.JTree
+import javax.swing.tree.DefaultMutableTreeNode
 import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
-import javax.swing.JTree
-import javax.swing.tree.DefaultMutableTreeNode
 
-/**
- * IntelliJ ToolWindow for Snyk plugin.
- */
-class SnykToolWindow(private val project: Project) : SimpleToolWindowPanel(false, true), Disposable {
+/** IntelliJ ToolWindow for Snyk plugin. */
+class SnykToolWindow(private val project: Project) :
+  SimpleToolWindowPanel(false, true), Disposable {
 
-    private val actionToolbar: ActionToolbar
+  private val actionToolbar: ActionToolbar
 
-    init {
-        val snykToolWindowPanel = getSnykToolWindowPanel(project)!!
-        val tree = snykToolWindowPanel.getTree()
-        val actionManager = ActionManager.getInstance()
-        val actionGroup = DefaultActionGroup()
+  init {
+    val snykToolWindowPanel = getSnykToolWindowPanel(project)!!
+    val tree = snykToolWindowPanel.getTree()
+    val actionManager = ActionManager.getInstance()
+    val actionGroup = DefaultActionGroup()
 
-        val expandTreeActionsGroup = DefaultActionGroup()
-        val myTreeExpander = DefaultTreeExpander(tree)
-        val commonActionsManager = CommonActionsManager.getInstance()
-        expandTreeActionsGroup.add(commonActionsManager.createExpandAllAction(myTreeExpander, this))
-        expandTreeActionsGroup.add(commonActionsManager.createCollapseAllAction(myTreeExpander, this))
+    val expandTreeActionsGroup = DefaultActionGroup()
+    val myTreeExpander = DefaultTreeExpander(tree)
+    val commonActionsManager = CommonActionsManager.getInstance()
+    expandTreeActionsGroup.add(commonActionsManager.createExpandAllAction(myTreeExpander, this))
+    expandTreeActionsGroup.add(commonActionsManager.createCollapseAllAction(myTreeExpander, this))
 
-        val expandNodeChildActionsGroup = DefaultActionGroup()
-        expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
-        PopupHandler.installPopupMenu(tree, expandNodeChildActionsGroup, "SnykTree")
+    val expandNodeChildActionsGroup = DefaultActionGroup()
+    expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
+    PopupHandler.installPopupMenu(tree, expandNodeChildActionsGroup, "SnykTree")
 
-        actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup)
-        actionGroup.addSeparator()
-        actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup)
-        actionGroup.addAll(expandTreeActionsGroup)
-        actionGroup.addSeparator()
-        actionGroup.addAll(actionManager.getAction("io.snyk.plugin.MiscActions") as DefaultActionGroup)
+    actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup)
+    actionGroup.addSeparator()
+    actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup)
+    actionGroup.addAll(expandTreeActionsGroup)
+    actionGroup.addSeparator()
+    actionGroup.addAll(actionManager.getAction("io.snyk.plugin.MiscActions") as DefaultActionGroup)
 
-        actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, false)
-        actionToolbar.targetComponent = this
-        initialiseToolbarUpdater()
-        toolbar = actionToolbar.component
+    actionToolbar = actionManager.createActionToolbar("Snyk Toolbar", actionGroup, false)
+    actionToolbar.targetComponent = this
+    initialiseToolbarUpdater()
+    toolbar = actionToolbar.component
 
-        setContent(snykToolWindowPanel)
+    setContent(snykToolWindowPanel)
+  }
+
+  private fun initialiseToolbarUpdater() {
+    // update actions presentation immediately after running state changes (avoid default 500 ms
+    // delay)
+    project.messageBus
+      .connect(this)
+      .subscribe(
+        SnykScanListener.SNYK_SCAN_TOPIC,
+        object : SnykScanListener {
+          override fun scanningSnykCodeFinished() {
+            updateActionsPresentation()
+          }
+
+          override fun scanningOssFinished() {
+            updateActionsPresentation()
+          }
+
+          override fun scanningIacFinished() {
+            updateActionsPresentation()
+          }
+
+          override fun scanningError(snykScan: SnykScanParams) {
+            updateActionsPresentation()
+          }
+
+          override fun onPublishDiagnostics(
+            product: LsProduct,
+            snykFile: SnykFile,
+            issues: Set<ScanIssue>,
+          ) = Unit
+        },
+      )
+
+    project.messageBus
+      .connect(this)
+      .subscribe(
+        SnykTaskQueueListener.TASK_QUEUE_TOPIC,
+        object : SnykTaskQueueListener {
+          override fun stopped() = updateActionsPresentation()
+        },
+      )
+  }
+
+  private fun updateActionsPresentation() =
+    ApplicationManager.getApplication().invokeLater { actionToolbar.updateActionsAsync() }
+
+  var isDisposed = false
+
+  override fun dispose() {
+    isDisposed = true
+  }
+
+  class ExpandNodeChildAction(val tree: JTree) :
+    DumbAwareAction("Expand All Children", "Expand All Children", AllIcons.Actions.Expandall) {
+    override fun actionPerformed(e: AnActionEvent) {
+      val selectedNode = tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
+      expandTreeNodeRecursively(tree, selectedNode)
     }
-
-    private fun initialiseToolbarUpdater() {
-        // update actions presentation immediately after running state changes (avoid default 500 ms delay)
-        project.messageBus.connect(this)
-            .subscribe(SnykScanListener.SNYK_SCAN_TOPIC, object : SnykScanListener {
-                override fun scanningSnykCodeFinished() {
-                    updateActionsPresentation()
-                }
-
-                override fun scanningOssFinished() {
-                    updateActionsPresentation()
-                }
-
-                override fun scanningIacFinished() {
-                    updateActionsPresentation()
-                }
-
-                override fun scanningError(snykScan: SnykScanParams) {
-                    updateActionsPresentation()
-                }
-
-                override fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>) =
-                    Unit
-            })
-
-        project.messageBus.connect(this)
-            .subscribe(SnykTaskQueueListener.TASK_QUEUE_TOPIC, object : SnykTaskQueueListener {
-                override fun stopped() = updateActionsPresentation()
-            })
-    }
-
-    private fun updateActionsPresentation() =
-        ApplicationManager.getApplication().invokeLater { actionToolbar.updateActionsAsync() }
-
-    var isDisposed = false
-    override fun dispose() {
-        isDisposed = true
-    }
-
-    class ExpandNodeChildAction(
-        val tree: JTree
-    ) : DumbAwareAction("Expand All Children", "Expand All Children", AllIcons.Actions.Expandall) {
-        override fun actionPerformed(e: AnActionEvent) {
-            val selectedNode = tree.selectionPath?.lastPathComponent as? DefaultMutableTreeNode ?: return
-            expandTreeNodeRecursively(tree, selectedNode)
-        }
-    }
+  }
 }

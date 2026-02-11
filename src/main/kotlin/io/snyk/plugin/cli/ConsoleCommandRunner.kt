@@ -13,81 +13,89 @@ import com.intellij.openapi.util.Key
 import io.snyk.plugin.controlExternalProcessWithProgressIndicator
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
-import snyk.common.EnvironmentHelper
 import java.nio.charset.Charset
+import snyk.common.EnvironmentHelper
 
 open class ConsoleCommandRunner {
-    private val logger = logger<ConsoleCommandRunner>()
+  private val logger = logger<ConsoleCommandRunner>()
 
-    open fun execute(
-        commands: List<String>,
-        workDirectory: String? = null,
-        apiToken: String = "",
-        project: Project,
-        outputConsumer: (line: String) -> Unit = {}
-    ): String {
-        logger.info("Call to execute commands: $commands")
-        val generalCommandLine = GeneralCommandLine(commands)
+  open fun execute(
+    commands: List<String>,
+    workDirectory: String? = null,
+    apiToken: String = "",
+    project: Project,
+    outputConsumer: (line: String) -> Unit = {},
+  ): String {
+    logger.info("Call to execute commands: $commands")
+    val generalCommandLine = GeneralCommandLine(commands)
 
-        generalCommandLine.charset = Charset.forName("UTF-8")
-        workDirectory?.let { generalCommandLine.setWorkDirectory(it) }
+    generalCommandLine.charset = Charset.forName("UTF-8")
+    workDirectory?.let { generalCommandLine.setWorkDirectory(it) }
 
-        setupCliEnvironmentVariables(generalCommandLine, apiToken)
+    setupCliEnvironmentVariables(generalCommandLine, apiToken)
 
-        val processHandler = try {
-            OSProcessHandler(generalCommandLine)
-        } catch (e: ExecutionException) {
-            //  if CLI is still downloading (or temporarily blocked by Antivirus) we'll get ProcessNotCreatedException
-            val message = "Not able to run CLI, try again later."
-            SnykBalloonNotificationHelper.showWarn(message, project)
-            logger.warn(message, e)
-            return ""
+    val processHandler =
+      try {
+        OSProcessHandler(generalCommandLine)
+      } catch (e: ExecutionException) {
+        //  if CLI is still downloading (or temporarily blocked by Antivirus) we'll get
+        // ProcessNotCreatedException
+        val message = "Not able to run CLI, try again later."
+        SnykBalloonNotificationHelper.showWarn(message, project)
+        logger.warn(message, e)
+        return ""
+      }
+    val parentIndicator = ProgressManager.getInstance().progressIndicator
+
+    var firstLine = true
+    processHandler.addProcessListener(
+      object : ProcessAdapter() {
+        override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+          if (firstLine) {
+            logger.debug("Executing:\n${event.text}")
+            firstLine = false
+          }
+          outputConsumer(event.text)
         }
-        val parentIndicator = ProgressManager.getInstance().progressIndicator
+      }
+    )
 
-        var firstLine = true
-        processHandler.addProcessListener(object : ProcessAdapter() {
-            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                if (firstLine) {
-                    logger.debug("Executing:\n${event.text}")
-                    firstLine = false
-                }
-                outputConsumer(event.text)
-            }
-        })
-
-        var wasProcessTerminated = false
-        controlExternalProcessWithProgressIndicator(parentIndicator) {
-            if (!processHandler.isProcessTerminated) {
-                ScriptRunnerUtil.terminateProcessHandler(processHandler, 50, null)
-                wasProcessTerminated = true
-            }
-        }
-
-        logger.debug("Execute ScriptRunnerUtil.getProcessOutput(...)")
-        val timeout = getWaitForResultsTimeout()
-        val processOutput = try {
-            ScriptRunnerUtil.getProcessOutput(
-                processHandler, ScriptRunnerUtil.STDOUT_OR_STDERR_OUTPUT_KEY_FILTER, timeout
-            )
-        } catch (e: ExecutionException) {
-            logger.error("Execution timeout [${timeout / 1000} sec] is reached with NO results produced", e)
-            ""
-        }
-
-        return if (wasProcessTerminated) PROCESS_CANCELLED_BY_USER else processOutput
+    var wasProcessTerminated = false
+    controlExternalProcessWithProgressIndicator(parentIndicator) {
+      if (!processHandler.isProcessTerminated) {
+        ScriptRunnerUtil.terminateProcessHandler(processHandler, 50, null)
+        wasProcessTerminated = true
+      }
     }
 
-    /**
-     * Setup environment variables for CLI.
-     */
-    fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
-        val environment = commandLine.environment
-        EnvironmentHelper.updateEnvironment(environment, apiToken)
-    }
+    logger.debug("Execute ScriptRunnerUtil.getProcessOutput(...)")
+    val timeout = getWaitForResultsTimeout()
+    val processOutput =
+      try {
+        ScriptRunnerUtil.getProcessOutput(
+          processHandler,
+          ScriptRunnerUtil.STDOUT_OR_STDERR_OUTPUT_KEY_FILTER,
+          timeout,
+        )
+      } catch (e: ExecutionException) {
+        logger.error(
+          "Execution timeout [${timeout / 1000} sec] is reached with NO results produced",
+          e,
+        )
+        ""
+      }
 
-    companion object {
-        const val PROCESS_CANCELLED_BY_USER = "PROCESS_CANCELLED_BY_USER"
-        const val SAVING_POLICY_FILE = "Saving .snyk policy file...\n"
-    }
+    return if (wasProcessTerminated) PROCESS_CANCELLED_BY_USER else processOutput
+  }
+
+  /** Setup environment variables for CLI. */
+  fun setupCliEnvironmentVariables(commandLine: GeneralCommandLine, apiToken: String) {
+    val environment = commandLine.environment
+    EnvironmentHelper.updateEnvironment(environment, apiToken)
+  }
+
+  companion object {
+    const val PROCESS_CANCELLED_BY_USER = "PROCESS_CANCELLED_BY_USER"
+    const val SAVING_POLICY_FILE = "Saving .snyk policy file...\n"
+  }
 }
