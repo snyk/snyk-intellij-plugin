@@ -119,6 +119,38 @@ class FolderConfigSettingsTest {
   }
 
   @Test
+  fun `addFolderConfig handles null additionalParameters by defaulting to emptyList`() {
+    val path = "/test/project"
+    val config = FolderConfig(folderPath = path, baseBranch = "main", additionalParameters = null)
+
+    settings.addFolderConfig(config)
+
+    val retrievedConfig = settings.getFolderConfig(path)
+    assertNotNull("Retrieved config should not be null", retrievedConfig)
+    assertEquals(
+      "additionalParameters should be emptyList when null",
+      emptyList<String>(),
+      retrievedConfig.additionalParameters,
+    )
+  }
+
+  @Test
+  fun `addFolderConfig handles null additionalEnv by defaulting to empty string`() {
+    val path = "/test/project"
+    val config = FolderConfig(folderPath = path, baseBranch = "main", additionalEnv = null)
+
+    settings.addFolderConfig(config)
+
+    val retrievedConfig = settings.getFolderConfig(path)
+    assertNotNull("Retrieved config should not be null", retrievedConfig)
+    assertEquals(
+      "additionalEnv should be empty string when null",
+      "",
+      retrievedConfig.additionalEnv,
+    )
+  }
+
+  @Test
   fun `getFolderConfig creates and stores new config if not found, with normalized path`() {
     val rawPath = "/new/folder/./for/creation"
     val expectedNormalizedPath = Paths.get(rawPath).normalize().toAbsolutePath().toString()
