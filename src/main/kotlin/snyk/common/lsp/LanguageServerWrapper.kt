@@ -526,6 +526,7 @@ class LanguageServerWrapper(
         return LanguageServerSettings(
             activateSnykOpenSource = ps.ossScanEnable.toString(),
             activateSnykCode = ps.snykCodeSecurityIssuesScanEnable.toString(),
+            activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
             activateSnykIac = ps.iacScanEnabled.toString(),
             organization = ps.organization,
             insecure = ps.ignoreUnknownCA.toString(),

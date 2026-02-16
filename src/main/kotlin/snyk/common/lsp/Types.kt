@@ -586,6 +586,7 @@ data class SnykConfigurationParam(
     @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: String? = null,
     @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: String? = null,
     @SerializedName("activateSnykCode") val activateSnykCode: String? = null,
+    @SerializedName("activateSnykCodeSecurity") val activateSnykCodeSecurity: String? = null,
     @SerializedName("activateSnykIac") val activateSnykIac: String? = null,
     @SerializedName("scanningMode") val scanningMode: String? = null,
     @SerializedName("filterSeverity") val filterSeverity: SeverityFilter? = null,
@@ -605,7 +606,10 @@ data class SnykConfigurationParam(
         cliPath?.let { settings.cliPath = it }
         manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it.toBoolean() }
         activateSnykOpenSource?.let { settings.ossScanEnable = it.toBoolean() }
-        activateSnykCode?.let { settings.snykCodeSecurityIssuesScanEnable = it.toBoolean() }
+        val codeEnabled = (activateSnykCode?.toBoolean() == true) || (activateSnykCodeSecurity?.toBoolean() == true)
+        if (activateSnykCode != null || activateSnykCodeSecurity != null) {
+            settings.snykCodeSecurityIssuesScanEnable = codeEnabled
+        }
         activateSnykIac?.let { settings.iacScanEnabled = it.toBoolean() }
         scanningMode?.let { settings.scanOnSave = (it != "manual") }
         insecure?.let { settings.ignoreUnknownCA = it.toBoolean() }
