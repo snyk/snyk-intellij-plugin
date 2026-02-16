@@ -2,6 +2,7 @@ package snyk.common.lsp.settings
 
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.project.Project
+import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.pluginSettings
@@ -208,4 +209,19 @@ class FolderConfigSettings {
         val folderConfig = getActiveFolderConfig(project)
         return folderConfig?.issueViewIgnoredIssues ?: pluginSettings().ignoredIssuesEnabled
     }
+
+    fun hasSeverityEnabled(project: Project, severity: Severity): Boolean {
+        val folderConfig = getActiveFolderConfig(project)
+        val folderValue = when (severity) {
+            Severity.CRITICAL -> folderConfig?.enabledSeverities?.critical
+            Severity.HIGH -> folderConfig?.enabledSeverities?.high
+            Severity.MEDIUM -> folderConfig?.enabledSeverities?.medium
+            Severity.LOW -> folderConfig?.enabledSeverities?.low
+            else -> null
+        }
+        return folderValue ?: pluginSettings().hasSeverityEnabled(severity)
+    }
+
+    fun hasSeverityEnabledAndFiltered(project: Project, severity: Severity): Boolean =
+        hasSeverityEnabled(project, severity) && pluginSettings().hasSeverityTreeFiltered(severity)
 }

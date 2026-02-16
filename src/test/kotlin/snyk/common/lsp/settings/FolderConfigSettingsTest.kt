@@ -984,4 +984,59 @@ class FolderConfigSettingsTest {
         assertFalse("scanAutomatic should use folder override", settings.isScanAutomatic(projectMock))
         assertTrue("scanNetNew should use folder override", settings.isScanNetNew(projectMock))
     }
+
+    @Test
+    fun `hasSeverityEnabled uses folder override when enabledSeverities is set`() {
+        val severities = SeverityFilter(critical = false, high = true, medium = false, low = true)
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", enabledSeverities = severities)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.hasSeverityEnabled(io.snyk.plugin.Severity.CRITICAL) } returns true
+        every { globalSettings.hasSeverityEnabled(io.snyk.plugin.Severity.HIGH) } returns false
+        every { globalSettings.hasSeverityEnabled(io.snyk.plugin.Severity.MEDIUM) } returns true
+        every { globalSettings.hasSeverityEnabled(io.snyk.plugin.Severity.LOW) } returns false
+
+        assertFalse("Critical should use folder override (false)", settings.hasSeverityEnabled(projectMock, io.snyk.plugin.Severity.CRITICAL))
+        assertTrue("High should use folder override (true)", settings.hasSeverityEnabled(projectMock, io.snyk.plugin.Severity.HIGH))
+        assertFalse("Medium should use folder override (false)", settings.hasSeverityEnabled(projectMock, io.snyk.plugin.Severity.MEDIUM))
+        assertTrue("Low should use folder override (true)", settings.hasSeverityEnabled(projectMock, io.snyk.plugin.Severity.LOW))
+    }
+
+    @Test
+    fun `hasSeverityEnabled falls back to global when enabledSeverities is null`() {
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", enabledSeverities = null)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.hasSeverityEnabled(io.snyk.plugin.Severity.CRITICAL) } returns true
+        every { globalSettings.hasSeverityEnabled(io.snyk.plugin.Severity.HIGH) } returns false
+
+        assertTrue("Critical should fall back to global (true)", settings.hasSeverityEnabled(projectMock, io.snyk.plugin.Severity.CRITICAL))
+        assertFalse("High should fall back to global (false)", settings.hasSeverityEnabled(projectMock, io.snyk.plugin.Severity.HIGH))
+    }
+
+    @Test
+    fun `hasSeverityEnabledAndFiltered combines folder severity with tree filter`() {
+        val severities = SeverityFilter(critical = true, high = true, medium = false, low = false)
+        val config = FolderConfig(folderPath = "/test/project", baseBranch = "main", enabledSeverities = severities)
+        val projectMock = setupProjectWithFolderConfig(config)
+
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        val globalSettings = mockk<io.snyk.plugin.services.SnykApplicationSettingsStateService>(relaxed = true)
+        every { io.snyk.plugin.pluginSettings() } returns globalSettings
+        every { globalSettings.hasSeverityTreeFiltered(io.snyk.plugin.Severity.CRITICAL) } returns true
+        every { globalSettings.hasSeverityTreeFiltered(io.snyk.plugin.Severity.HIGH) } returns false
+        every { globalSettings.hasSeverityTreeFiltered(io.snyk.plugin.Severity.MEDIUM) } returns true
+        every { globalSettings.hasSeverityTreeFiltered(io.snyk.plugin.Severity.LOW) } returns true
+
+        assertTrue("Critical enabled + tree filtered = true", settings.hasSeverityEnabledAndFiltered(projectMock, io.snyk.plugin.Severity.CRITICAL))
+        assertFalse("High enabled but not tree filtered = false", settings.hasSeverityEnabledAndFiltered(projectMock, io.snyk.plugin.Severity.HIGH))
+        assertFalse("Medium not enabled (folder) even though tree filtered = false", settings.hasSeverityEnabledAndFiltered(projectMock, io.snyk.plugin.Severity.MEDIUM))
+        assertFalse("Low not enabled (folder) even though tree filtered = false", settings.hasSeverityEnabledAndFiltered(projectMock, io.snyk.plugin.Severity.LOW))
+    }
 }

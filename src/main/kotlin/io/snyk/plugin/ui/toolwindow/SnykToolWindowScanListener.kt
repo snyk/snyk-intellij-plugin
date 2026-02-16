@@ -291,10 +291,11 @@ class SnykToolWindowSnykScanListener(
             // Calculate filtered results first - apply severity filtering if enabled
             val resultsToDisplay =
                 if (filterTree) {
+                    val fcs = service<FolderConfigSettings>()
                     snykResults.map { entry ->
                         entry.key to
                             entry.value.filter {
-                                settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
+                                fcs.hasSeverityEnabledAndFiltered(project, it.getSeverityAsEnum())
                             }
                     }.toMap()
                 } else {
@@ -352,7 +353,8 @@ class SnykToolWindowSnykScanListener(
     }
 
     private fun getIssueFoundText(issuesCount: Int): String {
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
+        val fcs = service<FolderConfigSettings>()
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !fcs.isOpenIssuesEnabled(project)) {
             return OPEN_ISSUES_ARE_DISABLED
         }
 
@@ -365,8 +367,9 @@ class SnykToolWindowSnykScanListener(
             return getIssueFoundText(totalIssuesCount)
         }
 
-        val showingOpen = pluginSettings().openIssuesEnabled
-        val showingIgnored = pluginSettings().ignoredIssuesEnabled
+        val fcs = service<FolderConfigSettings>()
+        val showingOpen = fcs.isOpenIssuesEnabled(project)
+        val showingIgnored = fcs.isIgnoredIssuesEnabled(project)
 
         val openIssuesText = "$openIssuesCount open issue${if (openIssuesCount == 1) "" else "s"}"
         val ignoredIssuesText = "$ignoredIssuesCount ignored issue${if (ignoredIssuesCount == 1) "" else "s"}"
@@ -402,7 +405,8 @@ class SnykToolWindowSnykScanListener(
             return null
         }
 
-        if (!pluginSettings().openIssuesEnabled) {
+        val fcs = service<FolderConfigSettings>()
+        if (!fcs.isOpenIssuesEnabled(project)) {
             return InfoTreeNode(
                 OPEN_ISSUES_FILTERED_BUT_AVAILABLE,
                 project,
@@ -417,14 +421,15 @@ class SnykToolWindowSnykScanListener(
             return null
         }
 
-        if (!pluginSettings().openIssuesEnabled) {
+        val fcs = service<FolderConfigSettings>()
+        if (!fcs.isOpenIssuesEnabled(project)) {
             return InfoTreeNode(
                 OPEN_ISSUES_FILTERED_BUT_AVAILABLE,
                 project,
             )
         }
 
-        if (!pluginSettings().ignoredIssuesEnabled) {
+        if (!fcs.isIgnoredIssuesEnabled(project)) {
             return InfoTreeNode(
                 IGNORED_ISSUES_FILTERED_BUT_AVAILABLE,
                 project,
@@ -443,7 +448,8 @@ class SnykToolWindowSnykScanListener(
     }
 
     private fun getFixableIssuesTextForCode(fixableIssuesCount: Int): String? {
-        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !pluginSettings().openIssuesEnabled) {
+        val fcs = service<FolderConfigSettings>()
+        if (pluginSettings().isGlobalIgnoresFeatureEnabled && !fcs.isOpenIssuesEnabled(project)) {
             return null
         }
         return getFixableIssuesText(fixableIssuesCount, pluginSettings().isGlobalIgnoresFeatureEnabled)
