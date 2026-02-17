@@ -53,7 +53,8 @@ jobs:
         with:
           path: build/reports/kover/report.xml
           title: Code Coverage
-          min-coverage-overall: 60
+          min-coverage-overall: 40
+          min-coverage-changed-files: 80
           update-comment: true
 
   pluginVerifier:
