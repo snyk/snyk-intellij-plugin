@@ -1052,13 +1052,23 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   }
 
   fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) {
-    htmlTreePanel?.selectNode(scanIssue.id)
-    selectAndDisplayNodeWithIssueDescription(
-      { treeNode ->
-        treeNode is SuggestionTreeNode && (treeNode.userObject as ScanIssue).id == scanIssue.id
-      },
-      forceRefresh,
-    )
+    if (isHtmlTreeViewEnabled()) {
+      htmlTreePanel?.selectNode(scanIssue.id)
+      invokeLater {
+        if (isDisposed || project.isDisposed) return@invokeLater
+        descriptionPanel.removeAll()
+        descriptionPanel.add(SuggestionDescriptionPanel(project, scanIssue), BorderLayout.CENTER)
+        descriptionPanel.revalidate()
+        descriptionPanel.repaint()
+      }
+    } else {
+      selectAndDisplayNodeWithIssueDescription(
+        { treeNode ->
+          treeNode is SuggestionTreeNode && (treeNode.userObject as ScanIssue).id == scanIssue.id
+        },
+        forceRefresh,
+      )
+    }
   }
 
   @TestOnly fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode
