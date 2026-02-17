@@ -139,6 +139,16 @@ class ThemeBasedStylingGenerator {
       val checkboxBgColor = UIManager.getColor("CheckBox.background")?.toHex() ?: inputBgColor
       val checkboxFgColor = UIManager.getColor("CheckBox.foreground")?.toHex() ?: fgColor
       val checkboxSelectColor = UIManager.getColor("CheckBox.select")?.toHex() ?: buttonBgColor
+      val sideBarBgColor = treeBackground
+      val treeIndentGuideColor = borderColor
+      val badgeBgColor = UIManager.getColor("Badge.background")?.toHex() ?: buttonBgColor
+      val badgeFgColor = UIManager.getColor("Badge.foreground")?.toHex() ?: buttonFgColor
+      val listSelectionBgColor =
+        UIManager.getColor("List.selectionBackground")?.toHex() ?: buttonBgColor
+      val listSelectionFgColor = UIManager.getColor("List.selectionForeground")?.toHex() ?: fgColor
+      val listHoverBgColor =
+        UIManager.getColor("List.hoverBackground")?.toHex()
+          ?: adjustHexBrightness(bgColor, 0.1 * darkenOrLightenFactor)
 
       // Build variable map for single-pass replacement
       val varMap =
@@ -163,6 +173,13 @@ class ThemeBasedStylingGenerator {
           "vscode-scrollbarSlider-hoverBackground" to scrollbarColor,
           "vscode-scrollbarSlider-activeBackground" to scrollbarColor,
           "vscode-panel-border" to borderColor,
+          "vscode-sideBar-background" to sideBarBgColor,
+          "vscode-tree-indentGuidesStroke" to treeIndentGuideColor,
+          "vscode-badge-background" to badgeBgColor,
+          "vscode-badge-foreground" to badgeFgColor,
+          "vscode-list-activeSelectionBackground" to listSelectionBgColor,
+          "vscode-list-activeSelectionForeground" to listSelectionFgColor,
+          "vscode-list-hoverBackground" to listHoverBgColor,
           "vscode-editor-inactiveSelectionBackground" to sectionBackground,
           "vscode-inputValidation-infoBackground" to infoBgColor,
           "vscode-inputValidation-infoForeground" to fgColor,
