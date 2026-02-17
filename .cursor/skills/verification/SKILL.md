@@ -195,6 +195,10 @@ If a GitHub PR exists for the current branch:
 gh pr view --json number,reviews,comments,url 2>/dev/null
 ```
 
+1. If PR exists: trigger feedback by commenting `/review` in the PR.
+2. Wait for the bot to review.
+3. Review ALL comments in the PR feedback including the pr-review-bot comments
+
 ### Process Feedback
 
 For each review comment:

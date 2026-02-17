@@ -76,14 +76,17 @@ class SnykCliDownloaderServiceIntegTest : LightPlatformTestCase() {
    * available yet
    */
   fun testDownloadLatestCliRelease() {
+    val releaseInfo = cutSpy.requestLatestReleasesInformation()
+    if (releaseInfo.isNullOrEmpty()) {
+      println("Skipping testDownloadLatestCliRelease: preview release not available")
+      return
+    }
+
     ensureCliFileExistent()
 
     cutSpy.downloadLatestRelease(indicator, project)
 
-    val downloadedFile = cliFile
-
-    assertTrue(downloadedFile.exists())
-
+    assertTrue(cliFile.exists())
     verify { downloader.downloadFile(cliFile, any(), indicator) }
     verify { downloader.verifyChecksum(any(), any()) }
   }
