@@ -5,7 +5,6 @@ import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH
 import io.snyk.plugin.events.SnykTreeViewListener
@@ -17,10 +16,12 @@ import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.TreeViewBridgeHandler
 import io.snyk.plugin.ui.toolwindow.panels.PanelHTMLUtils.Companion.getFormattedHtml
 import java.awt.Dimension
+import javax.swing.JPanel
 import snyk.common.lsp.SnykTreeViewParams
 
-class HtmlTreePanel(project: Project) : SimpleToolWindowPanel(true, true), Disposable {
+class HtmlTreePanel(project: Project) : JPanel(), Disposable {
   private val logger = logger<HtmlTreePanel>()
+  private var jbCefBrowser: com.intellij.ui.jcef.JBCefBrowser? = null
 
   @Volatile private var isDisposed = false
 
@@ -50,12 +51,13 @@ class HtmlTreePanel(project: Project) : SimpleToolWindowPanel(true, true), Dispo
     loadHandlerGenerators += { treeViewBridgeHandler.generate(it) }
 
     logger.debug("HtmlTreePanel: creating JCEF browser")
-    val jbCefBrowser = JCEFUtils.getJBCefBrowserIfSupported(initHtml, loadHandlerGenerators)
+    jbCefBrowser = JCEFUtils.getJBCefBrowserIfSupported(initHtml, loadHandlerGenerators)
     logger.debug("HtmlTreePanel: JCEF browser created, isNull=${jbCefBrowser == null}")
 
-    if (jbCefBrowser != null) {
-      jbCefBrowser.component.preferredSize = preferredSize
-      add(jbCefBrowser.component, constraints)
+    val browser = jbCefBrowser
+    if (browser != null) {
+      browser.component.preferredSize = preferredSize
+      add(browser.component, constraints)
 
       project.messageBus
         .connect(this)
@@ -70,7 +72,7 @@ class HtmlTreePanel(project: Project) : SimpleToolWindowPanel(true, true), Dispo
                 if (!isDisposed) {
                   val styledHtml = getFormattedHtml(rawHtml)
                   logger.debug("HtmlTreePanel: loading HTML into browser")
-                  jbCefBrowser.loadHTML(styledHtml)
+                  browser.loadHTML(styledHtml)
                 }
               }
             }
@@ -88,6 +90,8 @@ class HtmlTreePanel(project: Project) : SimpleToolWindowPanel(true, true), Dispo
 
   override fun dispose() {
     isDisposed = true
+    jbCefBrowser?.dispose()
+    jbCefBrowser = null
   }
 
   companion object {

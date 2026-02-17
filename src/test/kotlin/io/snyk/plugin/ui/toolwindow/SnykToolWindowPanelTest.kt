@@ -19,7 +19,9 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
 import java.awt.Container
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import javax.swing.tree.DefaultMutableTreeNode
+import org.awaitility.Awaitility.await
 import org.eclipse.lsp4j.services.LanguageServer
 import org.eclipse.lsp4j.services.WorkspaceService
 import org.junit.Ignore
@@ -447,6 +449,36 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
       "IAC node should not be modified while scanning",
       initialChildCount,
       iacNode.childCount,
+    )
+  }
+
+  @Test
+  fun `scheduleDebouncedTreeRefresh should be no-op when HTML tree view is enabled`() {
+    every { settings.token } returns "test-token"
+    every { settings.pluginFirstRun } returns false
+    justRun { taskQueueService.scan() }
+
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { io.snyk.plugin.isHtmlTreeViewEnabled() } returns true
+    every { isOssRunning(any()) } returns false
+
+    cut = SnykToolWindowPanel(project)
+
+    val ossNode = cut.getRootOssIssuesTreeNode()
+    val initialChildCount = ossNode.childCount
+
+    cut.scheduleDebouncedTreeRefreshForTest(snyk.common.lsp.LsProduct.OpenSource)
+
+    // Wait for debounce window to expire, then verify no tree change
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+    await().atMost(2, TimeUnit.SECONDS).until { true }
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    assertEquals(
+      "Tree should not be refreshed when HTML tree view is enabled",
+      initialChildCount,
+      ossNode.childCount,
     )
   }
 

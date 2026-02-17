@@ -549,6 +549,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
    */
   private fun scheduleDebouncedTreeRefresh(product: LsProduct) {
     if (product == LsProduct.Unknown) return
+    if (isHtmlTreeViewEnabled()) return
     pendingTreeRefreshProducts.add(product)
     treeRefreshAlarm.cancelAllRequests()
     treeRefreshAlarm.addRequest({ flushPendingTreeRefreshes() }, TREE_REFRESH_DEBOUNCE_MS)

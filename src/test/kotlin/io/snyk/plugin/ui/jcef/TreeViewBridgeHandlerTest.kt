@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.ui.jcef.JBCefJSQuery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -15,6 +16,8 @@ import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import org.awaitility.Awaitility.await
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -78,13 +81,15 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should handle empty command`() {
+  fun `dispatchCommand should reject empty command via allowlist`() {
     val request = TreeViewCommandRequest(command = "", args = emptyList())
     val payload = gson.toJson(request)
 
     handler.dispatchCommand(payload)
 
-    verify(timeout = 2000) { lsWrapperMock.executeCommandWithArgs("", emptyList()) }
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
+    }
   }
 
   @Test
@@ -142,15 +147,18 @@ class TreeViewBridgeHandlerTest {
   fun `dispatchCommand should not invoke callback when callbackId is absent`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
 
-    var callbackInvoked = false
+    val callbackInvoked = AtomicBoolean(false)
     val request =
       TreeViewCommandRequest(command = "snyk.navigateToRange", args = listOf("/file.kt"))
     val payload = gson.toJson(request)
 
-    handler.dispatchCommand(payload) { _, _ -> callbackInvoked = true }
+    handler.dispatchCommand(payload) { _, _ -> callbackInvoked.set(true) }
 
-    Thread.sleep(500)
-    assertEquals(false, callbackInvoked)
+    // Wait for async dispatch to complete, then verify callback was not invoked
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.navigateToRange", listOf("/file.kt")) }
+    }
+    assertEquals(false, callbackInvoked.get())
   }
 
   @Test
@@ -177,12 +185,15 @@ class TreeViewBridgeHandlerTest {
   fun `dispatchCommand should not throw when language server throws`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } throws RuntimeException("LS error")
 
-    val request = TreeViewCommandRequest(command = "snyk.fail", args = listOf("arg1"))
+    val request = TreeViewCommandRequest(command = "snyk.getTreeView", args = listOf("arg1"))
     val payload = gson.toJson(request)
 
     // should not throw
     handler.dispatchCommand(payload)
-    Thread.sleep(500)
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.getTreeView", listOf("arg1")) }
+    }
   }
 
   @Test
@@ -190,12 +201,19 @@ class TreeViewBridgeHandlerTest {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
 
     val request =
-      TreeViewCommandRequest(command = "snyk.test", args = emptyList(), callbackId = "__cb_3")
+      TreeViewCommandRequest(
+        command = "snyk.getTreeView",
+        args = emptyList(),
+        callbackId = "__cb_3",
+      )
     val payload = gson.toJson(request)
 
     // pass null callbackExecutor — should not throw
     handler.dispatchCommand(payload, null)
-    Thread.sleep(500)
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.getTreeView", emptyList()) }
+    }
   }
 
   @Test
@@ -208,7 +226,8 @@ class TreeViewBridgeHandlerTest {
     repeat(3) { i ->
       Thread {
           try {
-            val request = TreeViewCommandRequest(command = "snyk.cmd$i", args = listOf("arg$i"))
+            val request =
+              TreeViewCommandRequest(command = "snyk.getTreeView", args = listOf("arg$i"))
             handler.dispatchCommand(gson.toJson(request))
           } catch (e: Exception) {
             synchronized(errors) { errors.add(e) }
@@ -221,6 +240,94 @@ class TreeViewBridgeHandlerTest {
 
     assertTrue("All dispatches should complete", latch.await(3, TimeUnit.SECONDS))
     assertTrue("No errors expected, got: $errors", errors.isEmpty())
+  }
+
+  @Test
+  fun `dispatchCommand should reject commands not in the allowlist`() {
+    val request =
+      TreeViewCommandRequest(command = "snyk.logout", args = emptyList(), callbackId = "__cb_99")
+    val payload = gson.toJson(request)
+
+    val callbackInvoked = AtomicBoolean(false)
+    handler.dispatchCommand(payload) { _, _ -> callbackInvoked.set(true) }
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
+    }
+    assertEquals(false, callbackInvoked.get())
+  }
+
+  @Test
+  fun `dispatchCommand should reject callbackId with non-alphanumeric characters to prevent JS injection`() {
+    every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
+
+    val maliciousCallbackId = "'];alert('xss');//"
+    val request =
+      TreeViewCommandRequest(
+        command = "snyk.getTreeView",
+        args = emptyList(),
+        callbackId = maliciousCallbackId,
+      )
+    val payload = gson.toJson(request)
+
+    val callbackInvoked = AtomicBoolean(false)
+    handler.dispatchCommand(payload) { _, _ -> callbackInvoked.set(true) }
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
+    }
+    assertEquals(false, callbackInvoked.get())
+  }
+
+  @Test
+  fun `dispatchCommand should accept all allowed tree view commands`() {
+    every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "ok"
+
+    val allowedCommands =
+      listOf(
+        "snyk.navigateToRange",
+        "snyk.toggleTreeFilter",
+        "snyk.getTreeViewIssueChunk",
+        "snyk.getTreeView",
+      )
+
+    val latch = CountDownLatch(allowedCommands.size)
+
+    for (cmd in allowedCommands) {
+      val request = TreeViewCommandRequest(command = cmd, args = emptyList())
+      handler.dispatchCommand(gson.toJson(request)) { _, _ -> latch.countDown() }
+    }
+
+    verify(timeout = 2000, exactly = allowedCommands.size) {
+      lsWrapperMock.executeCommandWithArgs(any(), any())
+    }
+  }
+
+  @Test
+  fun `buildBridgeScript should contain ideExecuteCommand bridge`() {
+    val mockQuery: JBCefJSQuery = mockk(relaxed = true)
+    every { mockQuery.inject(any()) } returns "window.cefQuery_inject(payload)"
+
+    val script = handler.buildBridgeScript(mockQuery)
+
+    assertTrue(
+      "Script should define __ideExecuteCommand__",
+      script.contains("__ideExecuteCommand__"),
+    )
+    assertTrue("Script should define __ideCallbacks__", script.contains("__ideCallbacks__"))
+    assertTrue("Script should contain injected query", script.contains("cefQuery_inject"))
+  }
+
+  @Test
+  fun `ALLOWED_COMMANDS should contain expected commands`() {
+    val expected =
+      setOf(
+        "snyk.navigateToRange",
+        "snyk.toggleTreeFilter",
+        "snyk.getTreeViewIssueChunk",
+        "snyk.getTreeView",
+      )
+    assertEquals(expected, TreeViewBridgeHandler.ALLOWED_COMMANDS)
   }
 
   @Test

@@ -21,6 +21,17 @@ class TreeViewBridgeHandler(private val project: Project) {
   private val logger = logger<TreeViewBridgeHandler>()
   private val gson = Gson()
 
+  companion object {
+    internal val ALLOWED_COMMANDS =
+      setOf(
+        "snyk.navigateToRange",
+        "snyk.toggleTreeFilter",
+        "snyk.getTreeViewIssueChunk",
+        "snyk.getTreeView",
+      )
+    private val SAFE_CALLBACK_ID = Regex("^[a-zA-Z0-9_]+$")
+  }
+
   fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
     val executeCommandQuery = JBCefJSQuery.create(jbCefBrowser)
     executeCommandQuery.addHandler { value -> handleCommand(value, jbCefBrowser) }
@@ -53,6 +64,16 @@ class TreeViewBridgeHandler(private val project: Project) {
     try {
       val request = gson.fromJson(value, TreeViewCommandRequest::class.java)
       logger.debug("TreeViewBridge: received command=${request.command}, args=${request.args}")
+      if (request.command !in ALLOWED_COMMANDS) {
+        logger.warn(
+          "TreeViewBridge: command '${request.command}' is not in the allowlist, ignoring"
+        )
+        return
+      }
+      if (request.callbackId != null && !SAFE_CALLBACK_ID.matches(request.callbackId)) {
+        logger.warn("TreeViewBridge: invalid callbackId '${request.callbackId}', ignoring")
+        return
+      }
       val ls = LanguageServerWrapper.getInstance(project)
       runAsync {
         try {

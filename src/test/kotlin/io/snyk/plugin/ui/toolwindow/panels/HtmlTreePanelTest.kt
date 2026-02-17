@@ -65,14 +65,17 @@ class HtmlTreePanelTest : LightPlatform4TestCase() {
   }
 
   @Test
-  fun `dispose should set isDisposed flag`() {
-    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns null
+  fun `dispose should dispose JCEF browser`() {
+    val mockBrowserComponent = JLabel("mock-browser")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockBrowserComponent
+
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns mockJBCefBrowser
 
     cut = HtmlTreePanel(project)
     cut.dispose()
 
-    // after dispose, notification should be ignored (tested indirectly via notification test)
-    assertNotNull(cut)
+    verify { mockJBCefBrowser.dispose() }
   }
 
   @Test
