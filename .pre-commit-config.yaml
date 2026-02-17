@@ -12,7 +12,7 @@ repos:
     hooks:
       - id: format-and-lint
         name: format and lint
-        entry: ./gradlew spotlessCheck ktlintCheck
+        entry: ./gradlew spotlessApply ktlintCheck
         language: system
         stages: [pre-commit]
         pass_filenames: false
