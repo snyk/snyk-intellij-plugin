@@ -18,6 +18,7 @@ import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.TreeUIHelper
+import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.Alarm
 import com.intellij.util.containers.Convertor
@@ -136,7 +137,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     java.util.concurrent.ConcurrentHashMap.newKeySet()
 
   // Reference to scan listener for debounced tree refresh
-  private lateinit var scanListenerLS: SnykToolWindowSnykScanListener
+  private var scanListenerLS: SnykToolWindowSnykScanListener
 
   // Tree node expander for progressive, non-blocking expansion
   private val treeNodeExpander by lazy { TreeNodeExpander(vulnerabilitiesTree) { isDisposed } }
@@ -702,7 +703,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     val treeSplitter = OnePixelSplitter(true, TOOL_TREE_SPLITTER_PROPORTION_KEY, 0.25f)
     treeSplitter.firstComponent = summaryPanel
 
-    if (isHtmlTreeViewEnabled()) {
+    if (isHtmlTreeViewEnabled() && JBCefApp.isSupported()) {
       val htmlTreePanel = HtmlTreePanel(project)
       Disposer.register(this, htmlTreePanel)
       treeSplitter.secondComponent = htmlTreePanel
