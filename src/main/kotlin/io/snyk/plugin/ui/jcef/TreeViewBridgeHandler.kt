@@ -27,7 +27,7 @@ class TreeViewBridgeHandler(private val project: Project) {
         "snyk.navigateToRange",
         "snyk.toggleTreeFilter",
         "snyk.getTreeViewIssueChunk",
-        "snyk.getTreeView",
+        "snyk.setNodeExpanded",
       )
     private val SAFE_CALLBACK_ID = Regex("^[a-zA-Z0-9_]+$")
   }

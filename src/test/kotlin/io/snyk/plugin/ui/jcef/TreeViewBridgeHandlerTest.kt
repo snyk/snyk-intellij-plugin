@@ -185,14 +185,14 @@ class TreeViewBridgeHandlerTest {
   fun `dispatchCommand should not throw when language server throws`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } throws RuntimeException("LS error")
 
-    val request = TreeViewCommandRequest(command = "snyk.getTreeView", args = listOf("arg1"))
+    val request = TreeViewCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg1"))
     val payload = gson.toJson(request)
 
     // should not throw
     handler.dispatchCommand(payload)
 
     await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      verify { lsWrapperMock.executeCommandWithArgs("snyk.getTreeView", listOf("arg1")) }
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.setNodeExpanded", listOf("arg1")) }
     }
   }
 
@@ -202,7 +202,7 @@ class TreeViewBridgeHandlerTest {
 
     val request =
       TreeViewCommandRequest(
-        command = "snyk.getTreeView",
+        command = "snyk.setNodeExpanded",
         args = emptyList(),
         callbackId = "__cb_3",
       )
@@ -212,7 +212,7 @@ class TreeViewBridgeHandlerTest {
     handler.dispatchCommand(payload, null)
 
     await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      verify { lsWrapperMock.executeCommandWithArgs("snyk.getTreeView", emptyList()) }
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.setNodeExpanded", emptyList()) }
     }
   }
 
@@ -227,7 +227,7 @@ class TreeViewBridgeHandlerTest {
       Thread {
           try {
             val request =
-              TreeViewCommandRequest(command = "snyk.getTreeView", args = listOf("arg$i"))
+              TreeViewCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg$i"))
             handler.dispatchCommand(gson.toJson(request))
           } catch (e: Exception) {
             synchronized(errors) { errors.add(e) }
@@ -264,7 +264,7 @@ class TreeViewBridgeHandlerTest {
     val maliciousCallbackId = "'];alert('xss');//"
     val request =
       TreeViewCommandRequest(
-        command = "snyk.getTreeView",
+        command = "snyk.setNodeExpanded",
         args = emptyList(),
         callbackId = maliciousCallbackId,
       )
@@ -288,7 +288,7 @@ class TreeViewBridgeHandlerTest {
         "snyk.navigateToRange",
         "snyk.toggleTreeFilter",
         "snyk.getTreeViewIssueChunk",
-        "snyk.getTreeView",
+        "snyk.setNodeExpanded",
       )
 
     val latch = CountDownLatch(allowedCommands.size)
@@ -325,7 +325,7 @@ class TreeViewBridgeHandlerTest {
         "snyk.navigateToRange",
         "snyk.toggleTreeFilter",
         "snyk.getTreeViewIssueChunk",
-        "snyk.getTreeView",
+        "snyk.setNodeExpanded",
       )
     assertEquals(expected, TreeViewBridgeHandler.ALLOWED_COMMANDS)
   }
