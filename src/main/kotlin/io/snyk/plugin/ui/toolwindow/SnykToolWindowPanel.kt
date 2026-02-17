@@ -59,6 +59,7 @@ import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
 import io.snyk.plugin.ui.toolwindow.panels.StatePanel
+import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SummaryPanel
 import io.snyk.plugin.ui.toolwindow.panels.TreePanel
 import io.snyk.plugin.ui.wrapWithScrollPane
@@ -336,7 +337,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 .firstOrNull { scanIssue -> scanIssue.id == issueId }
                 ?.let { scanIssue ->
                   logger.debug("Select node and display description for issue $issueId")
-                  selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
+                  if (isHtmlTreeViewEnabled()) {
+                    invokeLater {
+                      if (isDisposed || project.isDisposed) return@invokeLater
+                      descriptionPanel.removeAll()
+                      descriptionPanel.add(
+                        SuggestionDescriptionPanel(project, scanIssue),
+                        BorderLayout.CENTER,
+                      )
+                      descriptionPanel.revalidate()
+                      descriptionPanel.repaint()
+                    }
+                  } else {
+                    selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
+                  }
                 } ?: run { logger.debug("Failed to find issue $issueId in $product cache") }
             }
           }

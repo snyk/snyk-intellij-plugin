@@ -24,6 +24,7 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
   private var jbCefBrowser: com.intellij.ui.jcef.JBCefBrowser? = null
 
   @Volatile private var isDisposed = false
+  @Volatile private var lastHtmlHash: Int = 0
 
   init {
     logger.debug("HtmlTreePanel init starting")
@@ -68,6 +69,12 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
               logger.debug("HtmlTreePanel: onTreeViewReceived called, isDisposed=$isDisposed")
               if (isDisposed) return
               val rawHtml = params.treeViewHtml
+              val htmlHash = rawHtml.hashCode()
+              if (htmlHash == lastHtmlHash) {
+                logger.debug("HtmlTreePanel: skipping loadHTML — content unchanged")
+                return
+              }
+              lastHtmlHash = htmlHash
               invokeLater {
                 if (!isDisposed) {
                   val styledHtml = getFormattedHtml(rawHtml)
