@@ -130,7 +130,7 @@ kover {
   reports {
     total {
       xml {
-        onCheck = false
+        onCheck = true
         xmlFile = layout.buildDirectory.file("reports/kover/report.xml")
       }
       html {

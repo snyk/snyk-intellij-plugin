@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Gradle Wrapper Validation
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@v5
 
   test:
     name: Test
@@ -25,16 +25,16 @@ jobs:
 
     steps:
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         name: Setup Java
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '21'
 
       - name: Setup Gradle Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -43,10 +43,18 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
 
       - name: Run Tests
-        run: ./gradlew clean check
+        run: ./gradlew clean ktlintCheck spotlessCheck check
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
+
+      - name: Publish Kover Report
+        uses: mi-kas/kover-report@v1
+        with:
+          path: build/reports/kover/report.xml
+          title: Code Coverage
+          min-coverage-overall: 60
+          update-comment: true
 
   pluginVerifier:
     name: Plugin Verifier
@@ -54,18 +62,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # PluginVerifier has been compiled by a more recent version of the Java - Java 11.
       # That's why, we are using not version 8 here, but 11.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         name: Setup Java
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '21'
 
       - name: Setup Gradle Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
