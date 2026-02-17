@@ -345,6 +345,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ?.let { scanIssue ->
                   logger.info("onShowIssueDetail: found issue $issueId")
                   if (isHtmlTreeViewEnabled()) {
+                    htmlTreePanel?.selectNode(scanIssue.id)
                     invokeLater {
                       if (isDisposed || project.isDisposed) return@invokeLater
                       descriptionPanel.removeAll()
