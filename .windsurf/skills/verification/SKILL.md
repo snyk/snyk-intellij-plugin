@@ -27,8 +27,9 @@ Verification Progress:
 - [ ] Step 4: Identify code smells
 - [ ] Step 5: Run security scans
 - [ ] Step 6: Review PR feedback (if PR exists)
-- [ ] Step 7: Update implementation plan with findings
-- [ ] Step 8: Fix issues (TDD REQUIRED - test first, then fix)
+- [ ] Step 7: Get check results from github with gh cli
+- [ ] Step 8: Update implementation plan with findings
+- [ ] Step 9: Fix issues (TDD REQUIRED - test first, then fix)
 ```
 
 ---
@@ -37,7 +38,7 @@ Verification Progress:
 
 Read and apply these project standards:
 
-1. `.cursor/rules/general.mdc` - critical rules and workflow
+1. `.windsurf/rules/general.md` - critical rules and workflow
 2. `.github/CONTRIBUTING.md` - coding standards
 
 Key rules to verify against:
