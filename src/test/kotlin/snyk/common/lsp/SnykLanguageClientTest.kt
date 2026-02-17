@@ -42,7 +42,6 @@ import org.eclipse.lsp4j.WorkspaceEdit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -253,11 +252,9 @@ class SnykLanguageClientTest {
         messageBusMock.syncPublisher(SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)
       } returns mockListener
 
+      val result = cut.showDocument(ShowDocumentParams(url)).get()
       if (expectIntercept) {
-        assertEquals(
-          cut.showDocument(ShowDocumentParams(url)).get().isSuccess,
-          expectedNotifications > 0,
-        )
+        assertEquals(result.isSuccess, expectedNotifications > 0)
         // Wait for async publishAsync to complete if we expect notifications
         if (expectedNotifications > 0) {
           assertTrue(
@@ -266,9 +263,7 @@ class SnykLanguageClientTest {
           )
         }
       } else {
-        assertThrows(UnsupportedOperationException::class.java) {
-          cut.showDocument(ShowDocumentParams(url))
-        }
+        assertEquals("Non-intercepted URI should return false", false, result.isSuccess)
       }
       verify(exactly = expectedNotifications) { mockListener.onShowIssueDetail(any()) }
     }
@@ -372,6 +367,50 @@ class SnykLanguageClientTest {
     cut.folderConfig(param)
 
     verify(exactly = 0) { folderConfigSettingsMock.addAll(any()) }
+  }
+
+  @Test
+  fun `showDocument should navigate to file URI with selection`() {
+    val fileUri = "file:///tmp/test-file.kt"
+    val virtualFile = mockk<VirtualFile>(relaxed = true)
+    val document = mockk<Document>(relaxed = true)
+
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { fileUri.toVirtualFileOrNull() } returns virtualFile
+    every { virtualFile.isValid } returns true
+    every { virtualFile.getDocument() } returns document
+    every { document.lineCount } returns 100
+    every { document.getLineStartOffset(any()) } returns 0
+    every { io.snyk.plugin.navigateToSource(any(), any(), any(), any()) } returns Unit
+
+    val params =
+      ShowDocumentParams(fileUri).apply { selection = Range(Position(5, 0), Position(5, 10)) }
+
+    val result = cut.showDocument(params).get()
+
+    assertTrue(result.isSuccess)
+  }
+
+  @Test
+  fun `showDocument should return false for unsupported URI scheme`() {
+    val params = ShowDocumentParams("https://example.com/doc")
+
+    val result = cut.showDocument(params).get()
+
+    assertEquals(false, result.isSuccess)
+  }
+
+  @Test
+  fun `showDocument should return false for non-existent file`() {
+    val fileUri = "file:///nonexistent/path.kt"
+    every { fileUri.toVirtualFileOrNull() } returns null
+
+    val params = ShowDocumentParams(fileUri)
+
+    val result = cut.showDocument(params).get()
+
+    assertEquals(false, result.isSuccess)
   }
 
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {

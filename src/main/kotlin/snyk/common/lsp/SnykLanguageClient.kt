@@ -23,7 +23,9 @@ import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
 import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.getDecodedParam
+import io.snyk.plugin.getDocument
 import io.snyk.plugin.getSyncPublisher
+import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.refreshAnnotationsForFile
@@ -457,9 +459,40 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         success = true
       } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
       CompletableFuture.completedFuture(ShowDocumentResult(success))
+    } else if (uri.scheme == "file") {
+      logger.debug("showDocument: navigating to file URI: ${param.uri}")
+      try {
+        val virtualFile = param.uri.toVirtualFileOrNull()
+        if (virtualFile != null && virtualFile.isValid) {
+          val selection = param.selection
+          if (selection != null) {
+            val document = virtualFile.getDocument()
+            if (document != null) {
+              val startOffset =
+                document.getLineStartOffset(
+                  selection.start.line.coerceIn(0, document.lineCount - 1)
+                ) + selection.start.character
+              val endOffset =
+                document.getLineStartOffset(
+                  selection.end.line.coerceIn(0, document.lineCount - 1)
+                ) + selection.end.character
+              navigateToSource(project, virtualFile, startOffset, endOffset)
+            }
+          } else {
+            navigateToSource(project, virtualFile, 0)
+          }
+          CompletableFuture.completedFuture(ShowDocumentResult(true))
+        } else {
+          logger.warn("showDocument: file not found: ${param.uri}")
+          CompletableFuture.completedFuture(ShowDocumentResult(false))
+        }
+      } catch (e: Exception) {
+        logger.warn("showDocument: error navigating to ${param.uri}", e)
+        CompletableFuture.completedFuture(ShowDocumentResult(false))
+      }
     } else {
-      logger.debug("URI does not match Snyk scheme - passing to default handler: ${param.uri}")
-      super.showDocument(param)
+      logger.warn("showDocument: unsupported URI scheme '${uri.scheme}': ${param.uri}")
+      CompletableFuture.completedFuture(ShowDocumentResult(false))
     }
   }
 }
