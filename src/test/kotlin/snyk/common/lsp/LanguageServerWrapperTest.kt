@@ -501,6 +501,63 @@ class LanguageServerWrapperTest {
     }
   }
 
+  @Test
+  fun `executeCommandWithArgs should return null when not initialized`() {
+    cut.isInitialized = false
+
+    val result = cut.executeCommandWithArgs("snyk.testCommand", listOf("arg1"))
+
+    assertEquals(null, result)
+  }
+
+  @Test
+  fun `executeCommandWithArgs should execute command and return result`() {
+    simulateRunningLS()
+    val expectedResult = "<html>tree</html>"
+    every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns
+      CompletableFuture.completedFuture(expectedResult)
+
+    val result = cut.executeCommandWithArgs("snyk.getTreeView", emptyList())
+
+    assertEquals(expectedResult, result)
+    verify {
+      lsMock.workspaceService.executeCommand(
+        match<ExecuteCommandParams> {
+          it.command == "snyk.getTreeView" && it.arguments == emptyList<Any>()
+        }
+      )
+    }
+  }
+
+  @Test
+  fun `executeCommandWithArgs should pass arguments correctly`() {
+    simulateRunningLS()
+    every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns
+      CompletableFuture.completedFuture("ok")
+
+    val args = listOf("severity", "high", true)
+    cut.executeCommandWithArgs("snyk.toggleTreeFilter", args)
+
+    verify {
+      lsMock.workspaceService.executeCommand(
+        match<ExecuteCommandParams> {
+          it.command == "snyk.toggleTreeFilter" && it.arguments == args
+        }
+      )
+    }
+  }
+
+  @Test
+  fun `executeCommandWithArgs should return null result from LS`() {
+    simulateRunningLS()
+    every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns
+      CompletableFuture.completedFuture(null)
+
+    val result = cut.executeCommandWithArgs("snyk.navigateToRange", listOf("/file.kt"))
+
+    assertEquals(null, result)
+  }
+
   private fun simulateRunningLS() {
     cut.languageClient = mockk(relaxed = true)
     val processMock = mockk<Process>(relaxed = true)
