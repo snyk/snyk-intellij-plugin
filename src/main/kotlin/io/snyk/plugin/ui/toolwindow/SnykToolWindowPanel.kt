@@ -35,6 +35,7 @@ import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.isCliDownloading
+import io.snyk.plugin.isHtmlTreeViewEnabled
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
@@ -52,6 +53,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootTreeNodeBase
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
+import io.snyk.plugin.ui.toolwindow.panels.HtmlTreePanel
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykErrorPanel
@@ -698,7 +700,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
     val treeSplitter = OnePixelSplitter(true, TOOL_TREE_SPLITTER_PROPORTION_KEY, 0.25f)
     treeSplitter.firstComponent = summaryPanel
-    treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
+
+    if (isHtmlTreeViewEnabled()) {
+      val htmlTreePanel = HtmlTreePanel(project)
+      Disposer.register(this, htmlTreePanel)
+      treeSplitter.secondComponent = htmlTreePanel
+    } else {
+      treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
+    }
 
     vulnerabilitiesSplitter.firstComponent = treeSplitter
     vulnerabilitiesSplitter.secondComponent = descriptionPanel

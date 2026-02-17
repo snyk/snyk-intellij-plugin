@@ -497,6 +497,14 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private fun executeCommand(param: ExecuteCommandParams, timeoutMillis: Long = 5000): Any? =
     languageServer.workspaceService.executeCommand(param).get(timeoutMillis, TimeUnit.MILLISECONDS)
 
+  fun executeCommandWithArgs(command: String, args: List<Any>): Any? {
+    if (!isInitialized) return null
+    val param = ExecuteCommandParams()
+    param.command = command
+    param.arguments = args
+    return executeCommand(param)
+  }
+
   fun sendFolderScanCommand(folder: String, project: Project) {
     if (notAuthenticated()) return
     if (DumbService.getInstance(project).isDumb) return

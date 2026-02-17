@@ -257,6 +257,8 @@ fun isPreCommitCheckEnabled(): Boolean = Registry.get("snyk.issuesBlockCommit").
 
 fun isNewConfigDialogEnabled(): Boolean = Registry.get("snyk.useNewConfigDialog").asBoolean()
 
+fun isHtmlTreeViewEnabled(): Boolean = Registry.get("snyk.useHtmlTreeView").asBoolean()
+
 fun getWaitForResultsTimeout(): Long =
   Registry.intValue("snyk.timeout.results.waiting", DEFAULT_TIMEOUT_FOR_SCAN_WAITING_MS).toLong()
 

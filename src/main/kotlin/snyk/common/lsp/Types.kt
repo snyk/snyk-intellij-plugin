@@ -59,6 +59,8 @@ data class SnykScanSummaryParams(
   val scanSummary: String // HTML representation of the scan summary
 )
 
+data class SnykTreeViewParams(val treeViewHtml: String = "", val totalIssues: Int = 0)
+
 data class AiFixParams(val issueId: String, val product: ProductType)
 
 data class ErrorResponse(

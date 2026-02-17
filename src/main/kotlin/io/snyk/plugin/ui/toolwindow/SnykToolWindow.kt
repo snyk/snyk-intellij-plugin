@@ -17,6 +17,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.isHtmlTreeViewEnabled
 import io.snyk.plugin.ui.expandTreeNodeRecursively
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
@@ -36,20 +37,27 @@ class SnykToolWindow(private val project: Project) :
     val actionManager = ActionManager.getInstance()
     val actionGroup = DefaultActionGroup()
 
-    val expandTreeActionsGroup = DefaultActionGroup()
-    val myTreeExpander = DefaultTreeExpander(tree)
-    val commonActionsManager = CommonActionsManager.getInstance()
-    expandTreeActionsGroup.add(commonActionsManager.createExpandAllAction(myTreeExpander, this))
-    expandTreeActionsGroup.add(commonActionsManager.createCollapseAllAction(myTreeExpander, this))
-
-    val expandNodeChildActionsGroup = DefaultActionGroup()
-    expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
-    PopupHandler.installPopupMenu(tree, expandNodeChildActionsGroup, "SnykTree")
-
     actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup)
-    actionGroup.addSeparator()
-    actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup)
-    actionGroup.addAll(expandTreeActionsGroup)
+
+    if (!isHtmlTreeViewEnabled()) {
+      actionGroup.addSeparator()
+      actionGroup.addAll(
+        actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup
+      )
+
+      val expandTreeActionsGroup = DefaultActionGroup()
+      val myTreeExpander = DefaultTreeExpander(tree)
+      val commonActionsManager = CommonActionsManager.getInstance()
+      expandTreeActionsGroup.add(commonActionsManager.createExpandAllAction(myTreeExpander, this))
+      expandTreeActionsGroup.add(commonActionsManager.createCollapseAllAction(myTreeExpander, this))
+
+      val expandNodeChildActionsGroup = DefaultActionGroup()
+      expandNodeChildActionsGroup.add(ExpandNodeChildAction(tree))
+      PopupHandler.installPopupMenu(tree, expandNodeChildActionsGroup, "SnykTree")
+
+      actionGroup.addAll(expandTreeActionsGroup)
+    }
+
     actionGroup.addSeparator()
     actionGroup.addAll(actionManager.getAction("io.snyk.plugin.MiscActions") as DefaultActionGroup)
 

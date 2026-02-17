@@ -19,6 +19,7 @@ import io.mockk.verify
 import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
+import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForFile
@@ -303,6 +304,36 @@ class SnykLanguageClientTest {
       expectIntercept = true,
       expectedNotifications = 1,
     )
+  }
+
+  @Test
+  fun `snykTreeView should publish to tree view topic`() {
+    val mockListener = mockk<SnykTreeViewListener>(relaxed = true)
+    val latch = CountDownLatch(1)
+    every { mockListener.onTreeViewReceived(any()) } answers { latch.countDown() }
+    every { messageBusMock.syncPublisher(SnykTreeViewListener.SNYK_TREE_VIEW_TOPIC) } returns
+      mockListener
+
+    val params = SnykTreeViewParams(treeViewHtml = "<div>tree</div>", totalIssues = 5)
+    cut.snykTreeView(params)
+
+    assertTrue("Async publish should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+    verify(exactly = 1) { mockListener.onTreeViewReceived(params) }
+  }
+
+  @Test
+  fun `snykTreeView should not run when disposed`() {
+    every { projectMock.isDisposed } returns true
+
+    val mockListener = mockk<SnykTreeViewListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykTreeViewListener.SNYK_TREE_VIEW_TOPIC) } returns
+      mockListener
+
+    val params = SnykTreeViewParams(treeViewHtml = "<div>tree</div>", totalIssues = 5)
+    cut.snykTreeView(params)
+
+    Thread.sleep(200)
+    verify(exactly = 0) { mockListener.onTreeViewReceived(any()) }
   }
 
   @Test

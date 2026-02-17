@@ -21,6 +21,7 @@ import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_ACTION
+import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.pluginSettings
@@ -273,6 +274,12 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     publishAsync(project, SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC) {
       onSummaryReceived(summaryParams)
     }
+  }
+
+  @JsonNotification(value = "$/snyk.treeView")
+  fun snykTreeView(params: SnykTreeViewParams) {
+    if (disposed) return
+    publishAsync(project, SnykTreeViewListener.SNYK_TREE_VIEW_TOPIC) { onTreeViewReceived(params) }
   }
 
   @JsonNotification(value = "$/snyk.hasAuthenticated")

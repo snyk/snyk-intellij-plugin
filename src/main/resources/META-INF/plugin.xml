@@ -43,6 +43,11 @@
                  description="Use new HTML based config dialog served by language server"
                  restartRequired="false"
     />
+    <registryKey key="snyk.useHtmlTreeView"
+                 defaultValue="false"
+                 description="Use server-driven HTML tree view rendered via JCEF instead of native Swing tree"
+                 restartRequired="false"
+    />
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
