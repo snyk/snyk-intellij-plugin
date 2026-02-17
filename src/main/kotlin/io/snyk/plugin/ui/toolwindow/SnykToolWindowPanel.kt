@@ -90,6 +90,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     SimpleToolWindowPanel(true, true).apply { name = "descriptionPanel" }
   private val summaryPanel = SimpleToolWindowPanel(true, true).apply { name = "summaryPanel" }
   private var summaryPanelContent: SummaryPanel? = null
+  private var htmlTreePanel: HtmlTreePanel? = null
   private val logger = Logger.getInstance(this::class.java)
   private val rootTreeNode = ChooseBranchNode(project = project)
   private val rootOssTreeNode = RootOssTreeNode(project)
@@ -724,8 +725,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     treeSplitter.firstComponent = summaryPanel
 
     if (isHtmlTreeViewEnabled() && JBCefApp.isSupported()) {
-      val htmlTreePanel = HtmlTreePanel(project)
-      Disposer.register(this, htmlTreePanel)
+      htmlTreePanel = HtmlTreePanel(project)
+      Disposer.register(this, htmlTreePanel!!)
       treeSplitter.secondComponent = htmlTreePanel
     } else {
       treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
@@ -1048,13 +1049,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
   }
 
-  fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) =
+  fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) {
+    htmlTreePanel?.selectNode(scanIssue.id)
     selectAndDisplayNodeWithIssueDescription(
       { treeNode ->
         treeNode is SuggestionTreeNode && (treeNode.userObject as ScanIssue).id == scanIssue.id
       },
       forceRefresh,
     )
+  }
 
   @TestOnly fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode
 

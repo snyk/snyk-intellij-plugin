@@ -95,6 +95,21 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
     logger.debug("HtmlTreePanel init completed")
   }
 
+  fun selectNode(issueId: String) {
+    val browser = jbCefBrowser ?: return
+    if (isDisposed) return
+    val escaped = issueId.replace("\\", "\\\\").replace("\"", "\\\"")
+    invokeLater {
+      if (!isDisposed) {
+        browser.cefBrowser.executeJavaScript(
+          "if (window.__selectTreeNode__) window.__selectTreeNode__(\"$escaped\");",
+          browser.cefBrowser.url,
+          0,
+        )
+      }
+    }
+  }
+
   override fun dispose() {
     isDisposed = true
     jbCefBrowser?.dispose()
