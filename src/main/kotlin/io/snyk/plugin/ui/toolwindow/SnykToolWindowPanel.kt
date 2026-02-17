@@ -331,12 +331,18 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
           override fun onShowIssueDetail(aiFixParams: AiFixParams) {
             val issueId = aiFixParams.issueId
             val product = aiFixParams.product
+            logger.info("onShowIssueDetail: issueId=$issueId, product=$product")
             getSnykCachedResultsForProduct(project, product)?.let { results ->
+              logger.info(
+                "onShowIssueDetail: cache has ${results.size} files, ${results.values.flatten().size} issues"
+              )
+              val allIds = results.values.flatten().map { it.id }.take(5)
+              logger.info("onShowIssueDetail: first cached IDs: $allIds")
               results.values
                 .flatten()
                 .firstOrNull { scanIssue -> scanIssue.id == issueId }
                 ?.let { scanIssue ->
-                  logger.debug("Select node and display description for issue $issueId")
+                  logger.info("onShowIssueDetail: found issue $issueId")
                   if (isHtmlTreeViewEnabled()) {
                     invokeLater {
                       if (isDisposed || project.isDisposed) return@invokeLater

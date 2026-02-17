@@ -280,10 +280,11 @@ class SnykLanguageClientTest {
       expectIntercept = false,
     )
 
-    // Snyk URL with non-code product should bypass Snyk handler.
+    // Snyk URL with IaC product should be intercepted and trigger notifications.
     checkShowDocument(
       "snyk:///temp/test.txt?product=Snyk+IaC&issueId=12345&action=showInDetailPanel",
-      expectIntercept = false,
+      expectIntercept = true,
+      expectedNotifications = 1,
     )
 
     // Snyk URL with no issue ID should be handled but not trigger notifications.

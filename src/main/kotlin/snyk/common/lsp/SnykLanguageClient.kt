@@ -441,23 +441,33 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     if (disposed) return CompletableFuture.completedFuture(ShowDocumentResult(false))
 
     val uri = URI.create(param.uri)
+    logger.info("showDocument called with URI: ${param.uri}, scheme=${uri.scheme}")
 
-    return if (
-      uri.scheme == "snyk" &&
-        uri.getDecodedParam("product") == LsProduct.Code.longName &&
-        uri.getDecodedParam("action") == SHOW_DETAIL_ACTION
-    ) {
+    return if (uri.scheme == "snyk" && uri.getDecodedParam("action") == SHOW_DETAIL_ACTION) {
+      val productType =
+        when (LsProduct.getFor(uri.getDecodedParam("product") ?: "")) {
+          LsProduct.Code -> ProductType.CODE_SECURITY
+          LsProduct.OpenSource -> ProductType.OSS
+          LsProduct.InfrastructureAsCode -> ProductType.IAC
+          else -> null
+        }
 
       // Track whether we have successfully sent any notifications
       var success = false
-      uri.queryParameters["issueId"]?.let { issueId ->
-        val aiFixParams = AiFixParams(issueId, ProductType.CODE_SECURITY)
-        logger.debug("Publishing Snyk AI Fix notification for issue $issueId.")
-        publishAsync(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC) {
-          onShowIssueDetail(aiFixParams)
-        }
-        success = true
-      } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
+      if (productType != null) {
+        uri.queryParameters["issueId"]?.let { issueId ->
+          val aiFixParams = AiFixParams(issueId, productType)
+          logger.debug(
+            "Publishing show issue detail notification for issue $issueId, product=$productType"
+          )
+          publishAsync(project, SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC) {
+            onShowIssueDetail(aiFixParams)
+          }
+          success = true
+        } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
+      } else {
+        logger.info("Received showDocument URI with unknown product: $uri")
+      }
       CompletableFuture.completedFuture(ShowDocumentResult(success))
     } else if (uri.scheme == "file") {
       logger.debug("showDocument: navigating to file URI: ${param.uri}")
