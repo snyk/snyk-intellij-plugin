@@ -116,22 +116,26 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should not invoke callback when result is null`() {
+  fun `dispatchCommand should invoke callback with null when result is null to prevent JS callback leak`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns null
 
-    var callbackInvoked = false
+    val latch = CountDownLatch(1)
+    var receivedResult: String? = "not-called"
     val request =
       TreeViewCommandRequest(
-        command = "snyk.getTreeViewIssueChunk",
-        args = listOf("req1"),
+        command = "snyk.navigateToRange",
+        args = listOf("/file.kt"),
         callbackId = "__cb_2",
       )
     val payload = gson.toJson(request)
 
-    handler.dispatchCommand(payload) { _, _ -> callbackInvoked = true }
+    handler.dispatchCommand(payload) { _, escaped ->
+      receivedResult = escaped
+      latch.countDown()
+    }
 
-    Thread.sleep(500)
-    assertEquals(false, callbackInvoked)
+    assertTrue("Callback should be invoked even for null result", latch.await(2, TimeUnit.SECONDS))
+    assertEquals("null", receivedResult)
   }
 
   @Test

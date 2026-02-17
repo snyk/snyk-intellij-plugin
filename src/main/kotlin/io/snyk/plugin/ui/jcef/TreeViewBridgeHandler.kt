@@ -57,7 +57,7 @@ class TreeViewBridgeHandler(private val project: Project) {
       runAsync {
         try {
           val result = ls.executeCommandWithArgs(request.command, request.args)
-          if (request.callbackId != null && result != null && callbackExecutor != null) {
+          if (request.callbackId != null && callbackExecutor != null) {
             val escaped = gson.toJson(result)
             callbackExecutor(request.callbackId, escaped)
           }

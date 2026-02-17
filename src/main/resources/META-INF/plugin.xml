@@ -46,7 +46,7 @@
     <registryKey key="snyk.useHtmlTreeView"
                  defaultValue="false"
                  description="Use server-driven HTML tree view rendered via JCEF instead of native Swing tree"
-                 restartRequired="false"
+                  restartRequired="true"
     />
 
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
