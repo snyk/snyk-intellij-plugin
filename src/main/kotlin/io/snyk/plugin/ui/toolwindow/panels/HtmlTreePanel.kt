@@ -42,7 +42,8 @@ class HtmlTreePanel(project: Project) : SimpleToolWindowPanel(true, true), Dispo
         useParentLayout = true,
       )
 
-    val initHtml = getFormattedHtml(INIT_HTML)
+    val rawHtml = HtmlTreePanel::class.java.classLoader.getResource(HTML_INIT_FILE)?.readText()
+    val initHtml = getFormattedHtml(rawHtml ?: "")
 
     val loadHandlerGenerators = emptyList<LoadHandlerGenerator>().toMutableList()
     val treeViewBridgeHandler = TreeViewBridgeHandler(project)
@@ -90,6 +91,6 @@ class HtmlTreePanel(project: Project) : SimpleToolWindowPanel(true, true), Dispo
   }
 
   companion object {
-    private const val INIT_HTML = "<html><body><p>Waiting for scan results…</p></body></html>"
+    const val HTML_INIT_FILE = "html/TreeViewInit.html"
   }
 }
