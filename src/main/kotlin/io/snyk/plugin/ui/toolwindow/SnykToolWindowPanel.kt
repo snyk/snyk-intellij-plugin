@@ -647,6 +647,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     )
 
     invokeLater { (vulnerabilitiesTree.model as DefaultTreeModel).reload() }
+    htmlTreePanel?.reset()
 
     if (reDisplayDescription) {
       displayEmptyDescription()

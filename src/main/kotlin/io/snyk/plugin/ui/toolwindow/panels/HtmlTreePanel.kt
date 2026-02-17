@@ -95,6 +95,19 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
     logger.debug("HtmlTreePanel init completed")
   }
 
+  fun reset() {
+    val browser = jbCefBrowser ?: return
+    if (isDisposed) return
+    val rawHtml = HtmlTreePanel::class.java.classLoader.getResource(HTML_INIT_FILE)?.readText()
+    val initHtml = getFormattedHtml(rawHtml ?: "")
+    lastHtmlHash = 0
+    invokeLater {
+      if (!isDisposed) {
+        browser.loadHTML(initHtml)
+      }
+    }
+  }
+
   fun selectNode(issueId: String) {
     val browser = jbCefBrowser ?: return
     if (isDisposed) return
