@@ -479,13 +479,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             val document = virtualFile.getDocument()
             if (document != null) {
               val startOffset =
-                document.getLineStartOffset(
-                  selection.start.line.coerceIn(0, document.lineCount - 1)
-                ) + selection.start.character
+                (document.getLineStartOffset(
+                    selection.start.line.coerceIn(0, document.lineCount - 1)
+                  ) + selection.start.character)
+                  .coerceAtMost(document.textLength)
               val endOffset =
-                document.getLineStartOffset(
-                  selection.end.line.coerceIn(0, document.lineCount - 1)
-                ) + selection.end.character
+                (document.getLineStartOffset(
+                    selection.end.line.coerceIn(0, document.lineCount - 1)
+                  ) + selection.end.character)
+                  .coerceAtMost(document.textLength)
               navigateToSource(project, virtualFile, startOffset, endOffset)
             }
           } else {

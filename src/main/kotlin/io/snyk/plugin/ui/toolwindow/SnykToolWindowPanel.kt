@@ -345,17 +345,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ?.let { scanIssue ->
                   logger.info("onShowIssueDetail: found issue $issueId")
                   if (isHtmlTreeViewEnabled()) {
-                    htmlTreePanel?.selectNode(scanIssue.id)
-                    invokeLater {
-                      if (isDisposed || project.isDisposed) return@invokeLater
-                      descriptionPanel.removeAll()
-                      descriptionPanel.add(
-                        SuggestionDescriptionPanel(project, scanIssue),
-                        BorderLayout.CENTER,
-                      )
-                      descriptionPanel.revalidate()
-                      descriptionPanel.repaint()
-                    }
+                    selectNodeInHtmlTreeAndShowDescription(scanIssue)
                   } else {
                     selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
                   }
@@ -1053,14 +1043,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
   fun selectNodeAndDisplayDescription(scanIssue: ScanIssue, forceRefresh: Boolean) {
     if (isHtmlTreeViewEnabled()) {
-      htmlTreePanel?.selectNode(scanIssue.id)
-      invokeLater {
-        if (isDisposed || project.isDisposed) return@invokeLater
-        descriptionPanel.removeAll()
-        descriptionPanel.add(SuggestionDescriptionPanel(project, scanIssue), BorderLayout.CENTER)
-        descriptionPanel.revalidate()
-        descriptionPanel.repaint()
-      }
+      selectNodeInHtmlTreeAndShowDescription(scanIssue)
     } else {
       selectAndDisplayNodeWithIssueDescription(
         { treeNode ->
@@ -1068,6 +1051,17 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         },
         forceRefresh,
       )
+    }
+  }
+
+  private fun selectNodeInHtmlTreeAndShowDescription(scanIssue: ScanIssue) {
+    htmlTreePanel?.selectNode(scanIssue.id)
+    invokeLater {
+      if (isDisposed || project.isDisposed) return@invokeLater
+      descriptionPanel.removeAll()
+      descriptionPanel.add(SuggestionDescriptionPanel(project, scanIssue), BorderLayout.CENTER)
+      descriptionPanel.revalidate()
+      descriptionPanel.repaint()
     }
   }
 
