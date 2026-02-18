@@ -139,7 +139,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     java.util.concurrent.ConcurrentHashMap.newKeySet()
 
   // Reference to scan listener for debounced tree refresh
-  private var scanListenerLS: SnykToolWindowSnykScanListener
+  private lateinit var scanListenerLS: SnykToolWindowSnykScanListener
 
   // Tree node expander for progressive, non-blocking expansion
   private val treeNodeExpander by lazy { TreeNodeExpander(vulnerabilitiesTree) { isDisposed } }
@@ -344,11 +344,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 .firstOrNull { scanIssue -> scanIssue.id == issueId }
                 ?.let { scanIssue ->
                   logger.info("onShowIssueDetail: found issue $issueId")
-                  if (isHtmlTreeViewEnabled()) {
-                    selectNodeInHtmlTreeAndShowDescription(scanIssue)
-                  } else {
-                    selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
-                  }
+                  selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
                 } ?: run { logger.debug("Failed to find issue $issueId in $product cache") }
             }
           }

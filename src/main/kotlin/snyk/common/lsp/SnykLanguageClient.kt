@@ -24,6 +24,7 @@ import io.snyk.plugin.events.SnykShowIssueDetailListener.Companion.SHOW_DETAIL_A
 import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.getDecodedParam
 import io.snyk.plugin.getDocument
+import io.snyk.plugin.getSafeOffset
 import io.snyk.plugin.getSyncPublisher
 import io.snyk.plugin.navigateToSource
 import io.snyk.plugin.pluginSettings
@@ -479,15 +480,8 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             val document = virtualFile.getDocument()
             if (document != null) {
               val startOffset =
-                (document.getLineStartOffset(
-                    selection.start.line.coerceIn(0, document.lineCount - 1)
-                  ) + selection.start.character)
-                  .coerceAtMost(document.textLength)
-              val endOffset =
-                (document.getLineStartOffset(
-                    selection.end.line.coerceIn(0, document.lineCount - 1)
-                  ) + selection.end.character)
-                  .coerceAtMost(document.textLength)
+                document.getSafeOffset(selection.start.line, selection.start.character)
+              val endOffset = document.getSafeOffset(selection.end.line, selection.end.character)
               navigateToSource(project, virtualFile, startOffset, endOffset)
             }
           } else {

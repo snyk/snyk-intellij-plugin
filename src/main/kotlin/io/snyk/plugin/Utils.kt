@@ -510,6 +510,13 @@ fun String.fromPathToUriString(): String =
 
 private fun String.startsWithWindowsDriveLetter(): Boolean = this.matches(Regex("^[a-zA-Z]:.*$"))
 
+fun Document.getSafeOffset(line: Int, character: Int): Int {
+  if (line < 0) return 0
+  if (line >= lineCount) return textLength
+  val offset = getLineStartOffset(line) + character
+  return offset.coerceIn(0, textLength)
+}
+
 fun VirtualFile.getDocument(): Document? {
   if (ApplicationManager.getApplication().isDisposed) return null
   return ReadAction.compute<Document?, RuntimeException> {

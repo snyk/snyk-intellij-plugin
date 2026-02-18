@@ -9,6 +9,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
+import io.snyk.plugin.getSafeOffset
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import java.util.Date
@@ -145,7 +146,7 @@ data class ScanIssue(
   private var startOffset: Int?
     get() {
       return if (field == null) {
-        field = getSafeOffset(range.start.line, range.start.character)
+        field = document?.getSafeOffset(range.start.line, range.start.character)
         field
       } else {
         field
@@ -155,7 +156,7 @@ data class ScanIssue(
   private var endOffset: Int?
     get() {
       return if (field == null) {
-        field = getSafeOffset(range.end.line, range.end.character)
+        field = document?.getSafeOffset(range.end.line, range.end.character)
         field
       } else {
         field
@@ -165,16 +166,8 @@ data class ScanIssue(
   init {
     virtualFile = filePath.toVirtualFile()
     document = virtualFile?.getDocument()
-    startOffset = getSafeOffset(range.start.line, range.start.character)
-    endOffset = getSafeOffset(range.end.line, range.end.character)
-  }
-
-  private fun getSafeOffset(line: Int, character: Int): Int? {
-    val doc = document ?: return null
-    if (line < 0) return 0
-    if (line >= doc.lineCount) return doc.textLength
-    val offset = doc.getLineStartOffset(line) + character
-    return if (offset > doc.textLength) doc.textLength else offset
+    startOffset = document?.getSafeOffset(range.start.line, range.start.character)
+    endOffset = document?.getSafeOffset(range.end.line, range.end.character)
   }
 
   fun title(): String =
