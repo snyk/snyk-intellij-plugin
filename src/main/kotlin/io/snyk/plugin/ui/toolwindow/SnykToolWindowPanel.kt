@@ -332,20 +332,29 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
           override fun onShowIssueDetail(aiFixParams: AiFixParams) {
             val issueId = aiFixParams.issueId
             val product = aiFixParams.product
-            logger.debug("onShowIssueDetail: issueId=$issueId, product=$product")
+            if (logger.isDebugEnabled) {
+              logger.debug("onShowIssueDetail: issueId=$issueId, product=$product")
+            }
             getSnykCachedResultsForProduct(project, product)?.let { results ->
-              logger.debug(
-                "onShowIssueDetail: cache has ${results.size} files, ${results.values.flatten().size} issues"
-              )
-              val allIds = results.values.flatten().map { it.id }.take(5)
-              logger.debug("onShowIssueDetail: first cached IDs: $allIds")
+              if (logger.isDebugEnabled) {
+                val issueCount = results.values.sumOf { it.size }
+                logger.debug(
+                  "onShowIssueDetail: cache has ${results.size} files, $issueCount issues"
+                )
+                val sampleIds = results.values.asSequence().flatten().take(5).map { it.id }.toList()
+                logger.debug("onShowIssueDetail: first cached IDs: $sampleIds")
+              }
               results.values
-                .flatten()
-                .firstOrNull { scanIssue -> scanIssue.id == issueId }
+                .firstNotNullOfOrNull { issues -> issues.firstOrNull { it.id == issueId } }
                 ?.let { scanIssue ->
-                  logger.debug("onShowIssueDetail: found issue $issueId")
+                  if (logger.isDebugEnabled) logger.debug("onShowIssueDetail: found issue $issueId")
                   selectNodeAndDisplayDescription(scanIssue, forceRefresh = true)
-                } ?: run { logger.debug("Failed to find issue $issueId in $product cache") }
+                }
+                ?: run {
+                  if (logger.isDebugEnabled) {
+                    logger.debug("Failed to find issue $issueId in $product cache")
+                  }
+                }
             }
           }
         },
@@ -450,6 +459,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
   override fun dispose() {
     isDisposed = true
+    clearDescriptionPanel()
   }
 
   // Throttle for UI refresh to avoid rapid successive refreshes
