@@ -289,6 +289,8 @@ class TreeViewBridgeHandlerTest {
         "snyk.toggleTreeFilter",
         "snyk.getTreeViewIssueChunk",
         "snyk.setNodeExpanded",
+        "snyk.showScanErrorDetails",
+        "snyk.updateFolderConfig",
       )
 
     val latch = CountDownLatch(allowedCommands.size)
@@ -326,6 +328,8 @@ class TreeViewBridgeHandlerTest {
         "snyk.toggleTreeFilter",
         "snyk.getTreeViewIssueChunk",
         "snyk.setNodeExpanded",
+        "snyk.showScanErrorDetails",
+        "snyk.updateFolderConfig",
       )
     assertEquals(expected, TreeViewBridgeHandler.ALLOWED_COMMANDS)
   }
