@@ -39,7 +39,7 @@ class SnykToolWindow(private val project: Project) :
 
     actionGroup.addAll(actionManager.getAction("io.snyk.plugin.ScanActions") as DefaultActionGroup)
 
-    if (!isHtmlTreeViewEnabled()) {
+    if (!isHtmlTreeViewEnabled() || !com.intellij.ui.jcef.JBCefApp.isSupported()) {
       actionGroup.addSeparator()
       actionGroup.addAll(
         actionManager.getAction("io.snyk.plugin.ViewActions") as DefaultActionGroup
