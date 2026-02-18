@@ -66,6 +66,10 @@ class TreeViewBridgeHandler(private val project: Project) {
     try {
       val request = gson.fromJson(value, TreeViewCommandRequest::class.java)
       logger.debug("TreeViewBridge: received command=${request.command}, args=${request.args}")
+      if (request.callbackId != null && !SAFE_CALLBACK_ID.matches(request.callbackId)) {
+        logger.warn("TreeViewBridge: invalid callbackId '${request.callbackId}', ignoring")
+        return
+      }
       if (request.command !in ALLOWED_COMMANDS) {
         logger.warn(
           "TreeViewBridge: command '${request.command}' is not in the allowlist, ignoring"
@@ -73,10 +77,6 @@ class TreeViewBridgeHandler(private val project: Project) {
         if (request.callbackId != null && callbackExecutor != null) {
           callbackExecutor(request.callbackId, gson.toJson(mapOf("error" to "command not allowed")))
         }
-        return
-      }
-      if (request.callbackId != null && !SAFE_CALLBACK_ID.matches(request.callbackId)) {
-        logger.warn("TreeViewBridge: invalid callbackId '${request.callbackId}', ignoring")
         return
       }
       val ls = LanguageServerWrapper.getInstance(project)
