@@ -558,7 +558,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
    */
   private fun scheduleDebouncedTreeRefresh(product: LsProduct) {
     if (product == LsProduct.Unknown) return
-    if (isHtmlTreeViewEnabled()) return
+    if (htmlTreePanel != null) return
     pendingTreeRefreshProducts.add(product)
     treeRefreshAlarm.cancelAllRequests()
     treeRefreshAlarm.addRequest({ flushPendingTreeRefreshes() }, TREE_REFRESH_DEBOUNCE_MS)
@@ -1081,6 +1081,11 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   @TestOnly fun getRootNode() = rootTreeNode
 
   @TestOnly fun getDescriptionPanel() = descriptionPanel
+
+  @TestOnly
+  fun setHtmlTreePanelForTest(panel: HtmlTreePanel?) {
+    htmlTreePanel = panel
+  }
 
   @TestOnly
   fun scheduleDebouncedTreeRefreshForTest(product: LsProduct) =

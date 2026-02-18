@@ -32,6 +32,8 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
   private val unexpectedErrorMessage =
     "Snyk encountered an issue while rendering the vulnerability description. Please try again, or contact support if the problem persists. We apologize for any inconvenience caused."
 
+  @Volatile private var isDisposed = false
+
   // Used by tests to check if async initialization is complete
   @Volatile private var initialized = false
 
@@ -57,8 +59,8 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
     logger.debug("SuggestionDescriptionPanel: scheduling background task for issue details")
     ApplicationManager.getApplication().executeOnPooledThread {
       logger.debug("SuggestionDescriptionPanel: background task starting")
-      if (project.isDisposed) {
-        logger.debug("SuggestionDescriptionPanel: project disposed, aborting")
+      if (isDisposed || project.isDisposed) {
+        logger.debug("SuggestionDescriptionPanel: disposed or project disposed, aborting")
         return@executeOnPooledThread
       }
 
@@ -73,8 +75,8 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
       logger.debug("SuggestionDescriptionPanel: scheduling invokeLater for browser initialization")
       invokeLater {
         logger.debug("SuggestionDescriptionPanel: invokeLater executing")
-        if (project.isDisposed) {
-          logger.debug("SuggestionDescriptionPanel: project disposed in invokeLater, aborting")
+        if (isDisposed || project.isDisposed) {
+          logger.debug("SuggestionDescriptionPanel: disposed in invokeLater, aborting")
           return@invokeLater
         }
         initializeBrowser(issueDetails)
@@ -147,6 +149,7 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
   }
 
   override fun dispose() {
+    isDisposed = true
     jbCefBrowser?.dispose()
     jbCefBrowser = null
   }

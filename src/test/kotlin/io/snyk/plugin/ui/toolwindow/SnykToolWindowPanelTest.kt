@@ -453,17 +453,17 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
   }
 
   @Test
-  fun `scheduleDebouncedTreeRefresh should be no-op when HTML tree view is enabled`() {
+  fun `scheduleDebouncedTreeRefresh should be no-op when htmlTreePanel is active`() {
     every { settings.token } returns "test-token"
     every { settings.pluginFirstRun } returns false
     justRun { taskQueueService.scan() }
 
     mockkStatic("io.snyk.plugin.UtilsKt")
     every { pluginSettings() } returns settings
-    every { io.snyk.plugin.isHtmlTreeViewEnabled() } returns true
     every { isOssRunning(any()) } returns false
 
     cut = SnykToolWindowPanel(project)
+    cut.setHtmlTreePanelForTest(mockk(relaxed = true))
 
     val ossNode = cut.getRootOssIssuesTreeNode()
     val initialChildCount = ossNode.childCount
@@ -476,7 +476,7 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
     assertEquals(
-      "Tree should not be refreshed when HTML tree view is enabled",
+      "Tree should not be refreshed when htmlTreePanel is active",
       initialChildCount,
       ossNode.childCount,
     )

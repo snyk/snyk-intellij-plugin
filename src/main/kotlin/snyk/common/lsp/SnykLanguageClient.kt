@@ -261,7 +261,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
   }
 
   private fun processSuccessfulScan(snykScan: SnykScanParams, scanPublisher: SnykScanListener) {
-    logger.info("Scan completed")
+    logger.debug("Scan completed")
 
     when (LsProduct.getFor(snykScan.product)) {
       LsProduct.OpenSource -> scanPublisher.scanningOssFinished()
@@ -313,7 +313,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     // we use internal API here, as we need to force immediate persistence to ensure new
     // refresh tokens are always persisted, not only every 5 min.
     StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
-    logger.info("force-saved settings")
+    logger.debug("force-saved settings")
 
     // Notify listeners that settings have changed (including token update)
     publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
@@ -341,7 +341,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
   override fun logTrace(params: LogTraceParams?) {
     if (disposed) return
-    logger.info(params?.message)
+    logger.debug(params?.message)
   }
 
   override fun showMessage(messageParams: MessageParams?) {
@@ -370,7 +370,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             TimeUnit.SECONDS,
           )
       }
-      MessageType.Log -> logger.info(messageParams.message)
+      MessageType.Log -> logger.debug(messageParams.message)
       null -> {}
     }
   }
@@ -442,7 +442,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     if (disposed) return CompletableFuture.completedFuture(ShowDocumentResult(false))
 
     val uri = URI.create(param.uri)
-    logger.info("showDocument called with URI: ${param.uri}, scheme=${uri.scheme}")
+    logger.debug("showDocument called with URI: ${param.uri}, scheme=${uri.scheme}")
 
     return if (uri.scheme == "snyk" && uri.getDecodedParam("action") == SHOW_DETAIL_ACTION) {
       val productType =
