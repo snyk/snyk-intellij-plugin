@@ -159,6 +159,85 @@ class HtmlTreePanelTest : LightPlatform4TestCase() {
     )
   }
 
+  @Test
+  fun `reset should reload init HTML into browser`() {
+    val mockBrowserComponent = JLabel("mock-browser")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockBrowserComponent
+
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns mockJBCefBrowser
+
+    cut = HtmlTreePanel(project)
+    cut.reset()
+
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    verify {
+      mockJBCefBrowser.loadHTML(
+        match { html -> !html.contains("\${nonce}") && !html.contains("\${ideStyle}") }
+      )
+    }
+  }
+
+  @Test
+  fun `reset should not load HTML after dispose`() {
+    val mockBrowserComponent = JLabel("mock-browser")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockBrowserComponent
+
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns mockJBCefBrowser
+
+    cut = HtmlTreePanel(project)
+    cut.dispose()
+    cut.reset()
+
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    verify(exactly = 0) { mockJBCefBrowser.loadHTML(any<String>()) }
+  }
+
+  @Test
+  fun `reset should do nothing when JCEF is null`() {
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns null
+
+    cut = HtmlTreePanel(project)
+    // should not throw
+    cut.reset()
+  }
+
+  @Test
+  fun `selectNode should do nothing when JCEF is null`() {
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns null
+
+    cut = HtmlTreePanel(project)
+    // should not throw
+    cut.selectNode("test-id")
+  }
+
+  @Test
+  fun `should skip loading HTML when content is unchanged`() {
+    val mockBrowserComponent = JLabel("mock-browser")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockBrowserComponent
+
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns mockJBCefBrowser
+
+    cut = HtmlTreePanel(project)
+
+    val htmlContent = "<html><head>\${ideStyle}</head><body>\${nonce}same</body></html>"
+    val params = SnykTreeViewParams(treeViewHtml = htmlContent, totalIssues = 1)
+
+    // send same content twice
+    val publisher = project.messageBus.syncPublisher(SnykTreeViewListener.SNYK_TREE_VIEW_TOPIC)
+    publisher.onTreeViewReceived(params)
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+    publisher.onTreeViewReceived(params)
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    // should only load once since content hash is the same
+    verify(exactly = 1) { mockJBCefBrowser.loadHTML(any<String>()) }
+  }
+
   private fun findComponent(parent: java.awt.Container, target: java.awt.Component): Boolean {
     for (c in parent.components) {
       if (c === target) return true
