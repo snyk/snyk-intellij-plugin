@@ -465,7 +465,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             onShowIssueDetail(aiFixParams)
           }
           success = true
-        } ?: run { logger.info("Received showDocument URI with no issueID: $uri") }
+        } ?: run { logger.debug("Received showDocument URI with no issueID: $uri") }
       } else {
         logger.info("Received showDocument URI with unknown product: $uri")
       }
