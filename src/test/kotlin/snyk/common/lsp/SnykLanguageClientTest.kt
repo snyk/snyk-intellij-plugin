@@ -11,6 +11,7 @@ import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.messages.MessageBus
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -268,11 +269,12 @@ class SnykLanguageClientTest {
       verify(exactly = expectedNotifications) { mockListener.onShowIssueDetail(any()) }
     }
 
-    // HTTP URL should bypass Snyk handler.
-    checkShowDocument(
-      "http:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel",
-      expectIntercept = false,
-    )
+    // HTTP URL should open in browser, not be intercepted by Snyk handler.
+    mockkStatic(com.intellij.ide.BrowserUtil::class)
+    justRun { com.intellij.ide.BrowserUtil.browse(any<String>()) }
+    val httpUrl = "http:///temp/test.txt?product=Snyk+Code&issueId=12345&action=showInDetailPanel"
+    val httpResult = cut.showDocument(ShowDocumentParams(httpUrl)).get()
+    assertTrue("HTTP URL should be handled by opening browser", httpResult.isSuccess)
 
     // Snyk URL with invalid action should bypass Snyk Handler.
     checkShowDocument(
@@ -394,8 +396,21 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `showDocument should return false for unsupported URI scheme`() {
+  fun `showDocument should open https URL in browser`() {
+    mockkStatic(com.intellij.ide.BrowserUtil::class)
+    justRun { com.intellij.ide.BrowserUtil.browse(any<String>()) }
+
     val params = ShowDocumentParams("https://example.com/doc")
+
+    val result = cut.showDocument(params).get()
+
+    assertTrue(result.isSuccess)
+    verify { com.intellij.ide.BrowserUtil.browse("https://example.com/doc") }
+  }
+
+  @Test
+  fun `showDocument should return false for unsupported URI scheme`() {
+    val params = ShowDocumentParams("ftp://example.com/file")
 
     val result = cut.showDocument(params).get()
 

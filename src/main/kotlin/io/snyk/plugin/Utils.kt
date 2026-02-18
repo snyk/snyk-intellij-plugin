@@ -513,8 +513,9 @@ private fun String.startsWithWindowsDriveLetter(): Boolean = this.matches(Regex(
 fun Document.getSafeOffset(line: Int, character: Int): Int {
   if (line < 0) return 0
   if (line >= lineCount) return textLength
+  val lineEnd = getLineEndOffset(line)
   val offset = getLineStartOffset(line) + character
-  return offset.coerceIn(0, textLength)
+  return offset.coerceIn(0, lineEnd)
 }
 
 fun VirtualFile.getDocument(): Document? {

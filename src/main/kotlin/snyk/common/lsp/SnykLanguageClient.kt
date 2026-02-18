@@ -2,6 +2,7 @@ package snyk.common.lsp
 
 import com.google.gson.Gson
 import com.intellij.configurationStore.StoreUtil
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -494,6 +495,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         }
       } catch (e: Exception) {
         logger.warn("showDocument: error navigating to ${param.uri}", e)
+        CompletableFuture.completedFuture(ShowDocumentResult(false))
+      }
+    } else if (uri.scheme == "http" || uri.scheme == "https") {
+      logger.debug("showDocument: opening external URL: ${param.uri}")
+      try {
+        BrowserUtil.browse(param.uri)
+        CompletableFuture.completedFuture(ShowDocumentResult(true))
+      } catch (e: Exception) {
+        logger.warn("showDocument: error opening URL: ${param.uri}", e)
         CompletableFuture.completedFuture(ShowDocumentResult(false))
       }
     } else {

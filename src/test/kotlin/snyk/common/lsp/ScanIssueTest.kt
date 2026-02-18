@@ -43,8 +43,9 @@ class ScanIssueTest {
     // Document has 10 lines (0-9) and length 100
     every { document.lineCount } returns 10
     every { document.textLength } returns 100
-    // Valid line 5 starts at offset 50
+    // Valid line 5 starts at offset 50, ends at 59
     every { document.getLineStartOffset(5) } returns 50
+    every { document.getLineEndOffset(5) } returns 59
 
     // Create an issue with a range that goes out of bounds
     // Start: valid (line 5, char 0) -> offset 50
@@ -92,6 +93,7 @@ class ScanIssueTest {
     // End: valid line 5 -> offset 50
     val range = Range(Position(-1, 0), Position(5, 0))
     every { document.getLineStartOffset(5) } returns 50
+    every { document.getLineEndOffset(5) } returns 59
 
     val issue =
       ScanIssue(
@@ -130,6 +132,7 @@ class ScanIssueTest {
     every { document.lineCount } returns 10
     every { document.textLength } returns 100
     every { document.getLineStartOffset(9) } returns 90
+    every { document.getLineEndOffset(9) } returns 100
 
     // Start: valid line 9, but character 20 (90 + 20 = 110) > 100 -> should be clamped to 100
     val range = Range(Position(9, 20), Position(9, 25))
