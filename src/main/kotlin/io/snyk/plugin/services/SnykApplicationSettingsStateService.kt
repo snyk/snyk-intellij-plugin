@@ -25,7 +25,7 @@ class SnykApplicationSettingsStateService :
   // events
   var pluginInstalledSent: Boolean = false
 
-  val requiredLsProtocolVersion = 23
+  val requiredLsProtocolVersion = 24
 
   @Deprecated("left for old users migration only") var useTokenAuthentication = false
   var authenticationType = AuthenticationType.OAUTH2
