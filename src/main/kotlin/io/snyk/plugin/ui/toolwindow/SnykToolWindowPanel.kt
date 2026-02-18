@@ -416,20 +416,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             if (selectedNode is SuggestionTreeNode) {
               if (shouldUpdateSuggestionDescriptionPanel) {
                 val newDescriptionPanel = selectedNode.getDescriptionPanel()
-                descriptionPanel.removeAll()
+                clearDescriptionPanel()
                 descriptionPanel.add(newDescriptionPanel, BorderLayout.CENTER)
               }
             } else {
-              descriptionPanel.removeAll()
+              clearDescriptionPanel()
               descriptionPanel.add(selectedNode.getDescriptionPanel(), BorderLayout.CENTER)
             }
           }
           is ErrorHolderTreeNode -> {
-            descriptionPanel.removeAll()
+            clearDescriptionPanel()
             selectedNode.getSnykError()?.let { displaySnykError(it) } ?: displayEmptyDescription()
           }
           else -> {
-            descriptionPanel.removeAll()
+            clearDescriptionPanel()
             displayEmptyDescription()
           }
         }
@@ -683,7 +683,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   fun displayAuthPanel() {
     if (isDisposed) return
     doCleanUi(false)
-    descriptionPanel.removeAll()
+    clearDescriptionPanel()
     val authPanel = SnykAuthPanel(project)
     Disposer.register(this, authPanel)
     descriptionPanel.add(authPanel, BorderLayout.CENTER)
@@ -872,7 +872,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
 
   private fun displayNoVulnerabilitiesMessage() {
-    descriptionPanel.removeAll()
+    clearDescriptionPanel()
 
     val selectedTreeNode =
       vulnerabilitiesTree.selectionPath?.lastPathComponent as? RootTreeNodeBase ?: treeNodeStub
@@ -885,7 +885,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   }
 
   fun displayScanningMessage() {
-    descriptionPanel.removeAll()
+    clearDescriptionPanel()
 
     val selectedTreeNode =
       vulnerabilitiesTree.selectionPath?.lastPathComponent as? RootTreeNodeBase ?: treeNodeStub
@@ -900,7 +900,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   }
 
   private fun displayDownloadMessage() {
-    descriptionPanel.removeAll()
+    clearDescriptionPanel()
 
     val statePanel =
       StatePanel("Downloading Snyk CLI...", "Stop Downloading") {
@@ -929,7 +929,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
       // vulnerability/suggestion already selected
       return
     }
-    descriptionPanel.removeAll()
+    clearDescriptionPanel()
 
     val selectedTreeNode =
       vulnerabilitiesTree.selectionPath?.lastPathComponent as? RootTreeNodeBase ?: treeNodeStub
@@ -941,7 +941,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   }
 
   private fun displaySnykError(snykError: SnykError) {
-    descriptionPanel.removeAll()
+    clearDescriptionPanel()
 
     descriptionPanel.add(SnykErrorPanel(snykError), BorderLayout.CENTER)
 
@@ -1054,11 +1054,20 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     htmlTreePanel?.selectNode(scanIssue.id)
     invokeLater {
       if (isDisposed || project.isDisposed) return@invokeLater
-      descriptionPanel.removeAll()
+      clearDescriptionPanel()
       descriptionPanel.add(SuggestionDescriptionPanel(project, scanIssue), BorderLayout.CENTER)
       descriptionPanel.revalidate()
       descriptionPanel.repaint()
     }
+  }
+
+  private fun clearDescriptionPanel() {
+    for (child in descriptionPanel.components) {
+      if (child is Disposable) {
+        Disposer.dispose(child)
+      }
+    }
+    descriptionPanel.removeAll()
   }
 
   @TestOnly fun getRootIacIssuesTreeNode() = rootIacIssuesTreeNode

@@ -2,6 +2,7 @@
 
 package io.snyk.plugin.ui.toolwindow
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.WriteAction
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
@@ -11,6 +12,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.resetSettings
@@ -116,5 +118,27 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
     assertFalse(actual.contains("\${ideStyle}"))
     assertFalse(actual.contains("\${ideScript}"))
     assertFalse(actual.contains("\${nonce}"))
+  }
+
+  fun `test panel implements Disposable`() {
+    every { issue.details(project) } returns "<html>HTML message</html>"
+    cut = SuggestionDescriptionPanel(project, issue)
+    assertTrue("SuggestionDescriptionPanel should implement Disposable", cut is Disposable)
+  }
+
+  fun `test dispose should dispose JCEF browser`() {
+    val mockJBCefBrowserComponent = JLabel("<html>HTML message</html>")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockJBCefBrowserComponent
+
+    mockkObject(JCEFUtils)
+    every { JCEFUtils.getJBCefBrowserIfSupported(any(), any()) } returns mockJBCefBrowser
+
+    every { issue.details(project) } returns "<html>HTML message</html>"
+    cut = SuggestionDescriptionPanel(project, issue)
+    waitForPanelInit(cut)
+
+    (cut as Disposable).dispose()
+    verify { mockJBCefBrowser.dispose() }
   }
 }

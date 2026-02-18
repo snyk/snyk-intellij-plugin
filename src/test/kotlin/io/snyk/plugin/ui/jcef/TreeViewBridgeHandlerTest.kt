@@ -182,7 +182,31 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should not throw when language server throws`() {
+  fun `dispatchCommand should invoke error callback when language server throws`() {
+    every { lsWrapperMock.executeCommandWithArgs(any(), any()) } throws RuntimeException("LS error")
+
+    val latch = CountDownLatch(1)
+    var receivedResult: String? = null
+    val request =
+      TreeViewCommandRequest(
+        command = "snyk.setNodeExpanded",
+        args = listOf("arg1"),
+        callbackId = "__cb_err",
+      )
+    val payload = gson.toJson(request)
+
+    handler.dispatchCommand(payload) { _, result ->
+      receivedResult = result
+      latch.countDown()
+    }
+
+    assertTrue("Callback should be invoked with error", latch.await(2, TimeUnit.SECONDS))
+    assertTrue("Result should contain error", receivedResult!!.contains("error"))
+    verify { lsWrapperMock.executeCommandWithArgs("snyk.setNodeExpanded", listOf("arg1")) }
+  }
+
+  @Test
+  fun `dispatchCommand should not throw when language server throws and no callback`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } throws RuntimeException("LS error")
 
     val request = TreeViewCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg1"))
@@ -243,22 +267,25 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should reject commands not in the allowlist`() {
+  fun `dispatchCommand should reject commands not in the allowlist and invoke error callback`() {
     val request =
       TreeViewCommandRequest(command = "snyk.logout", args = emptyList(), callbackId = "__cb_99")
     val payload = gson.toJson(request)
 
-    val callbackInvoked = AtomicBoolean(false)
-    handler.dispatchCommand(payload) { _, _ -> callbackInvoked.set(true) }
-
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
+    val latch = CountDownLatch(1)
+    var receivedResult: String? = null
+    handler.dispatchCommand(payload) { _, result ->
+      receivedResult = result
+      latch.countDown()
     }
-    assertEquals(false, callbackInvoked.get())
+
+    assertTrue("Callback should be invoked with error", latch.await(2, TimeUnit.SECONDS))
+    assertTrue("Result should contain error", receivedResult!!.contains("error"))
+    verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
   }
 
   @Test
-  fun `dispatchCommand should reject callbackId with non-alphanumeric characters to prevent JS injection`() {
+  fun `dispatchCommand should reject callbackId with non-alphanumeric characters and not invoke callback`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
 
     val maliciousCallbackId = "'];alert('xss');//"
@@ -276,6 +303,7 @@ class TreeViewBridgeHandlerTest {
     await().atMost(2, TimeUnit.SECONDS).untilAsserted {
       verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
     }
+    // callback must NOT be invoked for unsafe callbackIds — prevents JS injection
     assertEquals(false, callbackInvoked.get())
   }
 

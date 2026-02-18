@@ -70,6 +70,9 @@ class TreeViewBridgeHandler(private val project: Project) {
         logger.warn(
           "TreeViewBridge: command '${request.command}' is not in the allowlist, ignoring"
         )
+        if (request.callbackId != null && callbackExecutor != null) {
+          callbackExecutor(request.callbackId, gson.toJson(mapOf("error" to "command not allowed")))
+        }
         return
       }
       if (request.callbackId != null && !SAFE_CALLBACK_ID.matches(request.callbackId)) {
@@ -86,6 +89,12 @@ class TreeViewBridgeHandler(private val project: Project) {
           }
         } catch (e: Exception) {
           logger.warn("TreeViewBridge: error executing command ${request.command}", e)
+          if (request.callbackId != null && callbackExecutor != null) {
+            callbackExecutor(
+              request.callbackId,
+              gson.toJson(mapOf("error" to (e.message ?: "unknown error"))),
+            )
+          }
         }
       }
     } catch (e: Exception) {
