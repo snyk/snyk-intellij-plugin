@@ -484,11 +484,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
                 document.getSafeOffset(selection.start.line, selection.start.character)
               val endOffset = document.getSafeOffset(selection.end.line, selection.end.character)
               navigateToSource(project, virtualFile, startOffset, endOffset)
+              CompletableFuture.completedFuture(ShowDocumentResult(true))
+            } else {
+              logger.warn("showDocument: could not get document for ${param.uri}")
+              CompletableFuture.completedFuture(ShowDocumentResult(false))
             }
           } else {
             navigateToSource(project, virtualFile, 0)
+            CompletableFuture.completedFuture(ShowDocumentResult(true))
           }
-          CompletableFuture.completedFuture(ShowDocumentResult(true))
         } else {
           logger.warn("showDocument: file not found: ${param.uri}")
           CompletableFuture.completedFuture(ShowDocumentResult(false))
