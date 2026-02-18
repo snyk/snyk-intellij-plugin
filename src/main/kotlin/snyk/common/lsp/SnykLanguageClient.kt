@@ -508,7 +508,11 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
       }
     } else {
       logger.warn("showDocument: unsupported URI scheme '${uri.scheme}': ${param.uri}")
-      CompletableFuture.completedFuture(ShowDocumentResult(false))
+      try {
+        return super.showDocument(param)
+      } catch (e: UnsupportedOperationException) {
+        CompletableFuture.completedFuture(ShowDocumentResult(false))
+      }
     }
   }
 }
