@@ -56,7 +56,7 @@ FIX THE TESTS - don't work around the commit hooks.
 git status                          # Check for uncommitted changes
 git log --oneline -5                # See recent commits
 ./gradlew t                         # lint check
-./gradlew test -x detekt            # Unit tests (fast)
+./gradlew test                       # Unit tests (fast)
 cat tests.json | jq '.summary'      # See test summary
 ```
 
@@ -114,7 +114,7 @@ If something goes wrong:
 ```bash
 git stash                                        # Save current work
 git checkout HEAD~1 -- internal/                 # Restore previous state
-./gradlew test -x detekt                         # Verify tests pass
+./gradlew test                                   # Verify tests pass
 git stash pop                                    # Reapply changes carefully
 ```
 
@@ -146,10 +146,10 @@ git checkout feat/{{TICKET_ID}}_{{branch-suffix}}
 git pull origin feat/{{TICKET_ID}}_{{branch-suffix}}
 
 # Run tests
-./gradlew test -x detekt       # Unit tests
+./gradlew test    # Unit tests
 
-# lint
-./gradlew detekt
+# format and lint
+./gradlew spotlessCheck ktlintCheck
 ```
 
 ---
@@ -238,8 +238,8 @@ Generated diagrams located in:
 
 1. [ ] Step 1
 2. [ ] Step 2
-3. [ ] Run `./gradlew detekt` and fix any issues
-4. [ ] Run tests (`./gradlew test -x detekt`)
+3. [ ] Run `./gradlew spotlessCheck ktlintCheck` and fix any issues
+4. [ ] Run tests (`./gradlew test`)
 
 **Tests (Write FIRST - TDD):** See `tests.json` IDs: `XX-001` to `XX-XXX`
 

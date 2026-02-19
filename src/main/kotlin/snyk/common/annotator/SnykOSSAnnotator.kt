@@ -9,19 +9,19 @@ import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.ProductType
 
 class SnykOSSAnnotator : SnykAnnotator(product = ProductType.OSS) {
-    init {
-        Disposer.register(SnykPluginDisposable.getInstance(), this)
-    }
+  init {
+    Disposer.register(SnykPluginDisposable.getInstance(), this)
+  }
 
-    override fun apply(
-        psiFile: PsiFile,
-        annotationResult: List<SnykAnnotation>,
-        holder: AnnotationHolder,
-    ) {
-        if (disposed) return
-        if (!pluginSettings().ossScanEnable) return
-        if (isOssRunning(psiFile.project)) return
+  override fun apply(
+    psiFile: PsiFile,
+    annotationResult: List<SnykAnnotation>,
+    holder: AnnotationHolder,
+  ) {
+    if (disposed) return
+    if (!pluginSettings().ossScanEnable) return
+    if (isOssRunning(psiFile.project)) return
 
-        super.apply(psiFile, annotationResult, holder)
-    }
+    super.apply(psiFile, annotationResult, holder)
+  }
 }

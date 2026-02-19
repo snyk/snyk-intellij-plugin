@@ -1,11 +1,12 @@
-name: Code Scanning - Action
+name: Lint
 on:
   push:
     branches: [ master ]
   pull_request:
 
 jobs:
-  detekt:
+  lint:
+    name: Format and Lint
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Sources
@@ -14,7 +15,7 @@ jobs:
       - uses: actions/setup-java@v4
         name: Setup Java
         with:
-          distribution: 'temurin' # See 'Supported distributions' for available options
+          distribution: 'temurin'
           java-version: '21'
 
       - name: Setup Gradle Cache
@@ -26,23 +27,8 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
 
-      - name: Run detekt Gradle task
-        run: ./gradlew detekt
-        continue-on-error: true
+      - name: Run Spotless (format check)
+        run: ./gradlew spotlessCheck
 
-      # modifies the SARIF output produced by Detekt so that absolute URIs are relative
-      - name: Make artifact location URIs relative
-        if: always()
-        run: |
-          echo "$(
-          jq \
-           --arg github_workspace ${{ github.workspace }} \
-           '. | ( .runs[].results[].locations[].physicalLocation.artifactLocation.uri |= if test($github_workspace) then .[($github_workspace | length | . + 1):] else . end )' \
-           build/detekt.sarif
-          )" > build/detekt.sarif
-
-      - name: Upload SARIF to GitHub
-        uses: github/codeql-action/upload-sarif@v3
-        if: success()
-        with:
-          sarif_file: build/detekt.sarif
+      - name: Run Ktlint (lint check)
+        run: ./gradlew ktlintCheck

@@ -15,176 +15,187 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.setupDummyCliFile
-import snyk.PLUGIN_ID
 import java.net.URLEncoder
 import java.util.UUID
-
+import snyk.PLUGIN_ID
 
 @Suppress("HttpUrlsUsage")
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
-    override fun setUp() {
-        super.setUp()
-        unmockkAll()
-        resetSettings(project)
-        setupDummyCliFile()
+  override fun setUp() {
+    super.setUp()
+    unmockkAll()
+    resetSettings(project)
+    setupDummyCliFile()
+  }
+
+  override fun tearDown() {
+    unmockkAll()
+    resetSettings(project)
+    removeDummyCliFile()
+    super.tearDown()
+  }
+
+  fun testSetupCliEnvironmentVariablesWithCustomEndpoint() {
+    val oldEndpoint = pluginSettings().customEndpointUrl
+    try {
+      val generalCommandLine = GeneralCommandLine("")
+      val expectedEndpoint = "https://customerTestEndpoint"
+      pluginSettings().customEndpointUrl = expectedEndpoint
+
+      ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+      assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+    } finally {
+      pluginSettings().customEndpointUrl = oldEndpoint
     }
+  }
 
-    override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
+  fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
+    val oldEndpoint = pluginSettings().customEndpointUrl
+    try {
+      val generalCommandLine = GeneralCommandLine("")
+      val expectedEndpoint = "https://api.xxx.snykgov.io"
+      generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
+
+      pluginSettings().customEndpointUrl = expectedEndpoint
+      pluginSettings().authenticationType = AuthenticationType.OAUTH2
+
+      val token = """{ "access_token":"IntelliJ TEST"}"""
+      ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
+
+      assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+      assertEquals(null, generalCommandLine.environment["SNYK_TOKEN"])
+      assertEquals(token, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
+      assertEquals("1", generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
+    } finally {
+      pluginSettings().customEndpointUrl = oldEndpoint
     }
+  }
 
-    fun testSetupCliEnvironmentVariablesWithCustomEndpoint() {
-        val oldEndpoint = pluginSettings().customEndpointUrl
-        try {
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint"
-            pluginSettings().customEndpointUrl = expectedEndpoint
+  fun testSetupCliEnvironmentVariablesWithNonOAuthEndpoint() {
+    val oldEndpoint = pluginSettings().customEndpointUrl
+    try {
+      val generalCommandLine = GeneralCommandLine("")
+      val expectedEndpoint = "https://api.snyk.io"
+      generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
 
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+      pluginSettings().customEndpointUrl = expectedEndpoint
+      pluginSettings().authenticationType = AuthenticationType.API_TOKEN
 
-            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
-        } finally {
-            pluginSettings().customEndpointUrl = oldEndpoint
-        }
+      val token = UUID.randomUUID().toString()
+      ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
+
+      assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+      assertEquals(token, generalCommandLine.environment["SNYK_TOKEN"])
+      assertEquals(null, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
+      assertEquals("0", generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
+    } finally {
+      pluginSettings().customEndpointUrl = oldEndpoint
     }
+  }
 
-    fun testSetupCliEnvironmentVariablesWithOAuthEndpoint() {
-        val oldEndpoint = pluginSettings().customEndpointUrl
-        try {
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://api.xxx.snykgov.io"
-            generalCommandLine.environment["SNYK_TOKEN"] = "IntelliJ TEST"
+  fun testSetupCliEnvironmentVariablesWithCustomEndpointNoTrailingSlash() {
+    val oldEndpoint = pluginSettings().customEndpointUrl
+    try {
+      val generalCommandLine = GeneralCommandLine("")
+      val expectedEndpoint = "https://customerTestEndpoint"
+      pluginSettings().customEndpointUrl = expectedEndpoint
 
-            pluginSettings().customEndpointUrl = expectedEndpoint
-            pluginSettings().authenticationType = AuthenticationType.OAUTH2
+      ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
-            val token = """{ "access_token":"IntelliJ TEST"}"""
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
-
-            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
-            assertEquals(null, generalCommandLine.environment["SNYK_TOKEN"])
-            assertEquals(token, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
-            assertEquals("1", generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
-        } finally {
-            pluginSettings().customEndpointUrl = oldEndpoint
-        }
+      assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
+    } finally {
+      pluginSettings().customEndpointUrl = oldEndpoint
     }
+  }
 
-    fun testSetupCliEnvironmentVariablesWithNonOAuthEndpoint() {
-        val oldEndpoint = pluginSettings().customEndpointUrl
-        try {
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://api.snyk.io"
-            generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"] = "{}"
+  @Suppress("UnstableApiUsage")
+  fun testSetupCliEnvironmentVariablesWithProxyWithoutAuth() {
+    val proxySettings = ProxySettings.getInstance()
+    val origConfig = proxySettings.getProxyConfiguration()
+    try {
+      proxySettings.setProxyConfiguration(createDummyProxyConfig())
 
-            pluginSettings().customEndpointUrl = expectedEndpoint
-            pluginSettings().authenticationType = AuthenticationType.API_TOKEN
+      val generalCommandLine = GeneralCommandLine("")
+      val expectedProxy = "http://testProxy:3128"
 
-            val token = UUID.randomUUID().toString()
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, token)
+      ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
 
-            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
-            assertEquals(token, generalCommandLine.environment["SNYK_TOKEN"])
-            assertEquals(null, generalCommandLine.environment["INTERNAL_OAUTH_TOKEN_STORAGE"])
-            assertEquals("0", generalCommandLine.environment["INTERNAL_SNYK_OAUTH_ENABLED"])
-        } finally {
-            pluginSettings().customEndpointUrl = oldEndpoint
-        }
+      assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
+    } finally {
+      proxySettings.setProxyConfiguration(origConfig)
     }
+  }
 
-    fun testSetupCliEnvironmentVariablesWithCustomEndpointNoTrailingSlash() {
-        val oldEndpoint = pluginSettings().customEndpointUrl
-        try {
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedEndpoint = "https://customerTestEndpoint"
-            pluginSettings().customEndpointUrl = expectedEndpoint
+  @Suppress("UnstableApiUsage")
+  fun testSetupCliEnvironmentVariablesWithProxyWithAuth() {
+    val proxySettings = ProxySettings.getInstance()
+    val credentialStore = ProxyCredentialStore.getInstance()
+    val origConfig = proxySettings.getProxyConfiguration()
+    val password = "test%!@Password"
+    val user = "testLogin"
+    try {
+      val proxyConfiguration = createDummyProxyConfig()
+      proxySettings.setProxyConfiguration(proxyConfiguration)
 
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+      val credentials = Credentials(user, password)
+      credentialStore.setCredentials(
+        proxyConfiguration.host,
+        proxyConfiguration.port,
+        credentials,
+        false,
+      )
 
-            assertEquals(expectedEndpoint, generalCommandLine.environment["SNYK_API"])
-        } finally {
-            pluginSettings().customEndpointUrl = oldEndpoint
-        }
+      val encodedLogin = URLEncoder.encode(user, "UTF-8")
+      val encodedPassword = URLEncoder.encode(password, "UTF-8")
+
+      val generalCommandLine = GeneralCommandLine("")
+      val expectedProxy =
+        "http://$encodedLogin:$encodedPassword@" +
+          "${proxyConfiguration.host}:${proxyConfiguration.port}"
+
+      ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+
+      assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
+    } finally {
+      proxySettings.setProxyConfiguration(origConfig)
+      credentialStore.clearAllCredentials()
     }
+  }
 
-    @Suppress("UnstableApiUsage")
-    fun testSetupCliEnvironmentVariablesWithProxyWithoutAuth() {
-        val proxySettings = ProxySettings.getInstance()
-        val origConfig = proxySettings.getProxyConfiguration()
-        try {
-            proxySettings.setProxyConfiguration(createDummyProxyConfig())
+  fun testSetupCliEnvironmentVariables() {
+    val generalCommandLine = GeneralCommandLine("")
+    val snykPluginVersion =
+      PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
+    pluginSettings().authenticationType = AuthenticationType.API_TOKEN
+    ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "test-api-token")
 
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedProxy = "http://testProxy:3128"
+    assertEquals("test-api-token", generalCommandLine.environment["SNYK_TOKEN"])
+    assertEquals("JETBRAINS_IDE", generalCommandLine.environment["SNYK_INTEGRATION_NAME"])
+    assertEquals(snykPluginVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
+    assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
+    assertEquals(
+      "2023.1".length,
+      generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"]?.length,
+    )
+  }
 
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
+  private fun createDummyProxyConfig(): StaticProxyConfiguration {
+    val newConfig =
+      object : StaticProxyConfiguration {
+        override val exceptions: String
+          get() = "testExceptions"
 
-            assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
-        } finally {
-            proxySettings.setProxyConfiguration(origConfig)
-        }
-    }
+        override val host: String
+          get() = "testProxy"
 
-    @Suppress("UnstableApiUsage")
-    fun testSetupCliEnvironmentVariablesWithProxyWithAuth() {
-        val proxySettings = ProxySettings.getInstance()
-        val credentialStore = ProxyCredentialStore.getInstance()
-        val origConfig = proxySettings.getProxyConfiguration()
-        val password = "test%!@Password"
-        val user = "testLogin"
-        try {
-            val proxyConfiguration = createDummyProxyConfig()
-            proxySettings.setProxyConfiguration(proxyConfiguration)
+        override val port: Int
+          get() = 3128
 
-            val credentials = Credentials(user, password)
-            credentialStore.setCredentials(proxyConfiguration.host, proxyConfiguration.port, credentials, false)
-
-            val encodedLogin = URLEncoder.encode(user, "UTF-8")
-            val encodedPassword = URLEncoder.encode(password, "UTF-8")
-
-            val generalCommandLine = GeneralCommandLine("")
-            val expectedProxy =
-                "http://$encodedLogin:$encodedPassword@" +
-                    "${proxyConfiguration.host}:${proxyConfiguration.port}"
-
-            ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "")
-
-            assertEquals(expectedProxy, generalCommandLine.environment["https_proxy"])
-        } finally {
-            proxySettings.setProxyConfiguration(origConfig)
-            credentialStore.clearAllCredentials()
-        }
-    }
-
-    fun testSetupCliEnvironmentVariables() {
-        val generalCommandLine = GeneralCommandLine("")
-        val snykPluginVersion = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
-        pluginSettings().authenticationType = AuthenticationType.API_TOKEN
-        ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "test-api-token")
-
-        assertEquals("test-api-token", generalCommandLine.environment["SNYK_TOKEN"])
-        assertEquals("JETBRAINS_IDE", generalCommandLine.environment["SNYK_INTEGRATION_NAME"])
-        assertEquals(snykPluginVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
-        assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
-        assertEquals("2023.1".length, generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT_VERSION"]?.length)
-    }
-
-
-    private fun createDummyProxyConfig(): StaticProxyConfiguration {
-        val newConfig = object : StaticProxyConfiguration {
-            override val exceptions: String
-                get() = "testExceptions"
-            override val host: String
-                get() = "testProxy"
-            override val port: Int
-                get() = 3128
-            override val protocol: ProxyConfiguration.ProxyProtocol
-                get() = ProxyConfiguration.ProxyProtocol.HTTP
-        }
-        return newConfig
-    }
+        override val protocol: ProxyConfiguration.ProxyProtocol
+          get() = ProxyConfiguration.ProxyProtocol.HTTP
+      }
+    return newConfig
+  }
 }

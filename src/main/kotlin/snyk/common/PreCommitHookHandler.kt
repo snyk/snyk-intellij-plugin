@@ -10,27 +10,30 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import snyk.common.lsp.LanguageServerWrapper
 
 class PreCommitHookHandler : CheckinHandlerFactory() {
-    override fun createHandler(panel: CheckinProjectPanel, commitContext: CommitContext): CheckinHandler {
-        val project = panel.project
-        return object : CheckinHandler() {
-            override fun beforeCheckin(): ReturnResult {
-                if (!isPreCommitCheckEnabled()) return ReturnResult.COMMIT
+  override fun createHandler(
+    panel: CheckinProjectPanel,
+    commitContext: CommitContext,
+  ): CheckinHandler {
+    val project = panel.project
+    return object : CheckinHandler() {
+      override fun beforeCheckin(): ReturnResult {
+        if (!isPreCommitCheckEnabled()) return ReturnResult.COMMIT
 
-                val snykCachedResults = getSnykCachedResults(project) ?: return ReturnResult.COMMIT
-                val noCodeIssues = snykCachedResults.currentSnykCodeResultsLS.isEmpty()
-                val noOSSIssues = snykCachedResults.currentOSSResultsLS.isEmpty()
-                val noIaCIssues = snykCachedResults.currentIacResultsLS.isEmpty()
-                LanguageServerWrapper.getInstance(project).sendScanCommand()
-                val doCommit = noCodeIssues && noOSSIssues && noIaCIssues
-                if (!doCommit) {
-                    SnykBalloonNotificationHelper.showWarn("Stopped commit, because of you have issues.", project)
-                    return ReturnResult.CANCEL
-                }
-                return ReturnResult.COMMIT
-            }
+        val snykCachedResults = getSnykCachedResults(project) ?: return ReturnResult.COMMIT
+        val noCodeIssues = snykCachedResults.currentSnykCodeResultsLS.isEmpty()
+        val noOSSIssues = snykCachedResults.currentOSSResultsLS.isEmpty()
+        val noIaCIssues = snykCachedResults.currentIacResultsLS.isEmpty()
+        LanguageServerWrapper.getInstance(project).sendScanCommand()
+        val doCommit = noCodeIssues && noOSSIssues && noIaCIssues
+        if (!doCommit) {
+          SnykBalloonNotificationHelper.showWarn(
+            "Stopped commit, because of you have issues.",
+            project,
+          )
+          return ReturnResult.CANCEL
         }
+        return ReturnResult.COMMIT
+      }
     }
-
-
-
+  }
 }

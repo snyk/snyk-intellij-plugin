@@ -9,23 +9,24 @@ import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPaneFixedSize
 import java.awt.event.ActionEvent
 import javax.swing.JPanel
 
-class StatePanel(messageHtmlText: String, actionText: String? = null, action: ((e: ActionEvent) -> Unit)? = null) : JPanel() {
-    init {
-        layout = GridLayoutManager(4, 1, JBUI.insets(20, 100), -1, -1)
+class StatePanel(
+  messageHtmlText: String,
+  actionText: String? = null,
+  action: ((e: ActionEvent) -> Unit)? = null,
+) : JPanel() {
+  init {
+    layout = GridLayoutManager(4, 1, JBUI.insets(20, 100), -1, -1)
 
-        add(
-            getReadOnlyClickableHtmlJEditorPaneFixedSize(messageHtmlText),
-            baseGridConstraints(row = 1, indent = 0)
-        )
+    add(
+      getReadOnlyClickableHtmlJEditorPaneFixedSize(messageHtmlText),
+      baseGridConstraints(row = 1, indent = 0),
+    )
 
-        if (actionText != null && action != null) {
-            add(
-                ActionLink(actionText, action),
-                baseGridConstraints(row = 2, indent = 0)
-            )
-        }
-
-        addSpacer(row = 0)
-        addSpacer(row = 3)
+    if (actionText != null && action != null) {
+      add(ActionLink(actionText, action), baseGridConstraints(row = 2, indent = 0))
     }
+
+    addSpacer(row = 0)
+    addSpacer(row = 3)
+  }
 }

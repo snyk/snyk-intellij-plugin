@@ -11,23 +11,22 @@ import java.util.Collections
 
 @Service
 @State(
-    name = "Workspace.Trust.Settings",
-    storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)]
+  name = "Workspace.Trust.Settings",
+  storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
 )
-class WorkspaceTrustSettings : SimplePersistentStateComponent<WorkspaceTrustSettings.State>(State()) {
-    class State : BaseState() {
-        @get:OptionTag("TRUSTED_PATHS")
-        var trustedPaths by list<String>()
-    }
+class WorkspaceTrustSettings :
+  SimplePersistentStateComponent<WorkspaceTrustSettings.State>(State()) {
+  class State : BaseState() {
+    @get:OptionTag("TRUSTED_PATHS") var trustedPaths by list<String>()
+  }
 
-    fun addTrustedPath(path: String) {
-        state.trustedPaths.add(path)
-    }
+  fun addTrustedPath(path: String) {
+    state.trustedPaths.add(path)
+  }
 
-    fun removeTrustedPath(path: String) {
-        state.trustedPaths.remove(path)
-    }
+  fun removeTrustedPath(path: String) {
+    state.trustedPaths.remove(path)
+  }
 
-    fun getTrustedPaths(): List<String> = Collections.unmodifiableList(state.trustedPaths)
+  fun getTrustedPaths(): List<String> = Collections.unmodifiableList(state.trustedPaths)
 }
-

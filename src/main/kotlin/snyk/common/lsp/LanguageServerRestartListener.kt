@@ -10,21 +10,26 @@ import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 
 @Service(Service.Level.PROJECT)
 class LanguageServerRestartListener(val project: Project) : Disposable {
-    private var disposed = false
+  private var disposed = false
 
-    fun isDisposed() = disposed || project.isDisposed
-    override fun dispose() {
-        this.disposed = true
-    }
+  fun isDisposed() = disposed || project.isDisposed
 
-    init {
-        Disposer.register(SnykPluginDisposable.getInstance(project), this)
-        application.messageBus.connect()
-            .subscribe(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC, object : SnykCliDownloadListener {
-                override fun restartCLI() {
-                    super.restartCLI()
-                    LanguageServerWrapper.getInstance(project).restart()
-                }
-            })
-    }
+  override fun dispose() {
+    this.disposed = true
+  }
+
+  init {
+    Disposer.register(SnykPluginDisposable.getInstance(project), this)
+    application.messageBus
+      .connect()
+      .subscribe(
+        SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+        object : SnykCliDownloadListener {
+          override fun restartCLI() {
+            super.restartCLI()
+            LanguageServerWrapper.getInstance(project).restart()
+          }
+        },
+      )
+  }
 }

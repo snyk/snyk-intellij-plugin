@@ -1,6 +1,4 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
-/**
- * marker interface
- */
+/** marker interface */
 interface IssueDescriptionPanel

@@ -13,28 +13,31 @@ import snyk.common.lsp.LanguageServerWrapper
 
 class GenerateAIFixHandler(private val project: Project) {
 
-    fun generateAIFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
-        val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
+  fun generateAIFixCommand(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
+    val aiFixQuery = JBCefJSQuery.create(jbCefBrowser)
 
-        aiFixQuery.addHandler { value ->
-            runInBackground("Snyk: getting Agent Fix proposals...") {
-                val responseDiff: List<Fix> =
-                    LanguageServerWrapper.getInstance(project).sendCodeFixDiffsCommand(value)
+    aiFixQuery.addHandler { value ->
+      runInBackground("Snyk: getting Agent Fix proposals...") {
+        val responseDiff: List<Fix> =
+          LanguageServerWrapper.getInstance(project).sendCodeFixDiffsCommand(value)
 
-                val script = """
+        val script =
+          """
                         window.receiveAIFixResponse(${Gson().toJson(responseDiff)});
-                    """.trimIndent()
+                    """
+            .trimIndent()
 
-                jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
-                JBCefJSQuery.Response("success")
-            }
-            return@addHandler JBCefJSQuery.Response("success")
-        }
+        jbCefBrowser.cefBrowser.executeJavaScript(script, jbCefBrowser.cefBrowser.url, 0)
+        JBCefJSQuery.Response("success")
+      }
+      return@addHandler JBCefJSQuery.Response("success")
+    }
 
-        return object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
-                if (frame.isMain) {
-                    val script = """
+    return object : CefLoadHandlerAdapter() {
+      override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+        if (frame.isMain) {
+          val script =
+            """
                     (function() {
                         if (window.aiFixQuery) {
                             return;
@@ -42,9 +45,9 @@ class GenerateAIFixHandler(private val project: Project) {
                         window.aiFixQuery = function(value) { ${aiFixQuery.inject("value")} };
                     })();
                     """
-                    browser.executeJavaScript(script, browser.url, 0)
-                }
-            }
+          browser.executeJavaScript(script, browser.url, 0)
         }
+      }
     }
+  }
 }

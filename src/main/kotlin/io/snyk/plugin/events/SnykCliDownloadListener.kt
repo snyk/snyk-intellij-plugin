@@ -3,18 +3,17 @@ package io.snyk.plugin.events
 import com.intellij.util.messages.Topic
 
 interface SnykCliDownloadListener {
-    companion object {
-        val CLI_DOWNLOAD_TOPIC =
-            Topic.create("Snyk CLI download", SnykCliDownloadListener::class.java)
-    }
+  companion object {
+    val CLI_DOWNLOAD_TOPIC = Topic.create("Snyk CLI download", SnykCliDownloadListener::class.java)
+  }
 
-    fun checkCliExistsStarted() {}
+  fun checkCliExistsStarted() {}
 
-    fun checkCliExistsFinished() {}
+  fun checkCliExistsFinished() {}
 
-    fun cliDownloadStarted() {}
+  fun cliDownloadStarted() {}
 
-    fun cliDownloadFinished(succeed: Boolean = true) {}
+  fun cliDownloadFinished(succeed: Boolean = true) {}
 
-    fun restartCLI() {}
+  fun restartCLI() {}
 }

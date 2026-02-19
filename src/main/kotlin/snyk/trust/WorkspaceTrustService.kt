@@ -11,37 +11,41 @@ private val LOG = logger<WorkspaceTrustService>()
 @Service(Service.Level.APP)
 class WorkspaceTrustService {
 
-    val settings
-        get() = service<WorkspaceTrustSettings>()
+  val settings
+    get() = service<WorkspaceTrustSettings>()
 
-    fun addTrustedPath(path: Path) {
-        LOG.debug("Adding trusted path: $path")
-        if (settings.getTrustedPaths().contains(path.toString())) {
-            LOG.debug("Path is already trusted: $path")
-            return
+  fun addTrustedPath(path: Path) {
+    LOG.debug("Adding trusted path: $path")
+    if (settings.getTrustedPaths().contains(path.toString())) {
+      LOG.debug("Path is already trusted: $path")
+      return
+    }
+    settings.addTrustedPath(path.toString())
+  }
+
+  fun removeTrustedPath(path: Path) {
+    LOG.debug("Removing trusted path: $path")
+    settings.removeTrustedPath(path.toString())
+  }
+
+  fun isPathTrusted(path: Path): Boolean {
+    LOG.debug("Verifying if path is trusted: $path")
+    return settings
+      .getTrustedPaths()
+      .asSequence()
+      .mapNotNull {
+        try {
+          Paths.get(it)
+        } catch (e: Exception) {
+          LOG.warn(e)
+          null
         }
-        settings.addTrustedPath(path.toString())
-    }
-
-    fun removeTrustedPath(path: Path) {
-        LOG.debug("Removing trusted path: $path")
-        settings.removeTrustedPath(path.toString())
-    }
-
-    fun isPathTrusted(path: Path): Boolean {
-        LOG.debug("Verifying if path is trusted: $path")
-        return settings.getTrustedPaths().asSequence().mapNotNull {
-            try {
-                Paths.get(it)
-            } catch (e: Exception) {
-                LOG.warn(e)
-                null
-            }
-        }.any {
-            LOG.debug("Checking if the $it is an ancestor $path")
-            it.isAncestor(path)
-        }
-    }
+      }
+      .any {
+        LOG.debug("Checking if the $it is an ancestor $path")
+        it.isAncestor(path)
+      }
+  }
 }
 
 internal fun Path.isAncestor(child: Path): Boolean = child.startsWith(this)

@@ -11,49 +11,46 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 
 // "|" works also for separating in windows paths
-const val navigationSeparator = "|"
+const val NAVIGATION_SEPARATOR = "|"
 
 class OpenFileLoadHandlerGenerator(
-    private val project: Project,
-    private val virtualFiles: LinkedHashMap<String, VirtualFile?>,
+  private val project: Project,
+  private val virtualFiles: LinkedHashMap<String, VirtualFile?>,
 ) {
-    fun openFile(value: String): JBCefJSQuery.Response {
-        val values = value.replace("\n", "").split(navigationSeparator)
-        val filePath = values[0]
-        val startLine = values[1].toInt()
-        val endLine = values[2].toInt()
-        val startCharacter = values[3].toInt()
-        val endCharacter = values[4].toInt()
+  fun openFile(value: String): JBCefJSQuery.Response {
+    val values = value.replace("\n", "").split(NAVIGATION_SEPARATOR)
+    val filePath = values[0]
+    val startLine = values[1].toInt()
+    val endLine = values[2].toInt()
+    val startCharacter = values[3].toInt()
+    val endCharacter = values[4].toInt()
 
-        val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
-        val document = virtualFile.getDocument()?: return JBCefJSQuery.Response("success")
+    val virtualFile = virtualFiles[filePath] ?: return JBCefJSQuery.Response("success")
+    val document = virtualFile.getDocument() ?: return JBCefJSQuery.Response("success")
 
-        // Ensure line numbers are within bounds
-        val maxLine = document.lineCount - 1
-        val safeStartLine = startLine.coerceIn(0, maxLine)
-        val safeEndLine = endLine.coerceIn(0, maxLine)
+    // Ensure line numbers are within bounds
+    val maxLine = document.lineCount - 1
+    val safeStartLine = startLine.coerceIn(0, maxLine)
+    val safeEndLine = endLine.coerceIn(0, maxLine)
 
-        val startLineStartOffset = document.getLineStartOffset(safeStartLine)
-        val startOffset = startLineStartOffset + startCharacter
-        val endLineStartOffset = document.getLineStartOffset(safeEndLine)
-        val endOffset = endLineStartOffset + endCharacter - 1
+    val startLineStartOffset = document.getLineStartOffset(safeStartLine)
+    val startOffset = startLineStartOffset + startCharacter
+    val endLineStartOffset = document.getLineStartOffset(safeEndLine)
+    val endOffset = endLineStartOffset + endCharacter - 1
 
-        navigateToSource(project, virtualFile, startOffset, endOffset)
-        return JBCefJSQuery.Response("success")
-    }
+    navigateToSource(project, virtualFile, startOffset, endOffset)
+    return JBCefJSQuery.Response("success")
+  }
 
-    fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
-        val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
-        openFileQuery.addHandler { openFile(it) }
+  fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
+    val openFileQuery = JBCefJSQuery.create(jbCefBrowser)
+    openFileQuery.addHandler { openFile(it) }
 
-        return object : CefLoadHandlerAdapter() {
-            override fun onLoadEnd(
-                browser: CefBrowser,
-                frame: CefFrame,
-                httpStatusCode: Int,
-            ) {
-                if (frame.isMain) {
-                    val script = """
+    return object : CefLoadHandlerAdapter() {
+      override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
+        if (frame.isMain) {
+          val script =
+            """
                     (function() {
                         if (window.openFileQuery) {
                             return;
@@ -62,10 +59,10 @@ class OpenFileLoadHandlerGenerator(
 
                         function navigateToIssue(e, target) {
                             e.preventDefault();
-                            window.openFileQuery(target.getAttribute("file-path") + "$navigationSeparator" +
-                                 target.getAttribute("start-line") + "$navigationSeparator" +
-                                 target.getAttribute("end-line") + "$navigationSeparator" +
-                                 target.getAttribute("start-character") + "$navigationSeparator" +
+                            window.openFileQuery(target.getAttribute("file-path") + "$NAVIGATION_SEPARATOR" +
+                                 target.getAttribute("start-line") + "$NAVIGATION_SEPARATOR" +
+                                 target.getAttribute("end-line") + "$NAVIGATION_SEPARATOR" +
+                                 target.getAttribute("start-character") + "$NAVIGATION_SEPARATOR" +
                                  target.getAttribute("end-character"));
                         }
 
@@ -84,9 +81,9 @@ class OpenFileLoadHandlerGenerator(
                         });
                     })();
                 """
-                    browser.executeJavaScript(script, browser.url, 0)
-                }
-            }
+          browser.executeJavaScript(script, browser.url, 0)
         }
+      }
     }
+  }
 }

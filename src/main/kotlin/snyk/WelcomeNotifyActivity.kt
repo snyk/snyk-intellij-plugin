@@ -11,11 +11,11 @@ import io.snyk.plugin.ui.SnykBalloonNotifications
  * [SnykApplicationSettingsStateService.pluginFirstRun] property is `true`.
  */
 class WelcomeNotifyActivity : ProjectActivity {
-    override suspend fun execute(project: Project) {
-        val settings = pluginSettings()
+  override suspend fun execute(project: Project) {
+    val settings = pluginSettings()
 
-        if (settings.pluginFirstRun) {
-            SnykBalloonNotifications.showWelcomeNotification(project)
-        }
+    if (settings.pluginFirstRun) {
+      SnykBalloonNotifications.showWelcomeNotification(project)
     }
+  }
 }

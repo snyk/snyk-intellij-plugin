@@ -13,40 +13,40 @@ import java.nio.file.Paths
 
 class WorkspaceTrustServiceIntegrationTest : BasePlatformTestCase() {
 
-    private val workspaceTrustSettingsMock = mockk<WorkspaceTrustSettings>()
-    private lateinit var cut: WorkspaceTrustService
+  private val workspaceTrustSettingsMock = mockk<WorkspaceTrustSettings>()
+  private lateinit var cut: WorkspaceTrustService
 
-    private class IntegTestDisposable : Disposable {
-        override fun dispose() = Unit
-    }
+  private class IntegTestDisposable : Disposable {
+    override fun dispose() = Unit
+  }
 
-    public override fun setUp() {
-        super.setUp()
-        unmockkAll()
+  public override fun setUp() {
+    super.setUp()
+    unmockkAll()
 
-        val application = ApplicationManager.getApplication()
-        application.replaceService(
-            WorkspaceTrustSettings::class.java,
-            workspaceTrustSettingsMock,
-            IntegTestDisposable()
-        )
+    val application = ApplicationManager.getApplication()
+    application.replaceService(
+      WorkspaceTrustSettings::class.java,
+      workspaceTrustSettingsMock,
+      IntegTestDisposable(),
+    )
 
-        cut = WorkspaceTrustService()
-    }
+    cut = WorkspaceTrustService()
+  }
 
-    fun `test isPathTrusted should return false if no trusted path in settings available`() {
-        every { workspaceTrustSettingsMock.getTrustedPaths() } returns listOf()
+  fun `test isPathTrusted should return false if no trusted path in settings available`() {
+    every { workspaceTrustSettingsMock.getTrustedPaths() } returns listOf()
 
-        val path = Paths.get("/project")
+    val path = Paths.get("/project")
 
-        assertFalse(cut.isPathTrusted(path))
-    }
+    assertFalse(cut.isPathTrusted(path))
+  }
 
-    fun `test isPathTrusted should return true if trusted path in settings available`() {
-        every { workspaceTrustSettingsMock.getTrustedPaths() } returns listOf("/project")
+  fun `test isPathTrusted should return true if trusted path in settings available`() {
+    every { workspaceTrustSettingsMock.getTrustedPaths() } returns listOf("/project")
 
-        val path = Paths.get("/project")
+    val path = Paths.get("/project")
 
-        assertTrue(cut.isPathTrusted(path))
-    }
+    assertTrue(cut.isPathTrusted(path))
+  }
 }

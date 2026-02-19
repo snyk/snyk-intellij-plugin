@@ -10,28 +10,24 @@ import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.pluginSettings
 
-/**
- * Run scan project with Snyk action.
- */
+/** Run scan project with Snyk action. */
 class SnykRunScanAction : AnAction(AllIcons.Actions.Execute), DumbAware {
 
-    override fun actionPerformed(actionEvent: AnActionEvent) {
-        getSnykTaskQueueService(actionEvent.project!!)?.scan()
-    }
+  override fun actionPerformed(actionEvent: AnActionEvent) {
+    getSnykTaskQueueService(actionEvent.project!!)?.scan()
+  }
 
-    override fun update(actionEvent: AnActionEvent) {
-        val project = actionEvent.project
-        if (project != null && !project.isDisposed) {
-            val settings = pluginSettings()
-            actionEvent.presentation.isEnabled =
-                !isCliDownloading() &&
-                    !isScanRunning(project) &&
-                    !settings.pluginFirstRun &&
-                    !settings.token.isNullOrEmpty()
-        }
+  override fun update(actionEvent: AnActionEvent) {
+    val project = actionEvent.project
+    if (project != null && !project.isDisposed) {
+      val settings = pluginSettings()
+      actionEvent.presentation.isEnabled =
+        !isCliDownloading() &&
+          !isScanRunning(project) &&
+          !settings.pluginFirstRun &&
+          !settings.token.isNullOrEmpty()
     }
+  }
 
-    override fun getActionUpdateThread(): ActionUpdateThread {
-        return ActionUpdateThread.BGT
-    }
+  override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 }

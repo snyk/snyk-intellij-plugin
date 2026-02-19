@@ -17,42 +17,42 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 class SnykControllerImplTest : LightPlatformTestCase() {
-    private val languageServerWrapper = mockk<LanguageServerWrapper>()
-    private lateinit var downloaderServiceMock: SnykCliDownloaderService
+  private val languageServerWrapper = mockk<LanguageServerWrapper>()
+  private lateinit var downloaderServiceMock: SnykCliDownloaderService
 
-    override fun setUp() {
-        super.setUp()
-        unmockkAll()
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        mockkStatic("snyk.trust.TrustedProjectsKt")
-        downloaderServiceMock = spyk(SnykCliDownloaderService())
-        every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
-        every { getSnykCliDownloaderService() } returns downloaderServiceMock
-        every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
-        mockkObject(LanguageServerWrapper.Companion)
-        every { LanguageServerWrapper.getInstance(project) } returns languageServerWrapper
-        every { languageServerWrapper.isInitialized } returns true
-        justRun { languageServerWrapper.sendReportAnalyticsCommand(any()) }
-        justRun { languageServerWrapper.sendScanCommand() }
-    }
+  override fun setUp() {
+    super.setUp()
+    unmockkAll()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    mockkStatic("snyk.trust.TrustedProjectsKt")
+    downloaderServiceMock = spyk(SnykCliDownloaderService())
+    every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
+    every { getSnykCliDownloaderService() } returns downloaderServiceMock
+    every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
+    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(project) } returns languageServerWrapper
+    every { languageServerWrapper.isInitialized } returns true
+    justRun { languageServerWrapper.sendReportAnalyticsCommand(any()) }
+    justRun { languageServerWrapper.sendScanCommand() }
+  }
 
-    override fun tearDown() {
-        unmockkAll()
-        super.tearDown()
-    }
+  override fun tearDown() {
+    unmockkAll()
+    super.tearDown()
+  }
 
-    fun testControllerCanTriggerScan() {
-        val settings = pluginSettings()
-        settings.ossScanEnable = true
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.iacScanEnabled = false
+  fun testControllerCanTriggerScan() {
+    val settings = pluginSettings()
+    settings.ossScanEnable = true
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.iacScanEnabled = false
 
-        val controller = SnykControllerImpl(project)
-        controller.scan()
+    val controller = SnykControllerImpl(project)
+    controller.scan()
 
-        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-        verify (timeout = 5000){ languageServerWrapper.sendScanCommand() }
-    }
+    verify(timeout = 5000) { languageServerWrapper.sendScanCommand() }
+  }
 }

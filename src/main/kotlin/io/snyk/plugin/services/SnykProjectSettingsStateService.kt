@@ -9,14 +9,14 @@ import com.intellij.util.xmlb.XmlSerializerUtil
 
 @Service
 @State(
-    name = "SnykProjectSettingsState",
-    storages = [Storage("snyk.project.settings.xml", roamingType = RoamingType.DISABLED)]
+  name = "SnykProjectSettingsState",
+  storages = [Storage("snyk.project.settings.xml", roamingType = RoamingType.DISABLED)],
 )
 class SnykProjectSettingsStateService : PersistentStateComponent<SnykProjectSettingsStateService> {
 
-    override fun getState(): SnykProjectSettingsStateService = this
+  override fun getState(): SnykProjectSettingsStateService = this
 
-    override fun loadState(state: SnykProjectSettingsStateService) {
-        XmlSerializerUtil.copyBean(state, this)
-    }
+  override fun loadState(state: SnykProjectSettingsStateService) {
+    XmlSerializerUtil.copyBean(state, this)
+  }
 }

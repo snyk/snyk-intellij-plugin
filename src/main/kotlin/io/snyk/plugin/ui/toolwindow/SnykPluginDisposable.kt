@@ -9,54 +9,52 @@ import com.intellij.openapi.project.Project
 import org.jetbrains.annotations.NotNull
 import snyk.common.lsp.LanguageServerWrapper
 
-
-/**
- * Top-Level disposable for the Snyk plugin.
- */
+/** Top-Level disposable for the Snyk plugin. */
 @Service(Service.Level.APP, Service.Level.PROJECT)
 class SnykPluginDisposable : Disposable, AppLifecycleListener {
-    private var disposed = false
-        get() {
-            return ApplicationManager.getApplication().isDisposed || field
-        }
-
-    fun isDisposed() = disposed
-
-    override fun dispose() {
-        disposed = true
+  private var disposed = false
+    get() {
+      return ApplicationManager.getApplication().isDisposed || field
     }
 
-    companion object {
-        @NotNull
-        fun getInstance(): SnykPluginDisposable {
-            return ApplicationManager.getApplication().getService(SnykPluginDisposable::class.java)
-        }
+  fun isDisposed() = disposed
 
-        @NotNull
-        fun getInstance(@NotNull project: Project): SnykPluginDisposable {
-            return project.getService(SnykPluginDisposable::class.java)
-        }
-    }
+  override fun dispose() {
+    disposed = true
+  }
 
-    init {
-        ApplicationManager.getApplication().messageBus.connect(this).subscribe(AppLifecycleListener.TOPIC, this)
-    }
+  companion object {
+    @NotNull
+    fun getInstance(): SnykPluginDisposable =
+      ApplicationManager.getApplication().getService(SnykPluginDisposable::class.java)
 
-    override fun appClosing() {
-        shutdownAllLanguageServers()
-    }
+    @NotNull
+    fun getInstance(@NotNull project: Project): SnykPluginDisposable =
+      project.getService(SnykPluginDisposable::class.java)
+  }
 
-    private fun shutdownAllLanguageServers() {
-        ProjectUtil.getOpenProjects().forEach { project ->
-            try {
-                LanguageServerWrapper.getInstance(project).shutdown()
-            } catch (_: Exception) {
-                // do nothing
-            }
-        }
-    }
+  init {
+    ApplicationManager.getApplication()
+      .messageBus
+      .connect(this)
+      .subscribe(AppLifecycleListener.TOPIC, this)
+  }
 
-    override fun appWillBeClosed(isRestart: Boolean) {
-        shutdownAllLanguageServers()
+  override fun appClosing() {
+    shutdownAllLanguageServers()
+  }
+
+  private fun shutdownAllLanguageServers() {
+    ProjectUtil.getOpenProjects().forEach { project ->
+      try {
+        LanguageServerWrapper.getInstance(project).shutdown()
+      } catch (_: Exception) {
+        // do nothing
+      }
     }
+  }
+
+  override fun appWillBeClosed(isRestart: Boolean) {
+    shutdownAllLanguageServers()
+  }
 }

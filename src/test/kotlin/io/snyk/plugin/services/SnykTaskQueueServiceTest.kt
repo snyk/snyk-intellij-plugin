@@ -20,174 +20,182 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.download.CliDownloader
 import io.snyk.plugin.services.download.SnykCliDownloaderService
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
-    private lateinit var downloaderServiceMock: SnykCliDownloaderService
-    private val lsMock = mockk<LanguageServer>()
+  private lateinit var downloaderServiceMock: SnykCliDownloaderService
+  private val lsMock = mockk<LanguageServer>()
 
-    override fun setUp() {
-        super.setUp()
-        unmockkAll()
-        resetSettings(project)
+  override fun setUp() {
+    super.setUp()
+    unmockkAll()
+    resetSettings(project)
 
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        mockkStatic("snyk.trust.TrustedProjectsKt")
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    mockkStatic("snyk.trust.TrustedProjectsKt")
 
-        downloaderServiceMock = spyk(SnykCliDownloaderService())
-        every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
+    downloaderServiceMock = spyk(SnykCliDownloaderService())
+    every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
 
-        every { getSnykCliDownloaderService() } returns downloaderServiceMock
-        every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
-        every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
+    every { getSnykCliDownloaderService() } returns downloaderServiceMock
+    every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
+    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
 
-        mockkObject(LanguageServerWrapper.Companion)
-        val lswMock = mockk<LanguageServerWrapper>(relaxed = true)
-        every { LanguageServerWrapper.getInstance(project) } returns lswMock
-        every { lswMock.languageServer } returns lsMock
-        every { lswMock.isInitialized } returns true
-    }
+    mockkObject(LanguageServerWrapper.Companion)
+    val lswMock = mockk<LanguageServerWrapper>(relaxed = true)
+    every { LanguageServerWrapper.getInstance(project) } returns lswMock
+    every { lswMock.languageServer } returns lsMock
+    every { lswMock.isInitialized } returns true
+  }
 
-    override fun tearDown() {
-        unmockkAll()
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
-    }
+  override fun tearDown() {
+    unmockkAll()
+    resetSettings(project)
+    removeDummyCliFile()
+    super.tearDown()
+  }
 
-    fun testCliDownloadBeforeScanIfNeeded() {
-        setupAppSettingsForDownloadTests()
-        every { isCliInstalled() } returns true
+  fun testCliDownloadBeforeScanIfNeeded() {
+    setupAppSettingsForDownloadTests()
+    every { isCliInstalled() } returns true
 
-        // The scan() method waits for checkCliExistsFinished event, so we need to
-        // simulate it being fired after downloadLatestRelease is called
-        val latch = CountDownLatch(1)
-        ApplicationManager.getApplication().messageBus.connect(testRootDisposable).subscribe(
-            SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
-            object : SnykCliDownloadListener {
-                override fun checkCliExistsStarted() {
-                    // When download check starts, immediately signal completion
-                    // This simulates the CLI already being installed
-                    ApplicationManager.getApplication().messageBus
-                        .syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
-                        .checkCliExistsFinished()
-                }
-                override fun checkCliExistsFinished() {
-                    latch.countDown()
-                }
-            }
-        )
+    // The scan() method waits for checkCliExistsFinished event, so we need to
+    // simulate it being fired after downloadLatestRelease is called
+    val latch = CountDownLatch(1)
+    ApplicationManager.getApplication()
+      .messageBus
+      .connect(testRootDisposable)
+      .subscribe(
+        SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+        object : SnykCliDownloadListener {
+          override fun checkCliExistsStarted() {
+            // When download check starts, immediately signal completion
+            // This simulates the CLI already being installed
+            ApplicationManager.getApplication()
+              .messageBus
+              .syncPublisher(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC)
+              .checkCliExistsFinished()
+          }
 
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        snykTaskQueueService.downloadLatestRelease()
+          override fun checkCliExistsFinished() {
+            latch.countDown()
+          }
+        },
+      )
 
-        // Wait for the download check to complete with timeout
-        assertTrue("Download check should complete", latch.await(10, TimeUnit.SECONDS))
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-        verify { isCliInstalled() }
-    }
+    val snykTaskQueueService = project.service<SnykTaskQueueService>()
+    snykTaskQueueService.downloadLatestRelease()
 
-    fun testDontDownloadCLIIfUpdatesDisabled() {
-        val downloaderMock = setupMockForDownloadTest()
-        val settings = setupAppSettingsForDownloadTests()
-        settings.manageBinariesAutomatically = false
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        every { isCliInstalled() } returns true
+    // Wait for the download check to complete with timeout
+    assertTrue("Download check should complete", latch.await(10, TimeUnit.SECONDS))
+    PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+    verify { isCliInstalled() }
+  }
 
-        // When manageBinariesAutomatically is false, downloadLatestRelease returns early
-        // without triggering actual download
-        snykTaskQueueService.downloadLatestRelease()
+  fun testDontDownloadCLIIfUpdatesDisabled() {
+    val downloaderMock = setupMockForDownloadTest()
+    val settings = setupAppSettingsForDownloadTests()
+    settings.manageBinariesAutomatically = false
+    val snykTaskQueueService = project.service<SnykTaskQueueService>()
+    every { isCliInstalled() } returns true
 
-        PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
-        verify(exactly = 0) { downloaderMock.downloadFile(any(), any(), any()) }
-    }
+    // When manageBinariesAutomatically is false, downloadLatestRelease returns early
+    // without triggering actual download
+    snykTaskQueueService.downloadLatestRelease()
 
-    fun testCheckCliExistsFinishedPublishedWhenManageBinariesDisabled() {
-        val settings = setupAppSettingsForDownloadTests()
-        settings.manageBinariesAutomatically = false
-        every { isCliInstalled() } returns true
+    PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()
+    verify(exactly = 0) { downloaderMock.downloadFile(any(), any(), any()) }
+  }
 
-        val latch = CountDownLatch(1)
-        var eventReceived = false
+  fun testCheckCliExistsFinishedPublishedWhenManageBinariesDisabled() {
+    val settings = setupAppSettingsForDownloadTests()
+    settings.manageBinariesAutomatically = false
+    every { isCliInstalled() } returns true
 
-        ApplicationManager.getApplication().messageBus.connect(testRootDisposable).subscribe(
-            SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
-            object : SnykCliDownloadListener {
-                override fun checkCliExistsFinished() {
-                    eventReceived = true
-                    latch.countDown()
-                }
-            }
-        )
+    val latch = CountDownLatch(1)
+    var eventReceived = false
 
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
-        snykTaskQueueService.downloadLatestRelease()
+    ApplicationManager.getApplication()
+      .messageBus
+      .connect(testRootDisposable)
+      .subscribe(
+        SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC,
+        object : SnykCliDownloadListener {
+          override fun checkCliExistsFinished() {
+            eventReceived = true
+            latch.countDown()
+          }
+        },
+      )
 
-        // Wait for the event with a short timeout - it should be published immediately
-        // when manageBinariesAutomatically is false
-        assertTrue(
-            "checkCliExistsFinished should be published when manageBinariesAutomatically is false",
-            latch.await(5, TimeUnit.SECONDS)
-        )
-        assertTrue("Event should have been received", eventReceived)
-    }
+    val snykTaskQueueService = project.service<SnykTaskQueueService>()
+    snykTaskQueueService.downloadLatestRelease()
 
-    fun testWaitUntilCliDownloadedDoesNotHangWhenManageBinariesDisabled() {
-        val settings = setupAppSettingsForDownloadTests()
-        settings.manageBinariesAutomatically = false
-        every { isCliInstalled() } returns true
+    // Wait for the event with a short timeout - it should be published immediately
+    // when manageBinariesAutomatically is false
+    assertTrue(
+      "checkCliExistsFinished should be published when manageBinariesAutomatically is false",
+      latch.await(5, TimeUnit.SECONDS),
+    )
+    assertTrue("Event should have been received", eventReceived)
+  }
 
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+  fun testWaitUntilCliDownloadedDoesNotHangWhenManageBinariesDisabled() {
+    val settings = setupAppSettingsForDownloadTests()
+    settings.manageBinariesAutomatically = false
+    every { isCliInstalled() } returns true
 
-        // This should complete quickly (not wait 20 minutes) because
-        // checkCliExistsFinished is now published when manageBinariesAutomatically is false
-        val startTime = System.currentTimeMillis()
-        snykTaskQueueService.waitUntilCliDownloadedIfNeeded()
-        val elapsed = System.currentTimeMillis() - startTime
+    val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
-        // Should complete in under 10 seconds (not the 20-minute timeout)
-        assertTrue(
-            "waitUntilCliDownloadedIfNeeded should complete quickly when manageBinariesAutomatically is false, " +
-                "but took ${elapsed}ms",
-            elapsed < 10_000
-        )
-    }
+    // This should complete quickly (not wait 20 minutes) because
+    // checkCliExistsFinished is now published when manageBinariesAutomatically is false
+    val startTime = System.currentTimeMillis()
+    snykTaskQueueService.waitUntilCliDownloadedIfNeeded()
+    val elapsed = System.currentTimeMillis() - startTime
 
-    private fun setupAppSettingsForDownloadTests(): SnykApplicationSettingsStateService {
-        val settings = pluginSettings()
-        settings.ossScanEnable = true
-        settings.snykCodeSecurityIssuesScanEnable = false
-        settings.iacScanEnabled = false
-        return settings
-    }
+    // Should complete in under 10 seconds (not the 20-minute timeout)
+    assertTrue(
+      "waitUntilCliDownloadedIfNeeded should complete quickly when manageBinariesAutomatically is false, " +
+        "but took ${elapsed}ms",
+      elapsed < 10_000,
+    )
+  }
 
-    private fun setupMockForDownloadTest(): CliDownloader {
-        every { getCliFile().exists() } returns false
-        every { isCliInstalled() } returns false
+  private fun setupAppSettingsForDownloadTests(): SnykApplicationSettingsStateService {
+    val settings = pluginSettings()
+    settings.ossScanEnable = true
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.iacScanEnabled = false
+    return settings
+  }
 
-        val downloaderMock = mockk<CliDownloader>()
-        getSnykCliDownloaderService().downloader = downloaderMock
-        return downloaderMock
-    }
+  private fun setupMockForDownloadTest(): CliDownloader {
+    every { getCliFile().exists() } returns false
+    every { isCliInstalled() } returns false
 
-    fun testProjectClosedWhileTaskRunning() {
-        // Setup: ensure manageBinariesAutomatically is false so downloadLatestRelease
-        // returns early without trying to run background tasks
-        pluginSettings().manageBinariesAutomatically = false
-        every { isCliInstalled() } returns true
+    val downloaderMock = mockk<CliDownloader>()
+    getSnykCliDownloaderService().downloader = downloaderMock
+    return downloaderMock
+  }
 
-        val snykTaskQueueService = project.service<SnykTaskQueueService>()
+  fun testProjectClosedWhileTaskRunning() {
+    // Setup: ensure manageBinariesAutomatically is false so downloadLatestRelease
+    // returns early without trying to run background tasks
+    pluginSettings().manageBinariesAutomatically = false
+    every { isCliInstalled() } returns true
 
-        PlatformTestUtil.forceCloseProjectWithoutSaving(project)
-        setProject(null) // to avoid double disposing effort in tearDown
+    val snykTaskQueueService = project.service<SnykTaskQueueService>()
 
-        // the Task should roll out gracefully without any Exception or Error
-        // With project disposed and manageBinariesAutomatically=false, this should return immediately
-        snykTaskQueueService.downloadLatestRelease()
-    }
+    PlatformTestUtil.forceCloseProjectWithoutSaving(project)
+    setProject(null) // to avoid double disposing effort in tearDown
+
+    // the Task should roll out gracefully without any Exception or Error
+    // With project disposed and manageBinariesAutomatically=false, this should return immediately
+    snykTaskQueueService.downloadLatestRelease()
+  }
 }

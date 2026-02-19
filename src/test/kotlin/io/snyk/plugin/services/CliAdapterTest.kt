@@ -11,49 +11,54 @@ import snyk.common.SnykError
 
 class CliAdapterTest : LightPlatformTestCase() {
 
-    private val dummyCliAdapter by lazy {
-        object : CliAdapter<Unit, DummyResults>(project) {
-            override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) = DummyResults()
-            override fun sanitizeCliIssues(cliIssues: Unit) = Unit
-            override fun getCliIIssuesClass(): Class<Unit> = Unit::class.java
-            override fun buildExtraOptions(): List<String> = emptyList()
-        }
+  private val dummyCliAdapter by lazy {
+    object : CliAdapter<Unit, DummyResults>(project) {
+      override fun getProductResult(cliIssues: List<Unit>?, snykErrors: List<SnykError>) =
+        DummyResults()
+
+      override fun sanitizeCliIssues(cliIssues: Unit) = Unit
+
+      override fun getCliIIssuesClass(): Class<Unit> = Unit::class.java
+
+      override fun buildExtraOptions(): List<String> = emptyList()
     }
+  }
 
-    class DummyResults : CliResult<Unit>(null, emptyList()) {
-        override val issuesCount: Int? = null
-        override fun countBySeverity(severity: Severity): Int? = null
-    }
+  class DummyResults : CliResult<Unit>(null, emptyList()) {
+    override val issuesCount: Int? = null
 
-    @Throws(Exception::class)
-    override fun setUp() {
-        super.setUp()
-        resetSettings(project)
-    }
+    override fun countBySeverity(severity: Severity): Int? = null
+  }
 
-    override fun tearDown() {
-        resetSettings(project)
-        removeDummyCliFile()
-        super.tearDown()
-    }
+  @Throws(Exception::class)
+  override fun setUp() {
+    super.setUp()
+    resetSettings(project)
+  }
 
-    fun testBuildCliCommandsListWithInsecureParameter() {
-        setupDummyCliFile()
+  override fun tearDown() {
+    resetSettings(project)
+    removeDummyCliFile()
+    super.tearDown()
+  }
 
-        pluginSettings().ignoreUnknownCA = true
+  fun testBuildCliCommandsListWithInsecureParameter() {
+    setupDummyCliFile()
 
-        val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+    pluginSettings().ignoreUnknownCA = true
 
-        assertTrue(defaultCommands.contains("--insecure"))
-    }
+    val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
 
-    fun testBuildCliCommandsListWithOrganizationParameter() {
-        setupDummyCliFile()
+    assertTrue(defaultCommands.contains("--insecure"))
+  }
 
-        pluginSettings().organization = "test-org"
+  fun testBuildCliCommandsListWithOrganizationParameter() {
+    setupDummyCliFile()
 
-        val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+    pluginSettings().organization = "test-org"
 
-        assertTrue(defaultCommands.contains("--org=test-org"))
-    }
+    val defaultCommands = dummyCliAdapter.buildCliCommandsList_TEST_ONLY(listOf("fake_cli_command"))
+
+    assertTrue(defaultCommands.contains("--org=test-org"))
+  }
 }

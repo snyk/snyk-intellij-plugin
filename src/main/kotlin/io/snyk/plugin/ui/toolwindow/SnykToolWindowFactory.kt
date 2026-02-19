@@ -6,20 +6,18 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 
-/**
- * IntelliJ ToolWindowFactory for Snyk plugin.
- */
+/** IntelliJ ToolWindowFactory for Snyk plugin. */
 class SnykToolWindowFactory : ToolWindowFactory, DumbAware {
 
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val toolWindowPanel = SnykToolWindow(project)
-        Disposer.register(SnykPluginDisposable.getInstance(), toolWindowPanel)
-        val contentManager = toolWindow.contentManager
-        val content = contentManager.factory.createContent(toolWindowPanel, null, false)
-        contentManager.addContent(content)
-    }
+  override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+    val toolWindowPanel = SnykToolWindow(project)
+    Disposer.register(SnykPluginDisposable.getInstance(), toolWindowPanel)
+    val contentManager = toolWindow.contentManager
+    val content = contentManager.factory.createContent(toolWindowPanel, null, false)
+    contentManager.addContent(content)
+  }
 
-    companion object {
-        const val SNYK_TOOL_WINDOW = "Snyk"
-    }
+  companion object {
+    const val SNYK_TOOL_WINDOW = "Snyk"
+  }
 }
