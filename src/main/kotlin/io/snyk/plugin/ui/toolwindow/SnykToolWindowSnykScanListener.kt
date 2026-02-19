@@ -91,6 +91,11 @@ class SnykToolWindowSnykScanListener(
           cache?.currentIacError = null
           removeChildrenAndRefresh(rootIacIssuesTreeNode)
         }
+        LsProduct.Secrets -> {
+          cache?.currentSecretsResultsLS?.clear()
+          cache?.currentSecretsError = null
+          // no need to refresh the tree for secrets as they are not displayed in the tool window
+        }
         LsProduct.Unknown -> Unit
       }
       this.snykToolWindowPanel.updateTreeRootNodesPresentation()
@@ -110,7 +115,6 @@ class SnykToolWindowSnykScanListener(
       displaySnykCodeResults(results)
       this.snykToolWindowPanel.triggerSelectionListeners = true
     }
-    refreshAnnotationsForOpenFiles(project)
   }
 
   override fun scanningOssFinished() {
@@ -125,7 +129,6 @@ class SnykToolWindowSnykScanListener(
       displayOssResults(results)
       this.snykToolWindowPanel.triggerSelectionListeners = true
     }
-    refreshAnnotationsForOpenFiles(project)
   }
 
   override fun scanningIacFinished() {
@@ -140,7 +143,6 @@ class SnykToolWindowSnykScanListener(
       displayIacResults(results)
       this.snykToolWindowPanel.triggerSelectionListeners = true
     }
-    refreshAnnotationsForOpenFiles(project)
   }
 
   override fun scanningError(snykScan: SnykScanParams) {
@@ -156,6 +158,9 @@ class SnykToolWindowSnykScanListener(
         LsProduct.InfrastructureAsCode -> {
           removeChildrenAndRefresh(rootIacIssuesTreeNode)
         }
+        // secrets are not displayed in the tool window right now, as we want to switch to HTML Tree
+        // View
+        LsProduct.Secrets -> Unit
         LsProduct.Unknown -> Unit
       }
       snykToolWindowPanel.updateTreeRootNodesPresentation()
@@ -172,7 +177,7 @@ class SnykToolWindowSnykScanListener(
     product: LsProduct,
     snykFile: SnykFile,
     issues: Set<ScanIssue>,
-  ) {}
+  ) = Unit
 
   fun displaySnykCodeResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
     if (disposed) return

@@ -11,6 +11,7 @@ interface SnykScanListener {
     val SNYK_SCAN_TOPIC = Topic.create("Snyk scan LS", SnykScanListener::class.java)
   }
 
+  // these update the tree and should not be needed for the HTML tree anymore
   fun scanningStarted(snykScan: SnykScanParams) {}
 
   fun scanningSnykCodeFinished()
@@ -21,5 +22,6 @@ interface SnykScanListener {
 
   fun scanningError(snykScan: SnykScanParams)
 
+  // these are needed to update the local IDE issue cache for annotations and code vision
   fun onPublishDiagnostics(product: LsProduct, snykFile: SnykFile, issues: Set<ScanIssue>)
 }

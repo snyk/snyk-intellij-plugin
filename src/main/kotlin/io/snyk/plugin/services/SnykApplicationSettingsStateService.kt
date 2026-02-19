@@ -29,14 +29,17 @@ class SnykApplicationSettingsStateService :
 
   @Deprecated("left for old users migration only") var useTokenAuthentication = false
   var authenticationType = AuthenticationType.OAUTH2
+
+  // download settings
   var currentLSProtocolVersion: Int? = 0
-  var isGlobalIgnoresFeatureEnabled = false
   var cliBaseDownloadURL: String = "https://downloads.snyk.io"
   var cliPath: String = getDefaultCliPath()
   var cliReleaseChannel = "stable"
-  var issuesToDisplay: String = DISPLAY_ALL_ISSUES
   var manageBinariesAutomatically: Boolean = true
+
+  // testing flag
   var fileListenerEnabled: Boolean = true
+
   // TODO migrate to
   // https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
   var token: String? = null
@@ -50,22 +53,29 @@ class SnykApplicationSettingsStateService :
   // can't be private -> serialization will not work
   @Deprecated("left for old users migration only") var cliScanEnable: Boolean = true
 
+  // products enablement store
   var ossScanEnable: Boolean = true
   var snykCodeSecurityIssuesScanEnable: Boolean = true
   var iacScanEnabled: Boolean = true
+  var secretsEnabled: Boolean = false
+
+  // feature flag / server-side enablement
   var sastOnServerEnabled: Boolean? = null
   var sastSettingsError: Boolean? = null
+
+  // filters enablement store
+  var issuesToDisplay: String = DISPLAY_ALL_ISSUES // delta
   var lowSeverityEnabled = true
   var mediumSeverityEnabled = true
   var highSeverityEnabled = true
   var criticalSeverityEnabled = true
+  var riskScoreThreshold: Int? = null
+  var treeFiltering = TreeFiltering()
 
+  // ignore display option store
+  var isGlobalIgnoresFeatureEnabled = false
   var openIssuesEnabled = true
   var ignoredIssuesEnabled = false
-
-  var riskScoreThreshold: Int? = null
-
-  var treeFiltering = TreeFiltering()
 
   var lastCheckDate: Date? = null
   var pluginFirstRun = true

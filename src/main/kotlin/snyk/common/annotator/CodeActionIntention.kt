@@ -82,6 +82,7 @@ class CodeActionIntention(
       }
       ProductType.IAC -> SnykIcons.IAC
       ProductType.CODE_SECURITY -> SnykIcons.SNYK_CODE
+      ProductType.SECRETS -> SnykIcons.SNYK_SECRETS
     }
 
   override fun getPriority(): PriorityAction.Priority =
@@ -97,5 +98,6 @@ class CodeActionIntention(
       ProductType.OSS -> "Applying Snyk OpenSource Action"
       ProductType.IAC -> "Applying Snyk Infrastructure as Code Action"
       ProductType.CODE_SECURITY -> "Applying Snyk Code Action"
+      ProductType.SECRETS -> "Applying Snyk Secrets Action"
     }
 }

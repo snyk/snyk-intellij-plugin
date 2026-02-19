@@ -73,6 +73,7 @@ enum class LsProduct(val longName: String, val shortName: String) {
   OpenSource("Snyk Open Source", "oss"),
   Code("Snyk Code", "code"),
   InfrastructureAsCode("Snyk IaC", "iac"),
+  Secrets("Snyk Secrets", "secrets"),
   Unknown("", "");
 
   companion object {
@@ -111,12 +112,13 @@ data class ScanIssue(
     const val OPEN_SOURCE: FilterableIssueType = "Open Source"
     const val CODE_SECURITY: FilterableIssueType = "Code Security"
     const val INFRASTRUCTURE_AS_CODE: FilterableIssueType = "Infrastructure As Code"
+    const val SECRETS: FilterableIssueType = "Secrets"
   }
 
   var textRange: TextRange? = null
     get() {
       return if (startOffset == null || endOffset == null) {
-        return null
+        null
       } else {
         field = TextRange(startOffset!!, endOffset!!)
         field
@@ -174,23 +176,22 @@ data class ScanIssue(
     when (this.filterableIssueType) {
       OPEN_SOURCE,
       INFRASTRUCTURE_AS_CODE -> this.title
-      CODE_SECURITY -> {
+      CODE_SECURITY,
+      SECRETS -> {
         this.title.split(":").firstOrNull() ?: "Unknown issue"
       }
-      else -> TODO()
+      else -> this.title
     }
 
   fun longTitle(): String {
-    return when (this.filterableIssueType) {
-      OPEN_SOURCE -> {
-        "${this.additionalData.packageName}@${this.additionalData.version}: ${this.title()}"
+    val rangeBracket = "[${this.range.start.line + 1},${this.range.start.character}]"
+    val packageInfo =
+      if (this.additionalData.packageName.isNotEmpty()) {
+        "${this.additionalData.packageName}@${this.additionalData.version}: "
+      } else {
+        ""
       }
-      CODE_SECURITY,
-      INFRASTRUCTURE_AS_CODE -> {
-        return "${this.title()} [${this.range.start.line + 1},${this.range.start.character}]"
-      }
-      else -> TODO()
-    }
+    return packageInfo + this.title() + ": " + rangeBracket
   }
 
   fun priority(): Int {
@@ -204,14 +205,10 @@ data class ScanIssue(
         Severity.UNKNOWN -> 0
       }
 
-    return when (this.filterableIssueType) {
-      // For OSS and IAC: severity first, then riskScore as tiebreaker
-      OPEN_SOURCE,
-      INFRASTRUCTURE_AS_CODE -> severityPriority + this.additionalData.riskScore
-
-      // For CODE_SECURITY: severity first, then priorityScore as tiebreaker
-      CODE_SECURITY -> severityPriority + this.additionalData.priorityScore
-      else -> TODO()
+    return if (this.additionalData.riskScore > 0) {
+      severityPriority + this.additionalData.riskScore
+    } else {
+      severityPriority + this.additionalData.priorityScore
     }
   }
 
@@ -225,43 +222,19 @@ data class ScanIssue(
         }
       }
       CODE_SECURITY -> "Security Issue"
-      INFRASTRUCTURE_AS_CODE -> "Configuration Issue"
+      INFRASTRUCTURE_AS_CODE -> "Infrastructure as Code Issue"
+      SECRETS -> "Secrets Issue"
       else -> TODO()
     }
 
   fun cwes(): List<String> =
-    when (this.filterableIssueType) {
-      OPEN_SOURCE,
-      INFRASTRUCTURE_AS_CODE -> {
-        this.additionalData.identifiers?.CWE ?: emptyList()
-      }
-      CODE_SECURITY -> {
-        this.additionalData.cwe ?: emptyList()
-      }
-      else -> TODO()
-    }
+    (this.additionalData.identifiers?.CWE.orEmpty()) + (this.additionalData.cwe.orEmpty())
 
-  fun cves(): List<String> =
-    when (this.filterableIssueType) {
-      OPEN_SOURCE -> {
-        this.additionalData.identifiers?.CVE ?: emptyList()
-      }
-      CODE_SECURITY,
-      INFRASTRUCTURE_AS_CODE -> emptyList()
-      else -> TODO()
-    }
+  fun cves(): List<String> = this.additionalData.identifiers?.CVE.orEmpty()
 
-  fun cvssScore(): String? =
-    when (this.filterableIssueType) {
-      OPEN_SOURCE -> this.additionalData.cvssScore
-      else -> null
-    }
+  fun cvssScore(): String? = this.additionalData.cvssScore
 
-  fun cvssV3(): String? =
-    when (this.filterableIssueType) {
-      OPEN_SOURCE -> this.additionalData.CVSSv3
-      else -> null
-    }
+  fun cvssV3(): String? = this.additionalData.CVSSv3
 
   fun id(): String? =
     when (this.filterableIssueType) {
@@ -281,7 +254,8 @@ data class ScanIssue(
   fun details(project: Project): String =
     when (this.filterableIssueType) {
       OPEN_SOURCE,
-      CODE_SECURITY -> getHtml(this.additionalData.details, project)
+      CODE_SECURITY,
+      SECRETS -> getHtml(this.additionalData.details, project)
       INFRASTRUCTURE_AS_CODE -> getHtml(this.additionalData.customUIContent, project)
       else -> ""
     }

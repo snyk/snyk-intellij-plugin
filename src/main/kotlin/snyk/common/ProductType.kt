@@ -15,7 +15,7 @@ enum class ProductType(
   },
   IAC(
     productSelectionName = "Snyk Infrastructure as Code",
-    treeName = "Configuration",
+    treeName = "Snyk Infrastructure as Code",
     description = "Find and fix insecure configurations in Terraform and Kubernetes code",
   ) {
     override fun getCountText(count: Int, isUniqueCount: Boolean): String =
@@ -29,6 +29,14 @@ enum class ProductType(
   ) {
     override fun getCountText(count: Int, isUniqueCount: Boolean): String =
       getVulnerabilitiesCountText(count, isUniqueCount)
+  },
+  SECRETS(
+    productSelectionName = "Snyk Secrets",
+    treeName = "Secrets",
+    description = "Find and fix secrets in your code in real time.",
+  ) {
+    override fun getCountText(count: Int, isUniqueCount: Boolean): String =
+      getIssuesCountText(count, isUniqueCount)
   };
 
   override fun toString(): String = productSelectionName

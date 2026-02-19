@@ -20,6 +20,8 @@ object SnykIcons {
   val OPEN_SOURCE_SECURITY_DISABLED = getIcon("/icons/oss_disabled.svg", SnykIcons::class.java)
   val SNYK_CODE = getIcon("/icons/code.svg", SnykIcons::class.java)
   val SNYK_CODE_DISABLED = getIcon("/icons/code_disabled.svg", SnykIcons::class.java)
+  val SNYK_SECRETS = getIcon("/icons/secrets.svg", SnykIcons::class.java)
+  val SNYK_SECRETS_DISABLED = getIcon("/icons/secrets_disabled.svg", SnykIcons::class.java)
   val IAC = getIcon("/icons/iac.svg", SnykIcons::class.java)
   val IAC_DISABLED = getIcon("/icons/iac_disabled.svg", SnykIcons::class.java)
 

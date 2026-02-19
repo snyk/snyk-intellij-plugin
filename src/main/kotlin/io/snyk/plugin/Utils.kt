@@ -89,6 +89,7 @@ fun getSnykCachedResultsForProduct(
     ProductType.OSS -> getSnykCachedResults(project)?.currentOSSResultsLS
     ProductType.IAC -> getSnykCachedResults(project)?.currentIacResultsLS
     ProductType.CODE_SECURITY -> getSnykCachedResults(project)?.currentSnykCodeResultsLS
+    ProductType.SECRETS -> getSnykCachedResults(project)?.currentSecretsResultsLS
   }
 
 fun getAnalyticsScanListener(project: Project): AnalyticsScanListener? =
@@ -222,6 +223,9 @@ private fun isProductScanRunning(project: Project, productType: ProductType): Bo
 
 fun isSnykCodeRunning(project: Project): Boolean =
   isProductScanRunning(project, ProductType.CODE_SECURITY)
+
+fun isSnykSecretsRunning(project: Project): Boolean =
+  isProductScanRunning(project, ProductType.SECRETS)
 
 fun isIacRunning(project: Project): Boolean = isProductScanRunning(project, ProductType.IAC)
 

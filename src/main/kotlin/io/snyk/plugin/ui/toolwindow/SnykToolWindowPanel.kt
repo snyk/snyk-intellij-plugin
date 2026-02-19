@@ -1,7 +1,5 @@
 package io.snyk.plugin.ui.toolwindow
 
-import com.intellij.codeInsight.codeVision.CodeVisionHost
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
@@ -12,9 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
-import com.intellij.psi.PsiManager
 import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.TreeSpeedSearch
 import com.intellij.ui.TreeUIHelper
@@ -128,11 +124,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   private val pendingReloadNodes: MutableSet<DefaultMutableTreeNode> =
     java.util.concurrent.ConcurrentHashMap.newKeySet()
 
-  // Debouncing for annotation refresh - coalesces per-file diagnostic updates
-  private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
-  private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> =
-    java.util.concurrent.ConcurrentHashMap.newKeySet()
-
   // Debouncing for tree refresh - coalesces rapid diagnostic updates per product
   private val treeRefreshAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
   private val pendingTreeRefreshProducts: MutableSet<LsProduct> =
@@ -148,14 +139,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     // Debounce delay in milliseconds - coalesces rapid scan updates
     private const val RELOAD_DEBOUNCE_MS = 100
 
-    // Debounce delay for annotation refresh - allows collecting multiple files
-    private const val ANNOTATION_REFRESH_DEBOUNCE_MS = 150
-
     // Debounce delay for tree refresh - allows diagnostics to accumulate before refreshing tree
     private const val TREE_REFRESH_DEBOUNCE_MS = 200
-
-    // Max files to refresh individually before falling back to global refresh
-    private const val MAX_INDIVIDUAL_ANNOTATION_REFRESH = 20
 
     val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
     val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
@@ -236,16 +221,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
             snykFile: SnykFile,
             issues: Set<ScanIssue>,
           ) {
-            getSnykCachedResults(project)?.let {
-              when (product) {
-                LsProduct.Code -> it.currentSnykCodeResultsLS[snykFile] = issues
-                LsProduct.OpenSource -> it.currentOSSResultsLS[snykFile] = issues
-                LsProduct.InfrastructureAsCode -> it.currentIacResultsLS[snykFile] = issues
-                LsProduct.Unknown -> Unit
-              }
-            }
-            // Schedule debounced annotation refresh - coalesces rapid per-file updates
-            scheduleAnnotationRefresh(snykFile.virtualFile)
             // Schedule debounced tree refresh - coalesces rapid diagnostic updates per product
             scheduleDebouncedTreeRefresh(product)
           }
@@ -510,65 +485,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   }
 
   /**
-   * Schedules a debounced annotation refresh for the given file. Collects files over a short window
-   * and then refreshes them in batch.
-   */
-  private fun scheduleAnnotationRefresh(virtualFile: VirtualFile) {
-    pendingAnnotationRefreshFiles.add(virtualFile)
-    annotationRefreshAlarm.cancelAllRequests()
-    annotationRefreshAlarm.addRequest(
-      { flushPendingAnnotationRefreshes() },
-      ANNOTATION_REFRESH_DEBOUNCE_MS,
-    )
-  }
-
-  /** Flushes all pending annotation refreshes, either individually or as a global refresh. */
-  private fun flushPendingAnnotationRefreshes() {
-    if (isDisposed || project.isDisposed) return
-
-    val filesToRefresh =
-      pendingAnnotationRefreshFiles.toList().also { pendingAnnotationRefreshFiles.clear() }
-
-    if (filesToRefresh.isEmpty()) return
-
-    // Invalidate code vision for all affected files
-    invokeLater {
-      if (!project.isDisposed) {
-        project
-          .service<CodeVisionHost>()
-          .invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
-      }
-    }
-
-    // Batch all refreshes into a single invokeLater to avoid EDT queue flooding
-    invokeLater {
-      if (isDisposed || project.isDisposed) return@invokeLater
-      val analyzer = DaemonCodeAnalyzer.getInstance(project)
-
-      if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
-        // Too many files - do a global refresh
-        analyzer.restart()
-      } else {
-        // Refresh each file individually within same EDT task
-        filesToRefresh.forEach { file ->
-          if (file.isValid) {
-            PsiManager.getInstance(project).findFile(file)?.let { psiFile ->
-              analyzer.restart(psiFile)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /**
    * Schedules a debounced tree refresh for the given product. Collects products over a short window
    * and then refreshes them in batch. This ensures the tree stays in sync when diagnostics arrive
    * after scan completion.
    */
   private fun scheduleDebouncedTreeRefresh(product: LsProduct) {
     if (product == LsProduct.Unknown) return
-    if (htmlTreePanel != null) return
+    if (htmlTreePanel != null) return // this also covers secrets
     pendingTreeRefreshProducts.add(product)
     treeRefreshAlarm.cancelAllRequests()
     treeRefreshAlarm.addRequest({ flushPendingTreeRefreshes() }, TREE_REFRESH_DEBOUNCE_MS)
@@ -615,6 +538,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
               scanListenerLS.displayIacResults(results)
             }
           }
+          LsProduct.Secrets -> Unit // we use the HTML tree for secrets
           LsProduct.Unknown -> Unit
         }
       }

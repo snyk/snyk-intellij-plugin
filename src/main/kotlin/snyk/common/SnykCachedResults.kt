@@ -1,11 +1,18 @@
 package snyk.common
 
+import com.intellij.codeInsight.codeVision.CodeVisionHost
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiManager
+import com.intellij.util.Alarm
 import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
@@ -38,19 +45,28 @@ class SnykCachedResults(val project: Project) : Disposable {
   val currentSnykCodeResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
   val currentOSSResultsLS: ConcurrentMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
   val currentIacResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
+  val currentSecretsResultsLS: MutableMap<SnykFile, Set<ScanIssue>> = ConcurrentMap()
 
   var currentOssError: PresentableError? = null
   var currentIacError: PresentableError? = null
   var currentSnykCodeError: PresentableError? = null
+  var currentSecretsError: PresentableError? = null
+
+  // Debouncing for annotation refresh - coalesces per-file diagnostic updates
+  private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
+  private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> =
+    java.util.concurrent.ConcurrentHashMap.newKeySet()
 
   fun clearCaches() {
     currentOssError = null
     currentIacError = null
     currentSnykCodeError = null
+    currentSecretsError = null
 
     currentSnykCodeResultsLS.clear()
     currentOSSResultsLS.clear()
     currentIacResultsLS.clear()
+    currentSecretsResultsLS.clear()
   }
 
   fun initCacheUpdater() {
@@ -66,6 +82,7 @@ class SnykCachedResults(val project: Project) : Disposable {
             currentOssError = null
             currentSnykCodeError = null
             currentIacError = null
+            currentSecretsError = null
           }
 
           override fun scanningSnykCodeFinished() = Unit
@@ -88,6 +105,10 @@ class SnykCachedResults(val project: Project) : Disposable {
                 currentIacResultsLS.clear()
                 currentIacError = snykScan.presentableError
               }
+              LsProduct.Secrets -> {
+                currentSecretsResultsLS.clear()
+                currentSecretsError = snykScan.presentableError
+              }
               LsProduct.Unknown -> Unit
             }
 
@@ -109,11 +130,76 @@ class SnykCachedResults(val project: Project) : Disposable {
               LsProduct.OpenSource -> currentOSSResultsLS[snykFile] = issues
               LsProduct.Code -> currentSnykCodeResultsLS[snykFile] = issues
               LsProduct.InfrastructureAsCode -> currentIacResultsLS[snykFile] = issues
-              LsProduct.Unknown -> Unit
+              LsProduct.Secrets -> {
+                currentSecretsResultsLS[snykFile] = issues
+              }
+              LsProduct.Unknown -> return
             }
+            // Schedule debounced annotation refresh - coalesces rapid per-file updates
+            scheduleAnnotationRefresh(snykFile.virtualFile)
           }
         },
       )
+  }
+
+  /**
+   * Schedules a debounced annotation refresh for the given file. Collects files over a short window
+   * and then refreshes them in batch.
+   */
+  private fun scheduleAnnotationRefresh(virtualFile: VirtualFile) {
+    pendingAnnotationRefreshFiles.add(virtualFile)
+    annotationRefreshAlarm.cancelAllRequests()
+    annotationRefreshAlarm.addRequest(
+      { flushPendingAnnotationRefreshes() },
+      ANNOTATION_REFRESH_DEBOUNCE_MS,
+    )
+  }
+
+  /** Flushes all pending annotation refreshes, either individually or as a global refresh. */
+  private fun flushPendingAnnotationRefreshes() {
+    if (isDisposed() || project.isDisposed) return
+
+    val filesToRefresh =
+      pendingAnnotationRefreshFiles.toList().also { pendingAnnotationRefreshFiles.clear() }
+
+    if (filesToRefresh.isEmpty()) return
+
+    // Invalidate code vision for all affected files
+    invokeLater {
+      if (!project.isDisposed) {
+        project
+          .service<CodeVisionHost>()
+          .invalidateProvider(CodeVisionHost.LensInvalidateSignal(null))
+      }
+    }
+
+    // Batch all refreshes into a single invokeLater to avoid EDT queue flooding
+    invokeLater {
+      if (isDisposed() || project.isDisposed) return@invokeLater
+      val analyzer = DaemonCodeAnalyzer.getInstance(project)
+
+      if (filesToRefresh.size > MAX_INDIVIDUAL_ANNOTATION_REFRESH) {
+        // Too many files - do a global refresh
+        analyzer.restart()
+      } else {
+        // Refresh each file individually within same EDT task
+        filesToRefresh.forEach { file ->
+          if (file.isValid) {
+            PsiManager.getInstance(project).findFile(file)?.let { psiFile ->
+              analyzer.restart(psiFile)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  companion object {
+    // Debounce delay for annotation refresh - allows collecting multiple files
+    private const val ANNOTATION_REFRESH_DEBOUNCE_MS = 150
+
+    // Max files to refresh individually before falling back to global refresh
+    private const val MAX_INDIVIDUAL_ANNOTATION_REFRESH = 20
   }
 }
 

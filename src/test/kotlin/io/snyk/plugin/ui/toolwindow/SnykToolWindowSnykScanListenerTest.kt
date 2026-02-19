@@ -191,7 +191,7 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
 
   fun `test root nodes are created`() {
     assertEquals(
-      listOf(" Open Source", " Code Security", " Configuration"),
+      listOf(" Open Source", " Code Security", " Snyk Infrastructure as Code"),
       mapToLabels(rootTreeNode),
     )
   }
