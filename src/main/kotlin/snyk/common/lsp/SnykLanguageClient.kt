@@ -152,8 +152,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         .stream()
         .map {
           val issue = gson.fromJson(it.data.toString(), ScanIssue::class.java)
-          // load textRange for issue so it doesn't happen in UI thread
-          issue.textRange
           if (issue.isIgnored() && !pluginSettings().isGlobalIgnoresFeatureEnabled) {
             // apparently the server has consistent ignores activated
             pluginSettings().isGlobalIgnoresFeatureEnabled = true

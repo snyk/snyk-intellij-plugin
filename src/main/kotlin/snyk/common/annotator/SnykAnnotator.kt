@@ -245,17 +245,11 @@ abstract class SnykAnnotator(private val product: ProductType) :
       Severity.CRITICAL -> critical
     }
 
-  private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> =
-    getSnykCachedResultsForProduct(psiFile.project, product)
-      ?.filter {
-        val virtualFile = it.key.virtualFile
-        // Don't call isInContent here - it uses ReadAction.compute which can block EDT
-        // The file is already from our cache which only contains content files
-        virtualFile == psiFile.virtualFile
-      }
-      ?.map { it.value }
-      ?.flatten()
-      ?.toSet() ?: emptySet()
+  private fun getIssuesForFile(psiFile: PsiFile): Set<ScanIssue> {
+    val cache = getSnykCachedResultsForProduct(psiFile.project, product) ?: return emptySet()
+    val snykFile = io.snyk.plugin.SnykFile(psiFile.project, psiFile.virtualFile)
+    return cache[snykFile] ?: emptySet()
+  }
 
   class SnykShowDetailsGutterRenderer(val annotation: SnykAnnotation) : GutterIconRenderer() {
     override fun equals(other: Any?): Boolean = annotation == other

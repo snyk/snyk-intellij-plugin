@@ -36,6 +36,7 @@ class FolderConfigSettings {
         folderPath = normalizedAbsolutePath,
         preferredOrg = folderConfig.preferredOrg ?: "",
         autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
+        baseBranch = folderConfig.baseBranch ?: "",
         referenceFolderPath = folderConfig.referenceFolderPath ?: "",
         additionalParameters = folderConfig.additionalParameters ?: emptyList(),
         additionalEnv = folderConfig.additionalEnv ?: "",

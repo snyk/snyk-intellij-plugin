@@ -3,14 +3,13 @@
 package snyk.common.lsp
 
 import com.google.gson.annotations.SerializedName
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.getSafeOffset
-import io.snyk.plugin.toVirtualFile
+import io.snyk.plugin.toVirtualFileOrNull
 import io.snyk.plugin.ui.PackageManagerIconProvider.Companion.getIcon
 import java.util.Date
 import java.util.Locale
@@ -115,61 +114,33 @@ data class ScanIssue(
     const val SECRETS: FilterableIssueType = "Secrets"
   }
 
-  var textRange: TextRange? = null
-    get() {
-      return if (startOffset == null || endOffset == null) {
-        null
-      } else {
-        field = TextRange(startOffset!!, endOffset!!)
-        field
-      }
-    }
-
   var virtualFile: VirtualFile?
     get() {
       return if (field == null) {
-        field = filePath.toVirtualFile()
+        field = filePath.toVirtualFileOrNull()
         field
       } else {
         field
       }
     }
 
-  private var document: Document?
-    get() {
-      return if (field == null) {
-        field = virtualFile?.getDocument()
-        field
-      } else {
-        field
-      }
-    }
+  fun getTextRangeAccess(): TextRange? {
+    val document = virtualFile?.getDocument() ?: return null
+    val startOffset = document.getSafeOffset(range.start.line, range.start.character)
+    val endOffset = document.getSafeOffset(range.end.line, range.end.character)
+    return TextRange(startOffset, endOffset)
+  }
 
-  private var startOffset: Int?
+  var textRange: TextRange? = null
     get() {
-      return if (field == null) {
-        field = document?.getSafeOffset(range.start.line, range.start.character)
-        field
-      } else {
-        field
+      if (field == null) {
+        field = getTextRangeAccess()
       }
-    }
-
-  private var endOffset: Int?
-    get() {
-      return if (field == null) {
-        field = document?.getSafeOffset(range.end.line, range.end.character)
-        field
-      } else {
-        field
-      }
+      return field
     }
 
   init {
-    virtualFile = filePath.toVirtualFile()
-    document = virtualFile?.getDocument()
-    startOffset = document?.getSafeOffset(range.start.line, range.start.character)
-    endOffset = document?.getSafeOffset(range.end.line, range.end.character)
+    virtualFile = null
   }
 
   fun title(): String =
