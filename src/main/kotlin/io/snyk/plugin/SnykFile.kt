@@ -6,9 +6,7 @@ import org.jetbrains.concurrency.runAsync
 import snyk.common.RelativePathHelper
 
 data class SnykFile(val project: Project, val virtualFile: VirtualFile) {
-  val relativePath by lazy {
-    runAsync { RelativePathHelper().getRelativePath(virtualFile, project) }
-  }
+  val relativePath = runAsync { RelativePathHelper().getRelativePath(virtualFile, project) }
 
   fun isInContent(): Boolean {
     if (project.isDisposed) {
