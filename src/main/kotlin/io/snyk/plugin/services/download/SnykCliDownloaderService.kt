@@ -1,7 +1,6 @@
 package io.snyk.plugin.services.download
 
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.notification.NotificationAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
@@ -54,6 +53,7 @@ class SnykCliDownloaderService {
   }
 
   fun downloadLatestRelease(indicator: ProgressIndicator, project: Project) {
+    if (!pluginSettings().manageBinariesAutomatically) return
     currentProgressIndicator = indicator
     logger.debug("CLI download starting")
     publishAsyncApp(SnykCliDownloadListener.CLI_DOWNLOAD_TOPIC) { cliDownloadStarted() }
@@ -124,6 +124,7 @@ class SnykCliDownloaderService {
    * @param force - force the download
    */
   fun cliSilentAutoUpdate(indicator: ProgressIndicator, project: Project, force: Boolean = false) {
+    if (!pluginSettings().manageBinariesAutomatically) return
     if (force || isFourDaysPassedSinceLastCheck() || !matchesRequiredLsProtocolVersion()) {
       val latestReleaseInfo = requestLatestReleasesInformation()
 
@@ -207,23 +208,19 @@ class SnykCliDownloaderService {
 
   private fun showCliIntegrityWarning(project: Project) {
     val redownloadAction =
-      object : AnAction("Redownload CLI") {
-        override fun actionPerformed(e: AnActionEvent) {
-          getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
-        }
+      NotificationAction.createSimpleExpiring("Redownload CLI") {
+        getSnykTaskQueueService(project)?.downloadLatestRelease(force = true)
       }
 
     val ignoreAction =
-      object : AnAction("Ignore") {
-        override fun actionPerformed(e: AnActionEvent) {
-          // Update stored checksum to current file to stop warning
-          val cliFile = getCliFile()
-          if (cliFile.exists()) {
-            try {
-              pluginSettings().cliSha256 = downloader.calculateSha256(cliFile.readBytes())
-            } catch (_: Exception) {
-              // Ignore
-            }
+      NotificationAction.createSimpleExpiring("Ignore") {
+        // Update stored checksum to current file to stop warning
+        val cliFile = getCliFile()
+        if (cliFile.exists()) {
+          try {
+            pluginSettings().cliSha256 = downloader.calculateSha256(cliFile.readBytes())
+          } catch (_: Exception) {
+            // Ignore
           }
         }
       }
