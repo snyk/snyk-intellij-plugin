@@ -60,6 +60,7 @@
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykCodeAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykOSSAnnotator"/>
     <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykIaCAnnotator"/>
+    <externalAnnotator language="" implementationClass="snyk.common.annotator.SnykSecretsAnnotator"/>
     <editorFactoryListener implementation="snyk.common.editor.LineEndingEditorFactoryListener" id="snyk"/>
   </extensions>
 
