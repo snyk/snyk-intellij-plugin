@@ -66,11 +66,13 @@ class TreeViewBridgeHandlerTest {
 
     handler.dispatchCommand(payload)
 
-    verify(timeout = 2000) {
-      lsWrapperMock.executeCommandWithArgs(
-        "snyk.toggleTreeFilter",
-        listOf("severity", "high", true),
-      )
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify {
+        lsWrapperMock.executeCommandWithArgs(
+          "snyk.toggleTreeFilter",
+          listOf("severity", "high", true),
+        )
+      }
     }
   }
 
@@ -328,8 +330,8 @@ class TreeViewBridgeHandlerTest {
       handler.dispatchCommand(gson.toJson(request)) { _, _ -> latch.countDown() }
     }
 
-    verify(timeout = 2000, exactly = allowedCommands.size) {
-      lsWrapperMock.executeCommandWithArgs(any(), any())
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify(exactly = allowedCommands.size) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
     }
   }
 
