@@ -99,7 +99,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     val filePath = diagnosticsParams.uri
 
     // Run async to avoid blocking the LSP message thread
-    org.jetbrains.concurrency.runAsync {
+    runAsync {
       try {
         getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.let {
           updateCache(project, filePath, diagnosticsParams, it)
@@ -242,7 +242,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
   fun snykScan(snykScan: SnykScanParams) {
     if (disposed) return
     // Run async to avoid blocking the LSP message thread
-    org.jetbrains.concurrency.runAsync {
+    runAsync {
       try {
         getSyncPublisher(project, SnykScanListener.SNYK_SCAN_TOPIC)?.let {
           processSnykScan(snykScan, it)
