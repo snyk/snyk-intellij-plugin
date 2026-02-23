@@ -196,6 +196,78 @@ class SnykProjectSettingsConfigurableTest {
   }
 
   @Test
+  fun `applyFolderConfigChanges parses additionalParameters correctly`() {
+    data class Case(val description: String, val input: String, val expected: List<String>)
+
+    val cases =
+      listOf(
+        Case(
+          description = "simple space-separated flags",
+          input = "--json --all-projects",
+          expected = listOf("--json", "--all-projects"),
+        ),
+        Case(
+          description = "single-quoted argument with spaces is split (single quotes not supported)",
+          input = "'project sample'",
+          expected = listOf("'project", "sample'"),
+        ),
+        Case(
+          description = "double-quoted argument with spaces is kept as one token",
+          input = "\"project sample\"",
+          expected = listOf("project sample"),
+        ),
+        Case(
+          description = "newline-separated flags are split correctly",
+          input = "--json\n--all-projects",
+          expected = listOf("--json", "--all-projects"),
+        ),
+        Case(description = "empty string produces empty list", input = "", expected = emptyList()),
+        Case(
+          description =
+            "real-world complex input (double-quoted tokens preserved, single-quoted split)",
+          input =
+            "--json --org=00000000-0000-0000-0000-000000000000 --all-projects " +
+              "/Users/infra-services --package-manager=sbt " +
+              "-debug -- -Dprojects=sample \"project sample\" -DignoreLinter=true clean compile",
+          expected =
+            listOf(
+              "--json",
+              "--org=00000000-0000-0000-0000-000000000000",
+              "--all-projects",
+              "/Users/infra-services",
+              "--package-manager=sbt",
+              "-debug",
+              "--",
+              "-Dprojects=sample",
+              "project sample",
+              "-DignoreLinter=true",
+              "clean",
+              "compile",
+            ),
+        ),
+      )
+
+    val path = "/test/project"
+    val fcs = FolderConfigSettings()
+
+    for (case in cases) {
+      fcs.clear()
+      fcs.addFolderConfig(FolderConfig(folderPath = path, baseBranch = "main"))
+
+      applyFolderConfigChanges(
+        fcs = fcs,
+        folderPath = path,
+        preferredOrgText = "",
+        autoSelectOrgEnabled = true,
+        additionalParameters = case.input,
+      )
+
+      val result = fcs.getFolderConfig(path).additionalParameters
+      assertEquals("Case '${case.description}': unexpected parsed tokens", case.expected, result)
+    }
+  }
+
+  @Test
   fun `apply respects auto-detect checkbox when preferredOrgTextField has value and checkbox is checked`() {
     val path = "/test/project"
     val workspaceFolder =

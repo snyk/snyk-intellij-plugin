@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
+import com.intellij.util.execution.ParametersListUtil
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -235,7 +236,7 @@ fun applyFolderConfigChanges(
 
   val updatedConfig =
     existingConfig.copy(
-      additionalParameters = additionalParameters.split(" ", System.lineSeparator()),
+      additionalParameters = ParametersListUtil.parse(additionalParameters),
       // Clear the preferredOrg field if the auto org selection is enabled.
       preferredOrg = if (autoSelectOrgEnabled) "" else preferredOrgText.trim(),
       orgSetByUser = !autoSelectOrgEnabled,
