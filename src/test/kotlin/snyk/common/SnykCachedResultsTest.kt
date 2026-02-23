@@ -10,7 +10,6 @@ import io.mockk.unmockkAll
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykCachedResultsForProduct
 import io.snyk.plugin.resetSettings
-import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.LsProduct
 import snyk.common.lsp.PresentableError
@@ -36,7 +35,6 @@ class SnykCachedResultsTest : BasePlatformTestCase() {
     super.tearDown()
   }
 
-  @Test
   fun `test clearCaches clears secrets results and error`() {
     val cache = getSnykCachedResults(project)!!
     cache.currentSecretsError = PresentableError(error = "test error")
@@ -48,7 +46,6 @@ class SnykCachedResultsTest : BasePlatformTestCase() {
     assertTrue(cache.currentSecretsResultsLS.isEmpty())
   }
 
-  @Test
   fun `test clearCaches clears all product caches`() {
     val cache = getSnykCachedResults(project)!!
     cache.currentOssError = PresentableError(error = "oss error")
@@ -74,7 +71,6 @@ class SnykCachedResultsTest : BasePlatformTestCase() {
     val expectedMapGetter: (SnykCachedResults) -> MutableMap<*, Set<ScanIssue>>?,
   )
 
-  @Test
   fun `test getSnykCachedResultsForProduct returns correct map for each product`() {
     val testCases =
       listOf(
@@ -94,23 +90,19 @@ class SnykCachedResultsTest : BasePlatformTestCase() {
     }
   }
 
-  @Test
   fun `test LsProduct getFor returns Secrets for secrets short name`() {
     assertEquals(LsProduct.Secrets, LsProduct.getFor("secrets"))
   }
 
-  @Test
   fun `test LsProduct getFor returns Secrets for secrets long name`() {
     assertEquals(LsProduct.Secrets, LsProduct.getFor("Snyk Secrets"))
   }
 
-  @Test
   fun `test LsProduct getFor returns Unknown for unrecognized name`() {
     assertEquals(LsProduct.Unknown, LsProduct.getFor("nonexistent"))
   }
 
-  @Test
-  fun `drainPendingAnnotationRefreshFiles returns all queued files and empties the set`() {
+  fun `test drainPendingAnnotationRefreshFiles returns all queued files and empties the set`() {
     data class Case(val description: String, val filesToAdd: Int)
 
     val cases =
@@ -141,8 +133,7 @@ class SnykCachedResultsTest : BasePlatformTestCase() {
     }
   }
 
-  @Test
-  fun `drainPendingAnnotationRefreshFiles does not lose files added concurrently during drain`() {
+  fun `test drainPendingAnnotationRefreshFiles does not lose files added concurrently during drain`() {
     val cache = getSnykCachedResults(project)!!
     cache.pendingAnnotationRefreshFiles.clear()
 
