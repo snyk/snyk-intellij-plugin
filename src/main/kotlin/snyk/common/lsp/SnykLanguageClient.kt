@@ -129,12 +129,29 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     val firstDiagnostic = diagnosticsParams.diagnostics.firstOrNull()
     val product = firstDiagnostic?.source
 
-    // If the diagnostics for the file is empty, clear the cache.
+    // If the diagnostics for the file is empty, we only want to clear the cache for the product
+    // that sent it.
+    // However, if we don't know the product, we have to clear everything.
     if (firstDiagnostic == null) {
-      scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptySet())
-      scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptySet())
-      scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptySet())
-      scanPublisher.onPublishDiagnostics(LsProduct.Secrets, snykFile, emptySet())
+      // The language server sends empty diagnostics per product when it has finished a scan and
+      // did not find anything.If the product is contained in the version of the file, use it to
+      // clean only the product cache
+      when (diagnosticsParams.version) {
+        LsProduct.OpenSource.ordinal ->
+          scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptySet())
+        LsProduct.Code.ordinal ->
+          scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptySet())
+        LsProduct.InfrastructureAsCode.ordinal ->
+          scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptySet())
+        LsProduct.Secrets.ordinal ->
+          scanPublisher.onPublishDiagnostics(LsProduct.Secrets, snykFile, emptySet())
+        else -> {
+          scanPublisher.onPublishDiagnostics(LsProduct.Code, snykFile, emptySet())
+          scanPublisher.onPublishDiagnostics(LsProduct.OpenSource, snykFile, emptySet())
+          scanPublisher.onPublishDiagnostics(LsProduct.InfrastructureAsCode, snykFile, emptySet())
+          scanPublisher.onPublishDiagnostics(LsProduct.Secrets, snykFile, emptySet())
+        }
+      }
       return
     }
 
