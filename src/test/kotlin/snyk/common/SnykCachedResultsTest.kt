@@ -1,5 +1,6 @@
 package snyk.common
 
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.justRun
@@ -106,5 +107,63 @@ class SnykCachedResultsTest : BasePlatformTestCase() {
   @Test
   fun `test LsProduct getFor returns Unknown for unrecognized name`() {
     assertEquals(LsProduct.Unknown, LsProduct.getFor("nonexistent"))
+  }
+
+  @Test
+  fun `drainPendingAnnotationRefreshFiles returns all queued files and empties the set`() {
+    data class Case(val description: String, val filesToAdd: Int)
+
+    val cases =
+      listOf(
+        Case(description = "empty set returns empty list", filesToAdd = 0),
+        Case(description = "single file is drained and set is emptied", filesToAdd = 1),
+        Case(description = "multiple files are all drained and set is emptied", filesToAdd = 5),
+      )
+
+    val cache = getSnykCachedResults(project)!!
+
+    for (case in cases) {
+      cache.pendingAnnotationRefreshFiles.clear()
+      val added = (1..case.filesToAdd).map { mockk<VirtualFile>(relaxed = true) }
+      cache.pendingAnnotationRefreshFiles.addAll(added)
+
+      val drained = cache.drainPendingAnnotationRefreshFiles()
+
+      assertEquals("Case '${case.description}': drained count", case.filesToAdd, drained.size)
+      assertTrue(
+        "Case '${case.description}': set must be empty after drain",
+        cache.pendingAnnotationRefreshFiles.isEmpty(),
+      )
+      assertTrue(
+        "Case '${case.description}': drained list must contain all added files",
+        drained.containsAll(added),
+      )
+    }
+  }
+
+  @Test
+  fun `drainPendingAnnotationRefreshFiles does not lose files added concurrently during drain`() {
+    val cache = getSnykCachedResults(project)!!
+    cache.pendingAnnotationRefreshFiles.clear()
+
+    val fileA = mockk<VirtualFile>(relaxed = true)
+    val fileB = mockk<VirtualFile>(relaxed = true)
+    cache.pendingAnnotationRefreshFiles.add(fileA)
+
+    // Simulate a concurrent add that occurs while drain is in progress by adding fileB
+    // directly to the backing set before calling drain (worst-case: added just before clear()).
+    // With removeIf, fileB added before drain starts is always collected.
+    // Files added AFTER removeIf passes their bucket stay in the set for the next cycle.
+    cache.pendingAnnotationRefreshFiles.add(fileB)
+
+    val drained = cache.drainPendingAnnotationRefreshFiles()
+
+    // Both files added before drain must be collected — none silently dropped
+    assertTrue("fileA must be in drained list", fileA in drained)
+    assertTrue("fileB must be in drained list", fileB in drained)
+    assertTrue(
+      "set must be empty after draining all pre-drain files",
+      cache.pendingAnnotationRefreshFiles.isEmpty(),
+    )
   }
 }

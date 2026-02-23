@@ -54,7 +54,7 @@ class SnykCachedResults(val project: Project) : Disposable {
 
   // Debouncing for annotation refresh - coalesces per-file diagnostic updates
   private val annotationRefreshAlarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
-  private val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> =
+  internal val pendingAnnotationRefreshFiles: MutableSet<VirtualFile> =
     java.util.concurrent.ConcurrentHashMap.newKeySet()
 
   fun clearCaches() {
@@ -159,8 +159,7 @@ class SnykCachedResults(val project: Project) : Disposable {
   private fun flushPendingAnnotationRefreshes() {
     if (isDisposed() || project.isDisposed) return
 
-    val filesToRefresh =
-      pendingAnnotationRefreshFiles.toList().also { pendingAnnotationRefreshFiles.clear() }
+    val filesToRefresh = drainPendingAnnotationRefreshFiles()
 
     if (filesToRefresh.isEmpty()) return
 
@@ -192,6 +191,19 @@ class SnykCachedResults(val project: Project) : Disposable {
         }
       }
     }
+  }
+
+  /**
+   * Atomically drains [pendingAnnotationRefreshFiles] using [MutableSet.removeIf]. Each element is
+   * removed and collected in a single per-element atomic step, eliminating the race that existed
+   * with the previous `toList().also { clear() }` pattern: a file added between `toList()` and
+   * `clear()` would have been silently dropped. With [MutableSet.removeIf] any file added after the
+   * drain has passed its bucket remains in the set and is picked up on the next flush cycle.
+   */
+  internal fun drainPendingAnnotationRefreshFiles(): List<VirtualFile> {
+    val filesToRefresh = mutableListOf<VirtualFile>()
+    pendingAnnotationRefreshFiles.removeIf { filesToRefresh.add(it) }
+    return filesToRefresh
   }
 
   companion object {
