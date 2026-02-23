@@ -112,8 +112,6 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     }
 
     val rescanNeeded = isCoreParamsModified()
-    snykSettingsDialog.isScanTypeChanged()
-    snykSettingsDialog.isSeverityEnablementChanged()
 
     if (isCustomEndpointModified()) {
       settingsStateService.customEndpointUrl = customEndpoint
