@@ -112,8 +112,8 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     }
 
     val rescanNeeded = isCoreParamsModified()
-    val productSelectionChanged = snykSettingsDialog.isScanTypeChanged()
-    val severitySelectionChanged = snykSettingsDialog.isSeverityEnablementChanged()
+    snykSettingsDialog.isScanTypeChanged()
+    snykSettingsDialog.isSeverityEnablementChanged()
 
     if (isCustomEndpointModified()) {
       settingsStateService.customEndpointUrl = customEndpoint
@@ -273,7 +273,7 @@ fun handleReleaseChannelChange(project: Project) {
   if (!pluginSettings().manageBinariesAutomatically) return
 
   ApplicationManager.getApplication().invokeLater {
-    @Suppress("CanBeVal") var notification: Notification? = null
+    var notification: Notification? = null
     val downloadAction =
       object : AnAction("Download") {
         override fun actionPerformed(e: AnActionEvent) {
@@ -288,7 +288,6 @@ fun handleReleaseChannelChange(project: Project) {
           notification?.expire()
         }
       }
-    @Suppress("AssignedValueIsNeverRead")
     notification =
       SnykBalloonNotificationHelper.showInfo(
         "You changed the release channel. Would you like to download a new Snyk CLI now?",
