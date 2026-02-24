@@ -3,7 +3,7 @@ package snyk.common.annotator
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiFile
-import io.snyk.plugin.isSnykSecretsRunning
+import io.snyk.plugin.isSecretsRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.ProductType
@@ -20,7 +20,7 @@ class SnykSecretsAnnotator : SnykAnnotator(product = ProductType.SECRETS) {
   ) {
     if (disposed) return
     if (!pluginSettings().secretsEnabled) return
-    if (isSnykSecretsRunning(psiFile.project)) return
+    if (isSecretsRunning(psiFile.project)) return
     super.apply(psiFile, annotationResult, holder)
   }
 }

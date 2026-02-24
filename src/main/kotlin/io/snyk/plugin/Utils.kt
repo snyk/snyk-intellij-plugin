@@ -224,13 +224,15 @@ private fun isProductScanRunning(project: Project, productType: ProductType): Bo
 fun isSnykCodeRunning(project: Project): Boolean =
   isProductScanRunning(project, ProductType.CODE_SECURITY)
 
-fun isSnykSecretsRunning(project: Project): Boolean =
-  isProductScanRunning(project, ProductType.SECRETS)
+fun isSecretsRunning(project: Project): Boolean = isProductScanRunning(project, ProductType.SECRETS)
 
 fun isIacRunning(project: Project): Boolean = isProductScanRunning(project, ProductType.IAC)
 
 fun isScanRunning(project: Project): Boolean =
-  isOssRunning(project) || isSnykCodeRunning(project) || isIacRunning(project)
+  isOssRunning(project) ||
+    isSnykCodeRunning(project) ||
+    isIacRunning(project) ||
+    isSecretsRunning(project)
 
 fun isCliDownloading(): Boolean = getSnykCliDownloaderService().isCliDownloading()
 
