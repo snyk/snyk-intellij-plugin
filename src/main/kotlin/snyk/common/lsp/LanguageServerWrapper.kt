@@ -557,6 +557,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       activateSnykOpenSource = ps.ossScanEnable.toString(),
       activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
       activateSnykIac = ps.iacScanEnabled.toString(),
+      activateSnykSecrets = ps.secretsEnabled.toString(),
       organization = ps.organization ?: "",
       insecure = ps.ignoreUnknownCA.toString(),
       endpoint = getEndpointUrl(),

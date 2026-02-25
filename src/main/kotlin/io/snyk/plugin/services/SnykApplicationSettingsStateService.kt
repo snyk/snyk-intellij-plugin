@@ -172,6 +172,7 @@ class SnykApplicationSettingsStateService :
     treeFiltering.ossResults = ossScanEnable
     treeFiltering.codeSecurityResults = snykCodeSecurityIssuesScanEnable
     treeFiltering.iacResults = iacScanEnabled
+    treeFiltering.secretsResults = secretsEnabled
   }
 
   fun setDeltaEnabled(enabled: Boolean) {
@@ -203,6 +204,7 @@ class TreeFiltering {
   var ossResults: Boolean = true
   var codeSecurityResults: Boolean = true
   var iacResults: Boolean = true
+  var secretsResults: Boolean = false
 
   var lowSeverity = true
   var mediumSeverity = true

@@ -28,7 +28,12 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
   }
 
   override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-    listOfNotNull(createOssScanAction(), createSecurityIssuesScanAction(), createIacScanAction())
+    listOfNotNull(
+        createOssScanAction(),
+        createSecurityIssuesScanAction(),
+        createIacScanAction(),
+        createSecretsScanAction(),
+      )
       .toTypedArray()
 
   private fun createScanFilteringAction(
@@ -91,12 +96,21 @@ class SnykTreeScanTypeFilterActionGroup : ActionGroup() {
       setResultsTreeFiltering = { settings.treeFiltering.iacResults = it },
     )
 
+  private fun createSecretsScanAction(): AnAction =
+    createScanFilteringAction(
+      productType = ProductType.SECRETS,
+      scanTypeAvailable = settings.secretsEnabled,
+      resultsTreeFiltering = settings.treeFiltering.secretsResults,
+      setResultsTreeFiltering = { settings.treeFiltering.secretsResults = it },
+    )
+
   private fun isLastScanTypeDisabling(e: AnActionEvent): Boolean {
     val onlyOneEnabled =
       arrayOf(
           settings.ossScanEnable && settings.treeFiltering.ossResults,
           settings.snykCodeSecurityIssuesScanEnable && settings.treeFiltering.codeSecurityResults,
           settings.iacScanEnabled && settings.treeFiltering.iacResults,
+          settings.secretsEnabled && settings.treeFiltering.secretsResults,
         )
         .count { it } == 1
     if (onlyOneEnabled) {

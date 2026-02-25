@@ -212,6 +212,7 @@ class SaveConfigHandler(
       settings.ossScanEnable = config.activateSnykOpenSource ?: false
       settings.snykCodeSecurityIssuesScanEnable = config.activateSnykCode ?: false
       settings.iacScanEnabled = config.activateSnykIac ?: false
+      settings.secretsEnabled = config.activateSnykSecrets ?: false
 
       // Scanning mode
       config.scanningMode?.let { settings.scanOnSave = (it == "auto") }

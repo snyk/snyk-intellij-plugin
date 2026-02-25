@@ -13,6 +13,7 @@ data class LanguageServerSettings(
   @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: String? = "false",
   @SerializedName("activateSnykCode") val activateSnykCode: String? = "false",
   @SerializedName("activateSnykIac") val activateSnykIac: String? = "false",
+  @SerializedName("activateSnykSecrets") val activateSnykSecrets: String? = "false",
   @SerializedName("insecure") val insecure: String?,
   @SerializedName("endpoint") val endpoint: String?,
   @SerializedName("additionalParams") val additionalParams: String? = null,
