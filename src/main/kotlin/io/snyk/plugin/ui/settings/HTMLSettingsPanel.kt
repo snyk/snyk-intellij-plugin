@@ -210,7 +210,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
           return
         }
 
-    val loadHandler = handler.generateSaveConfigHandler(jcefBrowser, currentNonce)
+    val loadHandler = handler.generateSaveConfigHandler(jcefBrowser)
     cefClient.addLoadHandler(loadHandler, jcefBrowser.cefBrowser)
 
     // Add browser to panel first (it already has IDE background from createBrowser)

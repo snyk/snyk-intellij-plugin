@@ -32,10 +32,7 @@ class SaveConfigHandler(
   private val logger = Logger.getInstance(SaveConfigHandler::class.java)
   private val gson = GsonBuilder().create()
 
-  fun generateSaveConfigHandler(
-    jbCefBrowser: JBCefBrowserBase,
-    nonce: String? = null,
-  ): CefLoadHandlerAdapter {
+  fun generateSaveConfigHandler(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
     val saveConfigQuery = JBCefJSQuery.create(jbCefBrowser)
     val saveAttemptFinishedQuery = JBCefJSQuery.create(jbCefBrowser)
     val loginQuery = JBCefJSQuery.create(jbCefBrowser)
