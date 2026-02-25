@@ -36,6 +36,7 @@ import io.snyk.plugin.isHtmlTreeViewEnabled
 import io.snyk.plugin.isIacRunning
 import io.snyk.plugin.isOssRunning
 import io.snyk.plugin.isScanRunning
+import io.snyk.plugin.isSecretsRunning
 import io.snyk.plugin.isSnykCodeRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
@@ -47,6 +48,7 @@ import io.snyk.plugin.ui.toolwindow.nodes.NavigatableToSourceTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
+import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecretsIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootTreeNodeBase
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.ChooseBranchNode
@@ -92,11 +94,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   private val rootOssTreeNode = RootOssTreeNode(project)
   private val rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
   private val rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
+  private val rootSecretsIssuesTreeNode = RootSecretsIssuesTreeNode(project)
 
   internal val vulnerabilitiesTree by lazy {
     rootTreeNode.add(rootOssTreeNode)
     rootTreeNode.add(rootSecurityIssuesTreeNode)
     rootTreeNode.add(rootIacIssuesTreeNode)
+    rootTreeNode.add(rootSecretsIssuesTreeNode)
     Tree(rootTreeNode).apply { this.isRootVisible = pluginSettings().isDeltaFindingsEnabled() }
   }
 
@@ -145,6 +149,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
     val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
     val IAC_ROOT_TEXT = " " + ProductType.IAC.treeName
+    val SECRETS_ROOT_TEXT = " " + ProductType.SECRETS.treeName
 
     const val SELECT_ISSUE_TEXT = "Select an issue and start improving your project."
     const val SCAN_PROJECT_TEXT = "Scan your project for security vulnerabilities and code issues."
@@ -206,6 +211,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
           rootSecurityIssuesTreeNode,
           rootOssTreeNode,
           rootIacIssuesTreeNode,
+          rootSecretsIssuesTreeNode,
         )
       project.messageBus.connect(this).subscribe(SnykScanListener.SNYK_SCAN_TOPIC, scanListener)
       scanListener
@@ -247,12 +253,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
               getSnykCachedResultsForProduct(project, ProductType.CODE_SECURITY)
             val ossResultsLS = getSnykCachedResultsForProduct(project, ProductType.OSS)
             val iacResultsLS = getSnykCachedResultsForProduct(project, ProductType.IAC)
+            val secretsResultsLS = getSnykCachedResultsForProduct(project, ProductType.SECRETS)
 
             invokeLater {
               if (isDisposed || project.isDisposed) return@invokeLater
               codeSecurityResultsLS?.let { scanListenerLS.displaySnykCodeResults(it) }
               ossResultsLS?.let { scanListenerLS.displayOssResults(it) }
               iacResultsLS?.let { scanListenerLS.displayIacResults(it) }
+              secretsResultsLS?.let { scanListenerLS.displaySecretsResults(it) }
             }
           }
         },
@@ -293,6 +301,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ossResultsCount = NODE_INITIAL_STATE,
                 securityIssuesCount = NODE_INITIAL_STATE,
                 iacResultsCount = NODE_INITIAL_STATE,
+                secretsResultsCount = NODE_INITIAL_STATE,
               )
               displayEmptyDescription()
             }
@@ -385,6 +394,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
               ScanIssue.CODE_SECURITY -> cache?.currentSnykCodeResultsLS
               ScanIssue.OPEN_SOURCE -> cache?.currentOSSResultsLS
               ScanIssue.INFRASTRUCTURE_AS_CODE -> cache?.currentIacResultsLS
+              ScanIssue.SECRETS -> cache?.currentSecretsResultsLS
               else -> {
                 null
               }
@@ -538,7 +548,13 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
               scanListenerLS.displayIacResults(results)
             }
           }
-          LsProduct.Secrets -> Unit // we use the HTML tree for secrets
+          LsProduct.Secrets -> {
+            if (isSecretsRunning(project)) return@forEach
+            val results = getSnykCachedResultsForProduct(project, ProductType.SECRETS)
+            if (results != null) {
+              scanListenerLS.displaySecretsResults(results)
+            }
+          }
           LsProduct.Unknown -> Unit
         }
       }
@@ -564,6 +580,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
       ossResultsCount = NODE_INITIAL_STATE,
       securityIssuesCount = NODE_INITIAL_STATE,
       iacResultsCount = NODE_INITIAL_STATE,
+      secretsResultsCount = NODE_INITIAL_STATE,
     )
 
     invokeLater { (vulnerabilitiesTree.model as DefaultTreeModel).reload() }
@@ -576,7 +593,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
   private fun removeAllChildren(
     rootNodesToUpdate: List<DefaultMutableTreeNode> =
-      listOf(rootOssTreeNode, rootSecurityIssuesTreeNode, rootIacIssuesTreeNode)
+      listOf(
+        rootOssTreeNode,
+        rootSecurityIssuesTreeNode,
+        rootIacIssuesTreeNode,
+        rootSecretsIssuesTreeNode,
+      )
   ) {
     rootNodesToUpdate.forEach {
       if (it.childCount > 0) {
@@ -682,7 +704,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   private fun noIssuesInAnyProductFound() =
     rootOssTreeNode.childCount == 0 &&
       rootSecurityIssuesTreeNode.childCount == 0 &&
-      rootIacIssuesTreeNode.childCount == 0
+      rootIacIssuesTreeNode.childCount == 0 &&
+      rootSecretsIssuesTreeNode.childCount == 0
 
   /**
    * public only for Tests Params value: `null` - if not qualify for `scanning` or `error` state
@@ -692,6 +715,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     ossResultsCount: Int? = null,
     securityIssuesCount: Int? = null,
     iacResultsCount: Int? = null,
+    secretsResultsCount: Int? = null,
     addHMLPostfix: String = "",
   ) {
     val settings = pluginSettings()
@@ -702,6 +726,9 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     val realIacError =
       getSnykCachedResults(project)?.currentIacError != null &&
         iacResultsCount != NODE_NOT_SUPPORTED_STATE
+    val realSecretsError =
+      getSnykCachedResults(project)?.currentSecretsError != null &&
+        secretsResultsCount != NODE_NOT_SUPPORTED_STATE
 
     val newOssTreeNodeText =
       getNewOssTreeNodeText(settings, realOssError, ossResultsCount, addHMLPostfix)
@@ -714,6 +741,10 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     val newIacTreeNodeText =
       getNewIacTreeNodeText(settings, realIacError, iacResultsCount, addHMLPostfix)
     newIacTreeNodeText?.let { rootIacIssuesTreeNode.userObject = it }
+
+    val newSecretsTreeNodeText =
+      getNewSecretsTreeNodeText(settings, realSecretsError, secretsResultsCount, addHMLPostfix)
+    newSecretsTreeNodeText?.let { rootSecretsIssuesTreeNode.userObject = it }
 
     val newRootTreeNodeText = getNewRootTreeNodeText()
     newRootTreeNodeText.let { rootTreeNode.info = it }
@@ -749,6 +780,32 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
               count == 0 -> NO_ISSUES_FOUND_TEXT
               count > 0 -> ProductType.IAC.getCountText(count, isUniqueCount = true) + addHMLPostfix
               count == NODE_NOT_SUPPORTED_STATE -> NO_SUPPORTED_IAC_FILES_FOUND
+              else -> throw IllegalStateException("ResultsCount is not meaningful")
+            }
+        }
+    }
+
+  private fun getNewSecretsTreeNodeText(
+    settings: SnykApplicationSettingsStateService,
+    realError: Boolean,
+    secretsResultsCount: Int?,
+    addHMLPostfix: String,
+  ) =
+    when {
+      realError -> {
+        val errorSuffix = getSnykCachedResults(project)?.currentSecretsError?.treeNodeSuffix ?: ""
+        "$SECRETS_ROOT_TEXT $errorSuffix"
+      }
+      isSecretsRunning(project) && settings.secretsEnabled -> "$SECRETS_ROOT_TEXT (scanning...)"
+      else ->
+        secretsResultsCount?.let { count ->
+          SECRETS_ROOT_TEXT +
+            when {
+              count == NODE_INITIAL_STATE -> ""
+              count == 0 -> NO_ISSUES_FOUND_TEXT
+              count > 0 ->
+                ProductType.SECRETS.getCountText(count, isUniqueCount = true) + addHMLPostfix
+              count == NODE_NOT_SUPPORTED_STATE -> ""
               else -> throw IllegalStateException("ResultsCount is not meaningful")
             }
         }
@@ -1009,6 +1066,8 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
   @TestOnly fun getRootOssIssuesTreeNode() = rootOssTreeNode
 
   @TestOnly fun getRootSecurityIssuesTreeNode() = rootSecurityIssuesTreeNode
+
+  @TestOnly fun getRootSecretsIssuesTreeNode() = rootSecretsIssuesTreeNode
 
   fun getTree() = vulnerabilitiesTree
 
