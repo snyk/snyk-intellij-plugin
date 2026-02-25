@@ -56,6 +56,7 @@ data class SaveConfigRequest(
   @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: Boolean? = null,
   @SerializedName("activateSnykCode") val activateSnykCode: Boolean? = null,
   @SerializedName("activateSnykIac") val activateSnykIac: Boolean? = null,
+  @SerializedName("activateSnykSecrets") val activateSnykSecrets: Boolean? = null,
   @SerializedName("scanningMode") val scanningMode: String? = null,
 
   // Connection Settings

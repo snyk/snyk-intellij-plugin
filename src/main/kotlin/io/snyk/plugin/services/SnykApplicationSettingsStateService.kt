@@ -57,7 +57,7 @@ class SnykApplicationSettingsStateService :
   var ossScanEnable: Boolean = true
   var snykCodeSecurityIssuesScanEnable: Boolean = true
   var iacScanEnabled: Boolean = true
-  var secretsEnabled: Boolean = false
+  var secretsEnabled: Boolean = true
 
   // feature flag / server-side enablement
   var sastOnServerEnabled: Boolean? = null
