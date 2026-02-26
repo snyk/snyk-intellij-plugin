@@ -194,13 +194,14 @@ class SaveConfigHandler(
         try {
             val root = JsonParser.parseString(jsonString).asJsonObject
             val folderConfigsArray = root.getAsJsonArray("folderConfigs") ?: return
-            for (element in folderConfigsArray) {
+            val patches = folderConfigsArray.mapNotNull { element ->
                 val rawEntry = element.asJsonObject
-                val folderPath = rawEntry.get("folderPath")?.asString ?: continue
+                val folderPath = rawEntry.get("folderPath")?.asString ?: return@mapNotNull null
                 val patch = extractFolderConfigPatch(rawEntry)
-                if (patch.isNotEmpty()) {
-                    lsWrapper.sendFolderConfigPatch(folderPath, patch)
-                }
+                if (patch.isNotEmpty()) folderPath to patch else null
+            }
+            if (patches.isNotEmpty()) {
+                lsWrapper.sendFolderConfigPatches(patches)
             }
         } catch (e: Exception) {
             logger.warn("Error forwarding folder config patches to LS", e)

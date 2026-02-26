@@ -66,10 +66,10 @@ abstract class SnykTreeSeverityFilterActionBase(
             )
         }
         val lsWrapper = LanguageServerWrapper.getInstance(project)
-        val folderConfigs = fcs.getFolderConfigs(project)
-        for (fc in folderConfigs) {
-            lsWrapper.sendFolderConfigPatch(fc.folderPath, mapOf("enabledSeverities" to currentSeverities))
+        val patches = fcs.getFolderConfigs(project).map { fc ->
+            fc.folderPath to mapOf<String, Any?>("enabledSeverities" to currentSeverities)
         }
+        lsWrapper.sendFolderConfigPatches(patches)
 
         publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
     }

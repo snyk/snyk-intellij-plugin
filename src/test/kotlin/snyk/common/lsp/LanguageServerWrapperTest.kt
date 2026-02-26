@@ -549,6 +549,46 @@ class LanguageServerWrapperTest {
         verify(exactly = 0) { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
     }
 
+    @Test
+    fun `sendFolderConfigPatches batches all folders into a single didChangeConfiguration call`() {
+        simulateRunningLS()
+        val capturedParams = mutableListOf<DidChangeConfigurationParams>()
+        justRun { lsMock.workspaceService.didChangeConfiguration(capture(capturedParams)) }
+
+        val patches = listOf(
+            "/path/to/folder1" to mapOf<String, Any?>("snykOssEnabled" to true),
+            "/path/to/folder2" to mapOf<String, Any?>("snykIacEnabled" to false, "snykCodeEnabled" to true),
+            "/path/to/folder3" to mapOf<String, Any?>("snykOssEnabled" to null),
+        )
+        cut.sendFolderConfigPatches(patches)
+
+        assertEquals("Should send exactly one didChangeConfiguration call", 1, capturedParams.size)
+        @Suppress("UNCHECKED_CAST")
+        val settings = capturedParams[0].settings as Map<String, Any?>
+        val folderConfigs = settings["folderConfigs"] as List<Map<String, Any?>>
+        assertEquals("Should contain all 3 folder entries", 3, folderConfigs.size)
+
+        assertEquals("/path/to/folder1", folderConfigs[0]["folderPath"])
+        assertEquals(true, folderConfigs[0]["snykOssEnabled"])
+
+        assertEquals("/path/to/folder2", folderConfigs[1]["folderPath"])
+        assertEquals(false, folderConfigs[1]["snykIacEnabled"])
+        assertEquals(true, folderConfigs[1]["snykCodeEnabled"])
+
+        assertEquals("/path/to/folder3", folderConfigs[2]["folderPath"])
+        assertTrue("Null field should be present", folderConfigs[2].containsKey("snykOssEnabled"))
+        assertEquals(null, folderConfigs[2]["snykOssEnabled"])
+    }
+
+    @Test
+    fun `sendFolderConfigPatches does nothing for empty list`() {
+        simulateRunningLS()
+
+        cut.sendFolderConfigPatches(emptyList())
+
+        verify(exactly = 0) { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
+    }
+
     private fun simulateRunningLS() {
         cut.languageClient = mockk(relaxed = true)
         val processMock = mockk<Process>(relaxed = true)

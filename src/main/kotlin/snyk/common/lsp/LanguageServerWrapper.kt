@@ -570,12 +570,19 @@ class LanguageServerWrapper(
     }
 
     fun sendFolderConfigPatch(folderPath: String, changes: Map<String, Any?>) {
+        sendFolderConfigPatches(listOf(folderPath to changes))
+    }
+
+    fun sendFolderConfigPatches(patches: List<Pair<String, Map<String, Any?>>>) {
+        if (patches.isEmpty()) return
         if (!ensureLanguageServerInitialized()) return
-        val folderConfigEntry = mutableMapOf<String, Any?>("folderPath" to folderPath).apply {
-            putAll(changes)
+        val folderConfigEntries = patches.map { (folderPath, changes) ->
+            mutableMapOf<String, Any?>("folderPath" to folderPath).apply {
+                putAll(changes)
+            }
         }
         val settingsMap = mapOf(
-            "folderConfigs" to listOf(folderConfigEntry)
+            "folderConfigs" to folderConfigEntries
         )
         val params = DidChangeConfigurationParams(settingsMap)
         languageServer.workspaceService.didChangeConfiguration(params)
