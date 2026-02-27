@@ -385,10 +385,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
               ScanIssue.CODE_SECURITY -> cache?.currentSnykCodeResultsLS
               ScanIssue.OPEN_SOURCE -> cache?.currentOSSResultsLS
               ScanIssue.INFRASTRUCTURE_AS_CODE -> cache?.currentIacResultsLS
-              ScanIssue.SECRETS -> cache?.currentSecretsResultsLS
-              else -> {
-                null
-              }
+              else -> null
             }
           productIssues?.values?.any { issues -> issues.any { issue.id == it.id } } == true
         } else {
