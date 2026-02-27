@@ -293,7 +293,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
                 ossResultsCount = NODE_INITIAL_STATE,
                 securityIssuesCount = NODE_INITIAL_STATE,
                 iacResultsCount = NODE_INITIAL_STATE,
-                secretsResultsCount = NODE_INITIAL_STATE,
               )
               displayEmptyDescription()
             }
@@ -566,7 +565,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
       ossResultsCount = NODE_INITIAL_STATE,
       securityIssuesCount = NODE_INITIAL_STATE,
       iacResultsCount = NODE_INITIAL_STATE,
-      secretsResultsCount = NODE_INITIAL_STATE,
     )
 
     invokeLater { (vulnerabilitiesTree.model as DefaultTreeModel).reload() }
@@ -695,7 +693,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     ossResultsCount: Int? = null,
     securityIssuesCount: Int? = null,
     iacResultsCount: Int? = null,
-    secretsResultsCount: Int? = null,
     addHMLPostfix: String = "",
   ) {
     val settings = pluginSettings()

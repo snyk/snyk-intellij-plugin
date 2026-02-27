@@ -91,7 +91,11 @@ class SnykToolWindowSnykScanListener(
           cache?.currentIacError = null
           removeChildrenAndRefresh(rootIacIssuesTreeNode)
         }
-        LsProduct.Secrets -> Unit
+        LsProduct.Secrets -> {
+          cache?.currentSecretsResultsLS?.clear()
+          cache?.currentSecretsError = null
+          // no need to refresh the tree for secrets as they are not displayed in the tool window
+        }
         LsProduct.Unknown -> Unit
       }
       this.snykToolWindowPanel.updateTreeRootNodesPresentation()
@@ -154,6 +158,8 @@ class SnykToolWindowSnykScanListener(
         LsProduct.InfrastructureAsCode -> {
           removeChildrenAndRefresh(rootIacIssuesTreeNode)
         }
+        // secrets are not displayed in the tool window right now, as we want to switch to HTML Tree
+        // View
         LsProduct.Secrets -> Unit
         LsProduct.Unknown -> Unit
       }
@@ -269,7 +275,6 @@ class SnykToolWindowSnykScanListener(
     ossResultsCount: Int? = null,
     securityIssuesCount: Int? = null,
     iacResultsCount: Int? = null,
-    secretsResultsCount: Int? = null,
   ) {
     val settings = pluginSettings()
 
@@ -284,7 +289,6 @@ class SnykToolWindowSnykScanListener(
     var filteredOssResultsCount = ossResultsCount
     var filteredSecurityIssuesCount = securityIssuesCount
     var filteredIacResultsCount = iacResultsCount
-    var filteredSecretsResultsCount = secretsResultsCount
 
     if (enabledInSettings) {
       // Calculate filtered results first - apply severity filtering if enabled
@@ -347,7 +351,6 @@ class SnykToolWindowSnykScanListener(
       securityIssuesCount = filteredSecurityIssuesCount,
       ossResultsCount = ossResultsCountForDisplay,
       iacResultsCount = filteredIacResultsCount,
-      secretsResultsCount = filteredSecretsResultsCount,
       addHMLPostfix = rootNodePostFix,
     )
 
