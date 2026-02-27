@@ -113,6 +113,10 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
         val applyIgnoreInFileHandler = IgnoreInFileHandler(project)
         loadHandlerGenerators += { applyIgnoreInFileHandler.generateIgnoreInFileCommand(it) }
       }
+      ScanIssue.SECRETS -> {
+        val submitIgnoreRequestHandler = SubmitIgnoreRequestHandler(project)
+        loadHandlerGenerators += { submitIgnoreRequestHandler.submitIgnoreRequestCommand(it) }
+      }
     }
 
     // getFormattedHtml accesses Swing components, must be called on EDT

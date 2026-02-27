@@ -145,7 +145,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     val OSS_ROOT_TEXT = " " + ProductType.OSS.treeName
     val CODE_SECURITY_ROOT_TEXT = " " + ProductType.CODE_SECURITY.treeName
     val IAC_ROOT_TEXT = " " + ProductType.IAC.treeName
-    val SECRETS_ROOT_TEXT = " " + ProductType.SECRETS.treeName
 
     const val SELECT_ISSUE_TEXT = "Select an issue and start improving your project."
     const val SCAN_PROJECT_TEXT = "Scan your project for security vulnerabilities and code issues."
