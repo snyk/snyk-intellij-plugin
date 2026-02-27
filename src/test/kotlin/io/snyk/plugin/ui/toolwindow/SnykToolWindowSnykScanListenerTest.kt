@@ -17,7 +17,6 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecretsIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import java.nio.file.Paths
 import javax.swing.JTree
@@ -41,7 +40,6 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
   private lateinit var rootOssIssuesTreeNode: DefaultMutableTreeNode
   private lateinit var rootSecurityIssuesTreeNode: DefaultMutableTreeNode
   private lateinit var rootIacIssuesTreeNode: DefaultMutableTreeNode
-  private lateinit var rootSecretsIssuesTreeNode: DefaultMutableTreeNode
 
   private val fileName = "app.js"
   private lateinit var file: VirtualFile
@@ -69,7 +67,6 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     rootOssIssuesTreeNode = RootOssTreeNode(project)
     rootSecurityIssuesTreeNode = RootSecurityIssuesTreeNode(project)
     rootIacIssuesTreeNode = RootIacIssuesTreeNode(project)
-    rootSecretsIssuesTreeNode = RootSecretsIssuesTreeNode(project)
     pluginSettings().setDeltaEnabled(enabled = true)
     contentRootPaths.forEach {
       service<WorkspaceTrustSettings>().addTrustedPath(it.root.absolutePathString())
@@ -79,7 +76,6 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     rootTreeNode.add(rootOssIssuesTreeNode)
     rootTreeNode.add(rootSecurityIssuesTreeNode)
     rootTreeNode.add(rootIacIssuesTreeNode)
-    rootTreeNode.add(rootSecretsIssuesTreeNode)
     vulnerabilitiesTree = Tree(rootTreeNode).apply { this.isRootVisible = false }
 
     cut =
@@ -90,7 +86,6 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
         rootSecurityIssuesTreeNode,
         rootOssIssuesTreeNode,
         rootIacIssuesTreeNode,
-        rootSecretsIssuesTreeNode,
       )
 
     pluginSettings().isGlobalIgnoresFeatureEnabled = true
@@ -196,7 +191,7 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
 
   fun `test root nodes are created`() {
     assertEquals(
-      listOf(" Open Source", " Code Security", " Snyk Infrastructure as Code", " Secrets"),
+      listOf(" Open Source", " Code Security", " Snyk Infrastructure as Code"),
       mapToLabels(rootTreeNode),
     )
   }
@@ -298,7 +293,6 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
         project,
         toolWindowPanelMock,
         mockk(relaxed = true),
-        DefaultMutableTreeNode(),
         DefaultMutableTreeNode(),
         DefaultMutableTreeNode(),
         DefaultMutableTreeNode(),

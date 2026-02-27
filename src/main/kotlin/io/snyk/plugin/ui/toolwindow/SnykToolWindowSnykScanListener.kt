@@ -23,7 +23,6 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel.Companion.SCANNING_TEXT
 import io.snyk.plugin.ui.toolwindow.nodes.leaf.SuggestionTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootIacIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootOssTreeNode
-import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecretsIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.root.RootSecurityIssuesTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.InfoTreeNode
 import io.snyk.plugin.ui.toolwindow.nodes.secondlevel.SnykFileTreeNode
@@ -54,7 +53,6 @@ class SnykToolWindowSnykScanListener(
   private val rootSecurityIssuesTreeNode: DefaultMutableTreeNode,
   private val rootOssIssuesTreeNode: DefaultMutableTreeNode,
   private val rootIacIssuesTreeNode: DefaultMutableTreeNode,
-  private val rootSecretsIssuesTreeNode: DefaultMutableTreeNode,
 ) : SnykScanListener, Disposable {
   private var disposed = false
     get() {
@@ -93,11 +91,7 @@ class SnykToolWindowSnykScanListener(
           cache?.currentIacError = null
           removeChildrenAndRefresh(rootIacIssuesTreeNode)
         }
-        LsProduct.Secrets -> {
-          cache?.currentSecretsResultsLS?.clear()
-          cache?.currentSecretsError = null
-          removeChildrenAndRefresh(rootSecretsIssuesTreeNode)
-        }
+        LsProduct.Secrets -> Unit
         LsProduct.Unknown -> Unit
       }
       this.snykToolWindowPanel.updateTreeRootNodesPresentation()
@@ -160,7 +154,7 @@ class SnykToolWindowSnykScanListener(
         LsProduct.InfrastructureAsCode -> {
           removeChildrenAndRefresh(rootIacIssuesTreeNode)
         }
-        LsProduct.Secrets -> removeChildrenAndRefresh(rootSecretsIssuesTreeNode)
+        LsProduct.Secrets -> Unit
         LsProduct.Unknown -> Unit
       }
       snykToolWindowPanel.updateTreeRootNodesPresentation()
@@ -236,18 +230,6 @@ class SnykToolWindowSnykScanListener(
           iacResultsCount = iacResultsCount,
         )
       }
-      ScanIssue.SECRETS -> {
-        val secretsResultsCount =
-          flattenedResults.filter { it.filterableIssueType == ScanIssue.SECRETS }.distinct().size
-        displayIssues(
-          filterableIssueType = ScanIssue.SECRETS,
-          enabledInSettings = enabledInSettings,
-          filterTree = filterTree,
-          snykResults = snykResults,
-          rootNode = rootNode,
-          secretsResultsCount = secretsResultsCount,
-        )
-      }
     }
   }
 
@@ -275,19 +257,6 @@ class SnykToolWindowSnykScanListener(
       settings.treeFiltering.iacResults,
       this.rootIacIssuesTreeNode,
       ScanIssue.INFRASTRUCTURE_AS_CODE,
-    )
-  }
-
-  fun displaySecretsResults(snykResults: Map<SnykFile, Set<ScanIssue>>) {
-    if (disposed) return
-
-    val settings = pluginSettings()
-    displayResults(
-      snykResults,
-      settings.secretsEnabled,
-      settings.treeFiltering.secretsResults,
-      this.rootSecretsIssuesTreeNode,
-      ScanIssue.SECRETS,
     )
   }
 
@@ -345,7 +314,6 @@ class SnykToolWindowSnykScanListener(
           showCritical = false
         }
         ScanIssue.INFRASTRUCTURE_AS_CODE -> filteredIacResultsCount = filteredIssues.size
-        ScanIssue.SECRETS -> filteredSecretsResultsCount = filteredIssues.size
       }
 
       rootNodePostFix = buildSeveritiesPostfixForFileNode(filteredIssues, showCritical)
@@ -558,7 +526,6 @@ class SnykToolWindowSnykScanListener(
             is RootSecurityIssuesTreeNode -> ProductType.CODE_SECURITY
             is RootOssTreeNode -> ProductType.OSS
             is RootIacIssuesTreeNode -> ProductType.IAC
-            is RootSecretsIssuesTreeNode -> ProductType.SECRETS
             else -> throw IllegalArgumentException(rootNode.javaClass.simpleName)
           }
 

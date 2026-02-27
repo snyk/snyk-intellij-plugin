@@ -505,18 +505,13 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     // Process pending events
     PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-    // Verify no node contains literal "null" text (includes Secrets root after clean)
+    // Verify no node contains literal "null" text
     val ossNodeText = cut.getRootOssIssuesTreeNode().userObject.toString()
     val codeNodeText = cut.getRootSecurityIssuesTreeNode().userObject.toString()
     val iacNodeText = cut.getRootIacIssuesTreeNode().userObject.toString()
-    val secretsNodeText = cut.getRootSecretsIssuesTreeNode().userObject.toString()
 
     assertFalse("OSS node should not contain 'null': $ossNodeText", ossNodeText.contains("null"))
     assertFalse("Code node should not contain 'null': $codeNodeText", codeNodeText.contains("null"))
     assertFalse("IAC node should not contain 'null': $iacNodeText", iacNodeText.contains("null"))
-    assertFalse(
-      "Secrets node should not contain 'null': $secretsNodeText",
-      secretsNodeText.contains("null"),
-    )
   }
 }
