@@ -498,9 +498,8 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
     cut = SnykToolWindowPanel(project)
 
-    // Trigger tree update (ossResultsCount, securityIssuesCount, iacResultsCount,
-    // secretsResultsCount, addHMLPostfix)
-    cut.updateTreeRootNodesPresentation(0, 0, 0, 0, "")
+    // Trigger tree update (ossResultsCount, securityIssuesCount, iacResultsCount, addHMLPostfix)
+    cut.updateTreeRootNodesPresentation(0, 0, 0, addHMLPostfix = "")
 
     // Process pending events
     PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
