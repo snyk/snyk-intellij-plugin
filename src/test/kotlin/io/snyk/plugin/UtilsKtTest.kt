@@ -1,8 +1,10 @@
 package io.snyk.plugin
 
+import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.pom.Navigatable
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import io.mockk.every
@@ -309,6 +311,89 @@ class UtilsKtTest {
 
     // Should not have accessed messageBus.syncPublisher since application is disposed
     verify(exactly = 0) { messageBus.syncPublisher(any<Topic<TestListener>>()) }
+  }
+
+  @Test
+  fun `navigateToSource should still open file when getDocument returns null`() {
+    unmockkAll()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    mockkStatic(ApplicationManager::class)
+    mockkStatic(PsiNavigationSupport::class)
+
+    val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+    every { ApplicationManager.getApplication() } returns appMock
+    every { appMock.isDisposed } returns false
+    // Mock invokeLater to execute runnables immediately
+    // The top-level invokeLater delegates to Application.invokeLater with ModalityState
+    every { appMock.invokeLater(any<Runnable>()) } answers { firstArg<Runnable>().run() }
+    every {
+      appMock.invokeLater(any<Runnable>(), any<com.intellij.openapi.application.ModalityState>())
+    } answers { firstArg<Runnable>().run() }
+
+    val project = mockk<Project>(relaxed = true)
+    every { project.isDisposed } returns false
+
+    val virtualFile = mockk<VirtualFile>(relaxed = true)
+    every { virtualFile.isValid } returns true
+    // Simulate a file type that IntelliJ doesn't recognize (e.g., .gitleaksignore)
+    every { virtualFile.getDocument() } returns null
+
+    val latch = CountDownLatch(1)
+    val navigatable = mockk<Navigatable>(relaxed = true)
+    every { navigatable.canNavigateToSource() } returns true
+    every { navigatable.canNavigate() } returns true
+    every { navigatable.navigate(any()) } answers { latch.countDown() }
+
+    val psiNavSupport = mockk<PsiNavigationSupport>(relaxed = true)
+    every { PsiNavigationSupport.getInstance() } returns psiNavSupport
+    every { psiNavSupport.createNavigatable(project, virtualFile, 5) } returns navigatable
+
+    navigateToSource(project, virtualFile, 5, 10)
+
+    assertTrue("Navigation should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+    verify { navigatable.navigate(false) }
+  }
+
+  @Test
+  fun `navigateToSource should still open file when offset is out of bounds`() {
+    unmockkAll()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    mockkStatic(ApplicationManager::class)
+    mockkStatic(PsiNavigationSupport::class)
+
+    val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+    every { ApplicationManager.getApplication() } returns appMock
+    every { appMock.isDisposed } returns false
+    every { appMock.invokeLater(any<Runnable>()) } answers { firstArg<Runnable>().run() }
+    every {
+      appMock.invokeLater(any<Runnable>(), any<com.intellij.openapi.application.ModalityState>())
+    } answers { firstArg<Runnable>().run() }
+
+    val project = mockk<Project>(relaxed = true)
+    every { project.isDisposed } returns false
+
+    val document = mockk<com.intellij.openapi.editor.Document>(relaxed = true)
+    every { document.textLength } returns 50
+
+    val virtualFile = mockk<VirtualFile>(relaxed = true)
+    every { virtualFile.isValid } returns true
+    every { virtualFile.getDocument() } returns document
+
+    // Offset 100 is beyond document length of 50
+    val latch = CountDownLatch(1)
+    val navigatable = mockk<Navigatable>(relaxed = true)
+    every { navigatable.canNavigateToSource() } returns true
+    every { navigatable.canNavigate() } returns true
+    every { navigatable.navigate(any()) } answers { latch.countDown() }
+
+    val psiNavSupport = mockk<PsiNavigationSupport>(relaxed = true)
+    every { PsiNavigationSupport.getInstance() } returns psiNavSupport
+    every { psiNavSupport.createNavigatable(project, virtualFile, 100) } returns navigatable
+
+    navigateToSource(project, virtualFile, 100, 110)
+
+    assertTrue("Navigation should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+    verify { navigatable.navigate(false) }
   }
 
   interface TestListener {
