@@ -352,18 +352,24 @@ fun navigateToSource(
 ) {
   runAsync {
     if (project.isDisposed || !virtualFile.isValid) return@runAsync
-    // Check that the offset is valid. If not, log it and let PsiNavigationSupport handle it instead of returning early
-    // This can happen if the IDE does not consider the file to be a document (e.g., .gitleaksignore)
+    // Check that the offset is valid. If not, log it and let PsiNavigationSupport handle it instead
+    // of returning early
+    // This can happen if the IDE does not consider the file to be a document (e.g.,
+    // .gitleaksignore)
     val document = virtualFile.getDocument()
 
     if (document == null) {
-      logger.warn("Cannot parse ${virtualFile.name} as a document; navigation to selection may fail")
+      logger.warn(
+        "Cannot parse ${virtualFile.name} as a document; navigation to selection may fail"
+      )
     }
 
     val textLength = document?.textLength
 
     if (textLength != null && selectionStartOffset !in (0 until textLength)) {
-      logger.warn("Navigation to wrong offset: $selectionStartOffset. ${virtualFile.name} file length=$textLength")
+      logger.warn(
+        "Navigation to wrong offset: $selectionStartOffset. ${virtualFile.name} file length=$textLength"
+      )
     }
 
     if (selectionStartOffset >= 0) {

@@ -325,12 +325,10 @@ class UtilsKtTest {
     every { appMock.isDisposed } returns false
     // Mock invokeLater to execute runnables immediately
     // The top-level invokeLater delegates to Application.invokeLater with ModalityState
-    every { appMock.invokeLater(any<Runnable>()) } answers {
-      firstArg<Runnable>().run()
-    }
-    every { appMock.invokeLater(any<Runnable>(), any<com.intellij.openapi.application.ModalityState>()) } answers {
-      firstArg<Runnable>().run()
-    }
+    every { appMock.invokeLater(any<Runnable>()) } answers { firstArg<Runnable>().run() }
+    every {
+      appMock.invokeLater(any<Runnable>(), any<com.intellij.openapi.application.ModalityState>())
+    } answers { firstArg<Runnable>().run() }
 
     val project = mockk<Project>(relaxed = true)
     every { project.isDisposed } returns false
@@ -366,12 +364,10 @@ class UtilsKtTest {
     val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
     every { ApplicationManager.getApplication() } returns appMock
     every { appMock.isDisposed } returns false
-    every { appMock.invokeLater(any<Runnable>()) } answers {
-      firstArg<Runnable>().run()
-    }
-    every { appMock.invokeLater(any<Runnable>(), any<com.intellij.openapi.application.ModalityState>()) } answers {
-      firstArg<Runnable>().run()
-    }
+    every { appMock.invokeLater(any<Runnable>()) } answers { firstArg<Runnable>().run() }
+    every {
+      appMock.invokeLater(any<Runnable>(), any<com.intellij.openapi.application.ModalityState>())
+    } answers { firstArg<Runnable>().run() }
 
     val project = mockk<Project>(relaxed = true)
     every { project.isDisposed } returns false
