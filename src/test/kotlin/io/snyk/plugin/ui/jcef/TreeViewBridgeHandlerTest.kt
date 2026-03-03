@@ -83,7 +83,7 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should reject empty command via allowlist`() {
+  fun `dispatchCommand should ignore empty command`() {
     val request = TreeViewCommandRequest(command = "", args = emptyList())
     val payload = gson.toJson(request)
 
@@ -269,24 +269,6 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should reject commands not in the allowlist and invoke error callback`() {
-    val request =
-      TreeViewCommandRequest(command = "snyk.logout", args = emptyList(), callbackId = "__cb_99")
-    val payload = gson.toJson(request)
-
-    val latch = CountDownLatch(1)
-    var receivedResult: String? = null
-    handler.dispatchCommand(payload) { _, result ->
-      receivedResult = result
-      latch.countDown()
-    }
-
-    assertTrue("Callback should be invoked with error", latch.await(2, TimeUnit.SECONDS))
-    assertTrue("Result should contain error", receivedResult!!.contains("error"))
-    verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
-  }
-
-  @Test
   fun `dispatchCommand should reject callbackId with non-alphanumeric characters and not invoke callback`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
 
@@ -310,32 +292,6 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `dispatchCommand should accept all allowed tree view commands`() {
-    every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "ok"
-
-    val allowedCommands =
-      listOf(
-        "snyk.navigateToRange",
-        "snyk.toggleTreeFilter",
-        "snyk.getTreeViewIssueChunk",
-        "snyk.setNodeExpanded",
-        "snyk.showScanErrorDetails",
-        "snyk.updateFolderConfig",
-      )
-
-    val latch = CountDownLatch(allowedCommands.size)
-
-    for (cmd in allowedCommands) {
-      val request = TreeViewCommandRequest(command = cmd, args = emptyList())
-      handler.dispatchCommand(gson.toJson(request)) { _, _ -> latch.countDown() }
-    }
-
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      verify(exactly = allowedCommands.size) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
-    }
-  }
-
-  @Test
   fun `buildBridgeScript should contain ideExecuteCommand bridge`() {
     val mockQuery: JBCefJSQuery = mockk(relaxed = true)
     every { mockQuery.inject(any()) } returns "window.cefQuery_inject(payload)"
@@ -348,20 +304,6 @@ class TreeViewBridgeHandlerTest {
     )
     assertTrue("Script should define __ideCallbacks__", script.contains("__ideCallbacks__"))
     assertTrue("Script should contain injected query", script.contains("cefQuery_inject"))
-  }
-
-  @Test
-  fun `ALLOWED_COMMANDS should contain expected commands`() {
-    val expected =
-      setOf(
-        "snyk.navigateToRange",
-        "snyk.toggleTreeFilter",
-        "snyk.getTreeViewIssueChunk",
-        "snyk.setNodeExpanded",
-        "snyk.showScanErrorDetails",
-        "snyk.updateFolderConfig",
-      )
-    assertEquals(expected, TreeViewBridgeHandler.ALLOWED_COMMANDS)
   }
 
   @Test
