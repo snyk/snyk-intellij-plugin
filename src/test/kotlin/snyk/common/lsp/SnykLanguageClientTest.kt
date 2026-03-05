@@ -1,6 +1,7 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.intellij.configurationStore.StoreUtil
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
@@ -23,10 +24,12 @@ import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.refreshAnnotationsForFile
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.toVirtualFileOrNull
+import io.snyk.plugin.ui.settings.HTMLSettingsPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -174,6 +177,31 @@ class SnykLanguageClientTest {
     cut.hasAuthenticated(HasAuthenticatedParam(unexpected, url))
 
     assertNotEquals(unexpected, settings.token)
+  }
+
+  @Test
+  fun `hasAuthenticated calls setAuthToken on HTMLSettingsPanel when panel is open`() {
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.instance = panelMock
+
+    try {
+      val token = "test-token-123"
+      val apiUrl = "https://api.snyk.io"
+      cut.hasAuthenticated(HasAuthenticatedParam(token, apiUrl))
+
+      verify { panelMock.setAuthToken(token, apiUrl) }
+    } finally {
+      HTMLSettingsPanel.instance = null
+    }
   }
 
   @Test

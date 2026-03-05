@@ -5,6 +5,8 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.AuthenticationType
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 
@@ -23,6 +25,9 @@ class ExecuteCommandBridge(private val project: Project) {
 
   companion object {
     internal val SAFE_CALLBACK_ID = Regex("^[a-zA-Z0-9_]+$")
+    // Login blocks until the user completes OAuth in the browser.
+    private const val LOGIN_TIMEOUT_MS = 120_000L
+    private val LONG_RUNNING_COMMANDS = setOf("snyk.login")
   }
 
   /**
@@ -90,7 +95,11 @@ class ExecuteCommandBridge(private val project: Project) {
       val ls = LanguageServerWrapper.getInstance(project)
       runAsync {
         try {
-          val result = ls.executeCommandWithArgs(request.command, request.args)
+          val timeout = if (request.command in LONG_RUNNING_COMMANDS) LOGIN_TIMEOUT_MS else 5_000L
+          if (request.command == "snyk.login" && request.args.size >= 3) {
+            saveLoginArgs(request.args)
+          }
+          val result = ls.executeCommandWithArgs(request.command, request.args, timeout)
           if (request.callbackId != null && callbackExecutor != null) {
             callbackExecutor(request.callbackId, gson.toJson(result))
           }
@@ -106,6 +115,26 @@ class ExecuteCommandBridge(private val project: Project) {
       }
     } catch (e: Exception) {
       log.warn("ExecuteCommandBridge: error parsing command request", e)
+    }
+  }
+
+  private fun saveLoginArgs(args: List<Any>) {
+    try {
+      val authMethodStr = args[0] as? String ?: return
+      val endpoint = args[1] as? String ?: ""
+      val ignoreUnknownCA = args[2] as? Boolean ?: false
+      val authType =
+        when (authMethodStr) {
+          "oauth" -> AuthenticationType.OAUTH2
+          "pat" -> AuthenticationType.PAT
+          "token" -> AuthenticationType.API_TOKEN
+          else -> AuthenticationType.OAUTH2
+        }
+      pluginSettings().authenticationType = authType
+      pluginSettings().customEndpointUrl = endpoint
+      pluginSettings().ignoreUnknownCA = ignoreUnknownCA
+    } catch (e: Exception) {
+      log.warn("ExecuteCommandBridge: error saving login args", e)
     }
   }
 }

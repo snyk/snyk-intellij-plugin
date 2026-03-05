@@ -8,7 +8,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
-import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.AuthenticationType
@@ -104,35 +103,6 @@ class SaveConfigHandler(
       }
       JBCefJSQuery.Response("success")
     }
-
-    // Subscribe to settings changes to update auth token in browser
-    project.messageBus
-      .connect()
-      .subscribe(
-        SnykSettingsListener.SNYK_SETTINGS_TOPIC,
-        object : SnykSettingsListener {
-          override fun settingsChanged() {
-            // Defer JavaScript execution to avoid EDT blocking
-            invokeLater {
-              val token = pluginSettings().token
-              if (token?.isNotEmpty() == true) {
-                val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                  "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
-                  jbCefBrowser.cefBrowser.url,
-                  0,
-                )
-              } else {
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                  "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
-                  jbCefBrowser.cefBrowser.url,
-                  0,
-                )
-              }
-            }
-          }
-        },
-      )
 
     executeCommandQuery.addHandler { value ->
       dispatchSettingsCommand(value) { callbackId, escaped ->

@@ -33,6 +33,10 @@ import snyk.common.lsp.LanguageServerWrapper
 
 class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
+  companion object {
+    @Volatile var instance: HTMLSettingsPanel? = null
+  }
+
   private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
   private var jbCefClient: JBCefClient? = null
   private var jbCefBrowser: JBCefBrowser? = null
@@ -48,6 +52,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     // Set panel background to match IDE theme (prevents white flash)
     background = UIUtil.getPanelBackground()
 
+    instance = this
     Disposer.register(SnykPluginDisposable.getInstance(project), this)
     initializePanel()
     subscribeToCliDownloadEvents()
@@ -393,8 +398,31 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     }
   }
 
+  fun setAuthToken(token: String, apiUrl: String?) {
+    if (isDisposed) return
+    ApplicationManager.getApplication()
+      .invokeLater(
+        {
+          if (isDisposed) return@invokeLater
+          val safeToken = token.replace("\\", "\\\\").replace("'", "\\'")
+          val safeApiUrl = (apiUrl ?: "").replace("\\", "\\\\").replace("'", "\\'")
+          jbCefBrowser
+            ?.cefBrowser
+            ?.executeJavaScript(
+              "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$safeToken', '$safeApiUrl'); }",
+              jbCefBrowser?.cefBrowser?.url ?: "",
+              0,
+            )
+        },
+        ModalityState.any(),
+      )
+  }
+
   override fun dispose() {
     isDisposed = true
+    if (instance === this) {
+      instance = null
+    }
     disposeCurrentBrowser()
   }
 }

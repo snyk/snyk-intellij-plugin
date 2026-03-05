@@ -68,8 +68,30 @@ class SaveConfigHandlerExecuteCommandTest {
         lsWrapperMock.executeCommandWithArgs(
           "snyk.login",
           listOf("oauth2", "https://api.snyk.io", false),
+          120_000L,
         )
       }
+    }
+  }
+
+  @Test
+  fun `dispatchSettingsCommand saves auth params to plugin settings before forwarding snyk login`() {
+    val settings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns settings
+
+    val request =
+      TreeViewCommandRequest(
+        command = "snyk.login",
+        args = listOf("pat", "https://api.eu.snyk.io", true),
+      )
+    val payload = gson.toJson(request)
+
+    handler.dispatchSettingsCommand(payload)
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      assertEquals(io.snyk.plugin.services.AuthenticationType.PAT, settings.authenticationType)
+      assertEquals("https://api.eu.snyk.io", settings.customEndpointUrl)
+      assertTrue(settings.ignoreUnknownCA)
     }
   }
 
@@ -81,7 +103,7 @@ class SaveConfigHandlerExecuteCommandTest {
     handler.dispatchSettingsCommand(payload)
 
     await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      verify { lsWrapperMock.executeCommandWithArgs("snyk.logout", emptyList()) }
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.logout", emptyList(), 5_000L) }
     }
   }
 
@@ -93,13 +115,13 @@ class SaveConfigHandlerExecuteCommandTest {
     handler.dispatchSettingsCommand(payload)
 
     await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
+      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any(), any()) }
     }
   }
 
   @Test
   fun `dispatchSettingsCommand invokes callback when callbackId present`() {
-    every { lsWrapperMock.executeCommandWithArgs("snyk.login", any()) } returns "auth-result"
+    every { lsWrapperMock.executeCommandWithArgs("snyk.login", any(), any()) } returns "auth-result"
 
     val latch = CountDownLatch(1)
     var receivedCallbackId: String? = null
