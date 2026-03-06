@@ -514,10 +514,6 @@ data class OssIdentifiers(
   }
 }
 
-data class FolderConfigsParam(
-  @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>?
-)
-
 /**
  * FolderConfig stores the configuration for a workspace folder
  *

@@ -22,7 +22,7 @@ import org.junit.Test
 import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
-import snyk.common.lsp.settings.LanguageServerSettings
+import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.trust.WorkspaceTrustSettings
 
 class ReferenceChooserDialogTest : LightPlatform4TestCase() {
@@ -116,11 +116,17 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
 
     val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
     verify { lsMock.workspaceService.didChangeConfiguration(capture(capturedParam)) }
-    val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
+    val transmittedSettings = capturedParam.captured.settings as LspConfigurationParam
     // we expect the selected item
-    assertEquals("main", transmittedSettings.folderConfigs[0].baseBranch)
+    assertEquals(
+      "main",
+      transmittedSettings.folderConfigs?.get(0)?.settings?.get("base_branch")?.value,
+    )
     // we also expect the reference folder to be transmitted
-    assertEquals("/some/reference/path", transmittedSettings.folderConfigs[0].referenceFolderPath)
+    assertEquals(
+      "/some/reference/path",
+      transmittedSettings.folderConfigs?.get(0)?.settings?.get("reference_folder")?.value,
+    )
   }
 
   @Test
@@ -221,13 +227,16 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
     verify { lsMock.workspaceService.didChangeConfiguration(capture(capturedParam)) }
 
-    val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
+    val transmittedSettings = capturedParam.captured.settings as LspConfigurationParam
     val transmittedConfig =
-      transmittedSettings.folderConfigs.find { it.folderPath == configNoBranches.folderPath }
+      transmittedSettings.folderConfigs?.find { it.folderPath == configNoBranches.folderPath }
 
     assertNotNull(transmittedConfig)
-    assertEquals("", transmittedConfig!!.baseBranch) // Should be empty string
-    assertEquals("/some/reference/path", transmittedConfig.referenceFolderPath)
+    assertEquals(
+      "",
+      transmittedConfig!!.settings?.get("base_branch")?.value,
+    ) // Should be empty string
+    assertEquals("/some/reference/path", transmittedConfig.settings?.get("reference_folder")?.value)
   }
 
   @Test

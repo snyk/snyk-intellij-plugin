@@ -33,6 +33,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Level
 import java.util.logging.Logger.getLogger
+import org.apache.commons.lang3.SystemUtils
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
 import org.eclipse.lsp4j.CodeActionCapabilities
@@ -76,10 +77,11 @@ import snyk.common.lsp.commands.COMMAND_WORKSPACE_CONFIGURATION
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_FOLDER_SCAN
 import snyk.common.lsp.commands.SNYK_GENERATE_ISSUE_DESCRIPTION
 import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
-import snyk.common.lsp.settings.IssueViewOptions
-import snyk.common.lsp.settings.LanguageServerSettings
-import snyk.common.lsp.settings.SeverityFilter
+import snyk.common.lsp.settings.InitializationOptions
+import snyk.common.lsp.settings.LspConfigurationParam
+import snyk.common.lsp.settings.LspFolderConfig
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -325,7 +327,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     params.processId = ProcessHandle.current().pid().toInt()
     params.clientInfo =
       ClientInfo(pluginInfo.integrationEnvironment, pluginInfo.integrationEnvironmentVersion)
-    params.initializationOptions = getSettings()
+    params.initializationOptions = getInitializationOptions()
     params.capabilities = getCapabilities()
 
     initializeResult =
@@ -532,13 +534,82 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun getSettings(): LanguageServerSettings {
+  fun getSettings(): LspConfigurationParam {
     val ps = pluginSettings()
+    val trustService = service<WorkspaceTrustService>()
+    val trustedFolders = trustService.settings.getTrustedPaths()
 
-    // only send folderConfig after having received the folderConfigs from LS
-    // IntelliJ only has in-memory storage, so that storage should not overwrite
-    // the folderConfigs in language server
-    val folderConfigs =
+    val settingsMap = mutableMapOf<String, ConfigSetting>()
+
+    // Global settings mapped to canonical pflag names
+    settingsMap["snyk_code_enabled"] =
+      ConfigSetting(value = ps.snykCodeSecurityIssuesScanEnable, changed = true)
+    settingsMap["snyk_oss_enabled"] = ConfigSetting(value = ps.ossScanEnable, changed = true)
+    settingsMap["snyk_iac_enabled"] = ConfigSetting(value = ps.iacScanEnabled, changed = true)
+    settingsMap["snyk_secrets_enabled"] = ConfigSetting(value = ps.secretsEnabled, changed = true)
+    settingsMap["proxy_insecure"] = ConfigSetting(value = ps.ignoreUnknownCA, changed = true)
+
+    val endpoint = getEndpointUrl()
+    if (!endpoint.isNullOrBlank()) {
+      settingsMap["api_endpoint"] = ConfigSetting(value = endpoint, changed = true)
+    }
+
+    if (ps.organization != null) {
+      settingsMap["organization"] = ConfigSetting(value = ps.organization!!, changed = true)
+    }
+
+    settingsMap["send_error_reports"] = ConfigSetting(value = true, changed = true)
+    settingsMap["automatic_download"] =
+      ConfigSetting(value = ps.manageBinariesAutomatically, changed = true)
+
+    val cliPath = getCliFile().absolutePath
+    if (cliPath.isNotBlank()) {
+      settingsMap["cli_path"] = ConfigSetting(value = cliPath, changed = true)
+    }
+
+    if (!ps.cliBaseDownloadURL.isNullOrBlank()) {
+      settingsMap["binary_base_url"] =
+        ConfigSetting(value = ps.cliBaseDownloadURL!!, changed = true)
+    }
+
+    if (!ps.token.isNullOrBlank()) {
+      settingsMap["token"] = ConfigSetting(value = ps.token!!, changed = true)
+    }
+
+    settingsMap["automatic_authentication"] = ConfigSetting(value = false, changed = true)
+
+    // filters
+    val severityFilter =
+      mapOf(
+        "critical" to ps.criticalSeverityEnabled,
+        "high" to ps.highSeverityEnabled,
+        "medium" to ps.mediumSeverityEnabled,
+        "low" to ps.lowSeverityEnabled,
+      )
+    settingsMap["enabled_severities"] = ConfigSetting(value = severityFilter, changed = true)
+
+    if (ps.riskScoreThreshold != null) {
+      settingsMap["risk_score_threshold"] =
+        ConfigSetting(value = ps.riskScoreThreshold!!, changed = true)
+    }
+
+    val issueViewOptions =
+      mapOf("openIssues" to ps.openIssuesEnabled, "ignoredIssues" to ps.ignoredIssuesEnabled)
+    // Actually mapped via canonical names, but issue_view_open_issues and issue_view_ignored_issues
+    settingsMap["issue_view_open_issues"] =
+      ConfigSetting(value = ps.openIssuesEnabled, changed = true)
+    settingsMap["issue_view_ignored_issues"] =
+      ConfigSetting(value = ps.ignoredIssuesEnabled, changed = true)
+
+    settingsMap["trust_enabled"] = ConfigSetting(value = false, changed = true)
+    settingsMap["scan_automatic"] = ConfigSetting(value = ps.scanOnSave, changed = true)
+    settingsMap["authentication_method"] =
+      ConfigSetting(value = ps.authenticationType.languageServerSettingsName, changed = true)
+    settingsMap["enable_snyk_oss_quick_fix_code_actions"] =
+      ConfigSetting(value = true, changed = true)
+    settingsMap["scan_net_new"] = ConfigSetting(value = ps.isDeltaFindingsEnabled(), changed = true)
+
+    val folderConfigsList =
       configuredWorkspaceFolders
         .filter {
           val folderPath = it.uri.fromUriToPath().toString()
@@ -546,46 +617,73 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         }
         .map {
           val folderPath = it.uri.fromUriToPath().toString()
-          service<FolderConfigSettings>().getFolderConfig(folderPath)
+          val fc = service<FolderConfigSettings>().getFolderConfig(folderPath)
+
+          val fcSettingsMap = mutableMapOf<String, ConfigSetting>()
+          if (fc.baseBranch != null) {
+            fcSettingsMap["base_branch"] = ConfigSetting(value = fc.baseBranch!!, changed = true)
+          }
+          if (fc.additionalEnv != null) {
+            fcSettingsMap["additional_environment"] =
+              ConfigSetting(value = fc.additionalEnv!!, changed = true)
+          }
+          if (fc.additionalParameters != null) {
+            fcSettingsMap["additional_parameters"] =
+              ConfigSetting(value = fc.additionalParameters!!, changed = true)
+          }
+          if (fc.localBranches != null) {
+            fcSettingsMap["local_branches"] =
+              ConfigSetting(value = fc.localBranches!!, changed = true)
+          }
+          if (fc.referenceFolderPath != null) {
+            fcSettingsMap["reference_folder"] =
+              ConfigSetting(value = fc.referenceFolderPath!!, changed = true)
+          }
+          if (fc.preferredOrg != null) {
+            fcSettingsMap["preferred_org"] =
+              ConfigSetting(value = fc.preferredOrg!!, changed = true)
+          }
+          if (fc.autoDeterminedOrg != null) {
+            fcSettingsMap["auto_determined_org"] =
+              ConfigSetting(value = fc.autoDeterminedOrg!!, changed = true)
+          }
+          if (fc.orgSetByUser != null) {
+            fcSettingsMap["org_set_by_user"] =
+              ConfigSetting(value = fc.orgSetByUser!!, changed = true)
+          }
+          if (fc.scanCommandConfig != null) {
+            fcSettingsMap["scan_command_config"] =
+              ConfigSetting(value = fc.scanCommandConfig!!, changed = true)
+          }
+          LspFolderConfig(folderPath = folderPath, settings = fcSettingsMap)
         }
         .toList()
 
+    return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
+  }
+
+  fun getInitializationOptions(): InitializationOptions {
+    val ps = pluginSettings()
     val trustService = service<WorkspaceTrustService>()
     val trustedFolders = trustService.settings.getTrustedPaths()
 
-    return LanguageServerSettings(
-      activateSnykOpenSource = ps.ossScanEnable.toString(),
-      activateSnykCodeSecurity = ps.snykCodeSecurityIssuesScanEnable.toString(),
-      activateSnykIac = ps.iacScanEnabled.toString(),
-      activateSnykSecrets = ps.secretsEnabled.toString(),
-      organization = ps.organization ?: "",
-      insecure = ps.ignoreUnknownCA.toString(),
-      endpoint = getEndpointUrl(),
-      cliPath = getCliFile().absolutePath,
-      cliBaseDownloadURL = ps.cliBaseDownloadURL,
-      manageBinariesAutomatically = ps.manageBinariesAutomatically.toString(),
-      token = ps.token,
-      filterSeverity =
-        SeverityFilter(
-          critical = ps.criticalSeverityEnabled,
-          high = ps.highSeverityEnabled,
-          medium = ps.mediumSeverityEnabled,
-          low = ps.lowSeverityEnabled,
-        ),
-      issueViewOptions =
-        IssueViewOptions(
-          openIssues = ps.openIssuesEnabled,
-          ignoredIssues = ps.ignoredIssuesEnabled,
-        ),
-      enableTrustedFoldersFeature = "false",
-      scanningMode = if (!ps.scanOnSave) "manual" else "auto",
+    val param = getSettings()
+
+    return InitializationOptions(
+      settings = param.settings,
+      folderConfigs = param.folderConfigs,
+      requiredProtocolVersion = ps.requiredLsProtocolVersion.toString(),
+      deviceId = ps.userAnonymousId,
       integrationName = pluginInfo.integrationName,
       integrationVersion = pluginInfo.integrationVersion,
-      authenticationMethod = ps.authenticationType.languageServerSettingsName,
-      enableSnykOSSQuickFixCodeActions = "true",
-      folderConfigs = folderConfigs,
+      osPlatform = SystemUtils.OS_NAME,
+      osArch = SystemUtils.OS_ARCH,
+      runtimeVersion = SystemUtils.JAVA_VERSION,
+      runtimeName = SystemUtils.JAVA_RUNTIME_NAME,
+      hoverVerbosity = 0,
+      outputFormat = "html",
+      path = null,
       trustedFolders = trustedFolders,
-      riskScoreThreshold = ps.riskScoreThreshold,
     )
   }
 

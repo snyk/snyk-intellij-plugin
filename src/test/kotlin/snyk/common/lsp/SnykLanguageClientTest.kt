@@ -47,7 +47,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.progress.ProgressManager
+import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LspConfigurationParam
+import snyk.common.lsp.settings.LspFolderConfig
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 
@@ -335,7 +338,7 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `folderConfig should call migrateNestedFolderConfigs after adding configs`() {
+  fun `snykConfiguration should call migrateNestedFolderConfigs after adding configs`() {
     val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
     val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
 
@@ -349,27 +352,64 @@ class SnykLanguageClientTest {
       messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
     } returns folderConfigListener
 
-    val folderConfig = FolderConfig(folderPath = "/test/project", baseBranch = "main")
-    val param = FolderConfigsParam(listOf(folderConfig))
+    val lspFolderConfig =
+      LspFolderConfig(
+        folderPath = "/test/project",
+        settings = mapOf("base_branch" to ConfigSetting(value = "main")),
+      )
+    val param = LspConfigurationParam(folderConfigs = listOf(lspFolderConfig))
 
-    cut.folderConfig(param)
+    cut.snykConfiguration(param)
 
-    verify(timeout = 5000) { folderConfigSettingsMock.addAll(listOf(folderConfig)) }
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(any()) }
     verify(timeout = 5000) { folderConfigSettingsMock.migrateNestedFolderConfigs(projectMock) }
   }
 
   @Test
-  fun `folderConfig should not run when disposed`() {
+  fun `snykConfiguration should not run when disposed`() {
     every { projectMock.isDisposed } returns true
 
     val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
       folderConfigSettingsMock
 
-    val param = FolderConfigsParam(listOf(FolderConfig(folderPath = "/test", baseBranch = "main")))
-    cut.folderConfig(param)
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test",
+              settings = mapOf("base_branch" to ConfigSetting(value = "main")),
+            )
+          )
+      )
+    cut.snykConfiguration(param)
 
     verify(exactly = 0) { folderConfigSettingsMock.addAll(any()) }
+  }
+
+  @Test
+  fun `snykConfiguration should update plugin settings when received`() {
+    // initial state
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.ossScanEnable = false
+
+    val param =
+      LspConfigurationParam(
+        settings =
+          mapOf(
+            "snyk_code_enabled" to ConfigSetting(value = true, isLocked = true),
+            "snyk_oss_enabled" to ConfigSetting(value = true, isLocked = false),
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    // Give it a small amount of time to process async task
+    Thread.sleep(200)
+
+    assertTrue(settings.snykCodeSecurityIssuesScanEnable)
+    assertTrue(settings.ossScanEnable)
   }
 
   @Test

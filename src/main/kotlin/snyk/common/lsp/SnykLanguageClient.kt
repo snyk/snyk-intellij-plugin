@@ -63,6 +63,7 @@ import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
 
@@ -213,27 +214,240 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     return completedFuture
   }
 
-  @JsonNotification(value = "$/snyk.folderConfigs")
-  fun folderConfig(folderConfigParam: FolderConfigsParam?) {
-    if (disposed) return
-    val folderConfigs = folderConfigParam?.folderConfigs ?: emptyList()
+  @JsonNotification(value = "$/snyk.configuration")
+  fun snykConfiguration(configurationParam: LspConfigurationParam?) {
+    if (disposed || configurationParam == null) return
     runAsync {
-      val service = service<FolderConfigSettings>()
-      val languageServerWrapper = LanguageServerWrapper.getInstance(project)
-
-      service.addAll(folderConfigs)
-      folderConfigs.forEach { languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true) }
-
-      // Migrate any nested folder configs that may have been created by earlier plugin versions
-      // Only workspace folder paths (non-nested) should have folder configs
-      service.migrateNestedFolderConfigs(project)
-
       try {
-        // Already in runAsync, so just use sync publisher here
-        getSyncPublisher(project, SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
-          ?.folderConfigsChanged(folderConfigs.isNotEmpty())
+        val ps = pluginSettings()
+        var settingsChanged = false
+
+        configurationParam.settings?.let { settings ->
+          settings["snyk_code_enabled"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.snykCodeSecurityIssuesScanEnable != boolVal) {
+                ps.snykCodeSecurityIssuesScanEnable = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["snyk_oss_enabled"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.ossScanEnable != boolVal) {
+                ps.ossScanEnable = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["snyk_iac_enabled"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.iacScanEnabled != boolVal) {
+                ps.iacScanEnabled = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["snyk_secrets_enabled"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.secretsEnabled != boolVal) {
+                ps.secretsEnabled = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["proxy_insecure"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.ignoreUnknownCA != boolVal) {
+                ps.ignoreUnknownCA = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["api_endpoint"]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.customEndpointUrl != strVal) {
+                ps.customEndpointUrl = strVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["organization"]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.organization != strVal) {
+                ps.organization = strVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["automatic_download"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.manageBinariesAutomatically != boolVal) {
+                ps.manageBinariesAutomatically = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["cli_path"]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.cliPath != strVal) {
+                ps.cliPath = strVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["binary_base_url"]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.cliBaseDownloadURL != strVal) {
+                ps.cliBaseDownloadURL = strVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["token"]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.token != strVal) {
+                ps.token = strVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["enabled_severities"]?.value?.let {
+            if (it is Map<*, *>) {
+              (it["critical"] as? Boolean)?.let { critical ->
+                if (ps.criticalSeverityEnabled != critical) {
+                  ps.criticalSeverityEnabled = critical
+                  settingsChanged = true
+                }
+              }
+              (it["high"] as? Boolean)?.let { high ->
+                if (ps.highSeverityEnabled != high) {
+                  ps.highSeverityEnabled = high
+                  settingsChanged = true
+                }
+              }
+              (it["medium"] as? Boolean)?.let { medium ->
+                if (ps.mediumSeverityEnabled != medium) {
+                  ps.mediumSeverityEnabled = medium
+                  settingsChanged = true
+                }
+              }
+              (it["low"] as? Boolean)?.let { low ->
+                if (ps.lowSeverityEnabled != low) {
+                  ps.lowSeverityEnabled = low
+                  settingsChanged = true
+                }
+              }
+            }
+          }
+          settings["risk_score_threshold"]?.value?.let {
+            if (it is Number && ps.riskScoreThreshold != it.toInt()) {
+              ps.riskScoreThreshold = it.toInt()
+              settingsChanged = true
+            }
+          }
+          settings["issue_view_open_issues"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.openIssuesEnabled != boolVal) {
+                ps.openIssuesEnabled = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["issue_view_ignored_issues"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.ignoredIssuesEnabled != boolVal) {
+                ps.ignoredIssuesEnabled = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["scan_automatic"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.scanOnSave != boolVal) {
+                ps.scanOnSave = boolVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings["scan_net_new"]?.value?.let {
+            (it as? Boolean)?.let { boolVal ->
+              if (ps.isDeltaFindingsEnabled() != boolVal) {
+                ps.setDeltaEnabled(boolVal)
+                settingsChanged = true
+              }
+            }
+          }
+        }
+
+        if (settingsChanged) {
+          StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
+          logger.debug("force-saved settings from Language Server configuration")
+
+          publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
+        }
+
+        configurationParam.folderConfigs?.let { folderConfigs ->
+          val service = service<FolderConfigSettings>()
+          val languageServerWrapper = LanguageServerWrapper.getInstance(project)
+
+          // convert to FolderConfig
+          val convertedConfigs =
+            folderConfigs.map { lspFolderConfig ->
+              val settings = lspFolderConfig.settings ?: emptyMap()
+              val baseBranch = settings["base_branch"]?.value as? String ?: ""
+              val additionalEnv = settings["additional_environment"]?.value as? String
+
+              // local_branches and additional_parameters are sent as arrays/lists of strings
+              val localBranches =
+                (settings["local_branches"]?.value as? List<*>)?.filterIsInstance<String>()
+                  ?: emptyList()
+              val additionalParameters =
+                (settings["additional_parameters"]?.value as? List<*>)?.filterIsInstance<String>()
+                  ?: emptyList()
+
+              val referenceFolderPath = settings["reference_folder"]?.value as? String
+              val preferredOrg = settings["preferred_org"]?.value as? String ?: ""
+              val autoDeterminedOrg = settings["auto_determined_org"]?.value as? String ?: ""
+              val orgSetByUser = settings["org_set_by_user"]?.value as? Boolean ?: false
+
+              @Suppress("UNCHECKED_CAST")
+              val scanCommandConfig =
+                settings["scan_command_config"]?.value
+                  as? Map<String, snyk.common.lsp.ScanCommandConfig>
+
+              FolderConfig(
+                folderPath = lspFolderConfig.folderPath,
+                baseBranch = baseBranch,
+                additionalEnv = additionalEnv,
+                localBranches = localBranches,
+                additionalParameters = additionalParameters,
+                referenceFolderPath = referenceFolderPath,
+                preferredOrg = preferredOrg,
+                autoDeterminedOrg = autoDeterminedOrg,
+                orgSetByUser = orgSetByUser,
+                scanCommandConfig = scanCommandConfig,
+              )
+            }
+
+          service.addAll(convertedConfigs)
+          convertedConfigs.forEach {
+            languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true)
+          }
+
+          // Migrate any nested folder configs that may have been created by earlier plugin versions
+          // Only workspace folder paths (non-nested) should have folder configs
+          service.migrateNestedFolderConfigs(project)
+
+          try {
+            // Already in runAsync, so just use sync publisher here
+            getSyncPublisher(project, SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+              ?.folderConfigsChanged(convertedConfigs.isNotEmpty())
+          } catch (e: Exception) {
+            logger.error("Error processing snyk folder configs", e)
+          }
+        }
       } catch (e: Exception) {
-        logger.error("Error processing snyk folder configs", e)
+        logger.error("Error processing snyk configuration", e)
       }
     }
   }

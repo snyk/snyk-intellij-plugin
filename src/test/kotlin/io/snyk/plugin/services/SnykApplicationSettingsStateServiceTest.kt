@@ -26,4 +26,10 @@ class SnykApplicationSettingsStateServiceTest {
     assertFalse(target.hasSeverityEnabled(Severity.CRITICAL))
     assertFalse(target.hasSeverityEnabled(Severity.LOW))
   }
+
+  @Test
+  fun requiredLsProtocolVersion_shouldBe25() {
+    val target = SnykApplicationSettingsStateService()
+    junit.framework.TestCase.assertEquals(25, target.requiredLsProtocolVersion)
+  }
 }
