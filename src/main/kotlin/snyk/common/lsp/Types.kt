@@ -538,8 +538,28 @@ data class FolderConfig(
   @SerializedName("scanCommandConfig")
   val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
   @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
+  @Transient val explicitChanges: MutableSet<String> = mutableSetOf(),
 ) : Comparable<FolderConfig> {
   override fun compareTo(other: FolderConfig): Int = this.folderPath.compareTo(other.folderPath)
+
+  fun markExplicitlyChanged(settingKey: String) {
+    explicitChanges.add(settingKey)
+  }
+
+  fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
+
+  fun migrateExplicitChanges() {
+    if (explicitChanges.isEmpty()) {
+      if (baseBranch.isNotEmpty()) markExplicitlyChanged("base_branch")
+      if (!additionalEnv.isNullOrEmpty()) markExplicitlyChanged("additional_environment")
+      if (!additionalParameters.isNullOrEmpty()) markExplicitlyChanged("additional_parameters")
+      if (!localBranches.isNullOrEmpty()) markExplicitlyChanged("local_branches")
+      if (!referenceFolderPath.isNullOrEmpty()) markExplicitlyChanged("reference_folder")
+      if (preferredOrg.isNotEmpty()) markExplicitlyChanged("preferred_org")
+      if (orgSetByUser) markExplicitlyChanged("org_set_by_user")
+      if (!scanCommandConfig.isNullOrEmpty()) markExplicitlyChanged("scan_command_config")
+    }
+  }
 }
 
 data class ScanCommandConfig(

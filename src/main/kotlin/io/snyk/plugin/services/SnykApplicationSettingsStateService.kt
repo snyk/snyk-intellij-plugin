@@ -40,6 +40,14 @@ class SnykApplicationSettingsStateService :
   // testing flag
   var fileListenerEnabled: Boolean = true
 
+  var explicitChanges: MutableSet<String> = mutableSetOf()
+
+  fun markExplicitlyChanged(settingKey: String) {
+    explicitChanges.add(settingKey)
+  }
+
+  fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
+
   // TODO migrate to
   // https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
   var token: String? = null

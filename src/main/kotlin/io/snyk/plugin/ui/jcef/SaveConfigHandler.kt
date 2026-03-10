@@ -21,6 +21,7 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.trust.WorkspaceTrustService
 
 class SaveConfigHandler(
@@ -199,28 +200,56 @@ class SaveConfigHandler(
   ) {
     val isFallback = config.isFallbackForm == true
 
-    config.manageBinariesAutomatically?.let { settings.manageBinariesAutomatically = it }
+    config.manageBinariesAutomatically?.let {
+      settings.manageBinariesAutomatically = it
+      settings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    }
 
     // Use the provided cliPath from the config if present, or the default CLI path if not.
-    config.cliPath?.let { path -> settings.cliPath = path.ifEmpty { getDefaultCliPath() } }
+    config.cliPath?.let { path ->
+      settings.cliPath = path.ifEmpty { getDefaultCliPath() }
+      settings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+    }
 
-    config.cliBaseDownloadURL?.let { settings.cliBaseDownloadURL = it }
+    config.cliBaseDownloadURL?.let {
+      settings.cliBaseDownloadURL = it
+      settings.markExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
+    }
     config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
-    config.insecure?.let { settings.ignoreUnknownCA = it }
+    config.insecure?.let {
+      settings.ignoreUnknownCA = it
+      settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
+    }
 
     if (!isFallback) {
       settings.ossScanEnable = config.activateSnykOpenSource ?: false
+      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_OSS_ENABLED)
       settings.snykCodeSecurityIssuesScanEnable = config.activateSnykCode ?: false
+      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_CODE_ENABLED)
       settings.iacScanEnabled = config.activateSnykIac ?: false
+      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_IAC_ENABLED)
       settings.secretsEnabled = config.activateSnykSecrets ?: false
+      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_SECRETS_ENABLED)
 
       // Scanning mode
-      config.scanningMode?.let { settings.scanOnSave = (it == "auto") }
+      config.scanningMode?.let {
+        settings.scanOnSave = (it == "auto")
+        settings.markExplicitlyChanged(LsSettingsKeys.SCAN_AUTOMATIC)
+      }
 
       // Connection settings
-      config.organization?.let { settings.organization = it }
-      config.endpoint?.let { settings.customEndpointUrl = it }
-      config.token?.let { settings.token = it }
+      config.organization?.let {
+        settings.organization = it
+        settings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+      }
+      config.endpoint?.let {
+        settings.customEndpointUrl = it
+        settings.markExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
+      }
+      config.token?.let {
+        settings.token = it
+        settings.markExplicitlyChanged(LsSettingsKeys.TOKEN)
+      }
 
       // Authentication method
       config.authenticationMethod?.let { method ->
@@ -231,27 +260,52 @@ class SaveConfigHandler(
             "pat" -> AuthenticationType.PAT
             else -> AuthenticationType.OAUTH2
           }
+        settings.markExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
       }
 
       // Severity filters
       config.filterSeverity?.let { severity ->
-        severity.critical?.let { settings.criticalSeverityEnabled = it }
-        severity.high?.let { settings.highSeverityEnabled = it }
-        severity.medium?.let { settings.mediumSeverityEnabled = it }
-        severity.low?.let { settings.lowSeverityEnabled = it }
+        severity.critical?.let {
+          settings.criticalSeverityEnabled = it
+          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+        }
+        severity.high?.let {
+          settings.highSeverityEnabled = it
+          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+        }
+        severity.medium?.let {
+          settings.mediumSeverityEnabled = it
+          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+        }
+        severity.low?.let {
+          settings.lowSeverityEnabled = it
+          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+        }
       }
 
       // Issue view options
       config.issueViewOptions?.let { options ->
-        options.openIssues?.let { settings.openIssuesEnabled = it }
-        options.ignoredIssues?.let { settings.ignoredIssuesEnabled = it }
+        options.openIssues?.let {
+          settings.openIssuesEnabled = it
+          settings.markExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES)
+        }
+        options.ignoredIssues?.let {
+          settings.ignoredIssuesEnabled = it
+          settings.markExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES)
+        }
       }
 
       // Delta findings
-      config.enableDeltaFindings?.let { settings.setDeltaEnabled(it) }
+      config.enableDeltaFindings?.let {
+        settings.setDeltaEnabled(it)
+        settings.markExplicitlyChanged(LsSettingsKeys.SCAN_NET_NEW)
+      }
 
       // Risk score threshold
-      config.riskScoreThreshold?.let { settings.riskScoreThreshold = it }
+      config.riskScoreThreshold?.let {
+        settings.riskScoreThreshold = it
+        settings.markExplicitlyChanged(LsSettingsKeys.RISK_SCORE_THRESHOLD)
+      }
 
       // Trusted folders - sync the list (add new, remove missing)
       config.trustedFolders?.let { folders ->
@@ -322,6 +376,7 @@ class SaveConfigHandler(
             folderConfig.scanCommandConfig?.let { parseScanCommandConfig(it) }
               ?: existingConfig.scanCommandConfig,
         )
+      updatedConfig.migrateExplicitChanges()
       fcs.addFolderConfig(updatedConfig)
     }
   }
