@@ -756,6 +756,78 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
                 changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG),
               )
           }
+
+          // Org-scope overrides
+          if (fc.scanAutomatic != null) {
+            fcSettingsMap[LsSettingsKeys.SCAN_AUTOMATIC] =
+              ConfigSetting(
+                value = fc.scanAutomatic,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.SCAN_AUTOMATIC),
+              )
+          }
+          if (fc.scanNetNew != null) {
+            fcSettingsMap[LsSettingsKeys.SCAN_NET_NEW] =
+              ConfigSetting(
+                value = fc.scanNetNew,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.SCAN_NET_NEW),
+              )
+          }
+          if (fc.enabledSeverities != null) {
+            val severityFilter =
+              mapOf(
+                "critical" to fc.enabledSeverities.critical,
+                "high" to fc.enabledSeverities.high,
+                "medium" to fc.enabledSeverities.medium,
+                "low" to fc.enabledSeverities.low,
+              )
+            fcSettingsMap[LsSettingsKeys.ENABLED_SEVERITIES] =
+              ConfigSetting(
+                value = severityFilter,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES),
+              )
+          }
+          if (fc.snykOssEnabled != null) {
+            fcSettingsMap[LsSettingsKeys.SNYK_OSS_ENABLED] =
+              ConfigSetting(
+                value = fc.snykOssEnabled,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.SNYK_OSS_ENABLED),
+              )
+          }
+          if (fc.snykCodeEnabled != null) {
+            fcSettingsMap[LsSettingsKeys.SNYK_CODE_ENABLED] =
+              ConfigSetting(
+                value = fc.snykCodeEnabled,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.SNYK_CODE_ENABLED),
+              )
+          }
+          if (fc.snykIacEnabled != null) {
+            fcSettingsMap[LsSettingsKeys.SNYK_IAC_ENABLED] =
+              ConfigSetting(
+                value = fc.snykIacEnabled,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.SNYK_IAC_ENABLED),
+              )
+          }
+          if (fc.issueViewOpenIssues != null) {
+            fcSettingsMap[LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES] =
+              ConfigSetting(
+                value = fc.issueViewOpenIssues,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES),
+              )
+          }
+          if (fc.issueViewIgnoredIssues != null) {
+            fcSettingsMap[LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES] =
+              ConfigSetting(
+                value = fc.issueViewIgnoredIssues,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES),
+              )
+          }
+          if (fc.riskScoreThreshold != null) {
+            fcSettingsMap[LsSettingsKeys.RISK_SCORE_THRESHOLD] =
+              ConfigSetting(
+                value = fc.riskScoreThreshold,
+                changed = fc.isExplicitlyChanged(LsSettingsKeys.RISK_SCORE_THRESHOLD),
+              )
+          }
           LspFolderConfig(folderPath = folderPath, settings = fcSettingsMap)
         }
         .toList()

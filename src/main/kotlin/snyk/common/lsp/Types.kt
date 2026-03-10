@@ -539,6 +539,17 @@ data class FolderConfig(
   val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
   @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
   @Transient val explicitChanges: MutableSet<String> = mutableSetOf(),
+  // Org-scope overrides
+  @SerializedName("scanAutomatic") val scanAutomatic: Boolean? = null,
+  @SerializedName("scanNetNew") val scanNetNew: Boolean? = null,
+  @SerializedName("enabledSeverities")
+  val enabledSeverities: snyk.common.lsp.settings.SeverityFilter? = null,
+  @SerializedName("snykOssEnabled") val snykOssEnabled: Boolean? = null,
+  @SerializedName("snykCodeEnabled") val snykCodeEnabled: Boolean? = null,
+  @SerializedName("snykIacEnabled") val snykIacEnabled: Boolean? = null,
+  @SerializedName("issueViewOpenIssues") val issueViewOpenIssues: Boolean? = null,
+  @SerializedName("issueViewIgnoredIssues") val issueViewIgnoredIssues: Boolean? = null,
+  @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
 ) : Comparable<FolderConfig> {
   override fun compareTo(other: FolderConfig): Int = this.folderPath.compareTo(other.folderPath)
 

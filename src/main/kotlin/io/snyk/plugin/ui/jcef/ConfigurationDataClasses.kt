@@ -113,6 +113,16 @@ data class FolderConfigData(
   @SerializedName("orgSetByUser") val orgSetByUser: Boolean? = null,
   @SerializedName("scanCommandConfig")
   val scanCommandConfig: Map<String, ScanCommandConfigData>? = null,
+  // Org-scope override fields
+  @SerializedName("scanAutomatic") val scanAutomatic: Boolean? = null,
+  @SerializedName("scanNetNew") val scanNetNew: Boolean? = null,
+  @SerializedName("enabledSeverities") val enabledSeverities: SeverityFilterConfig? = null,
+  @SerializedName("snykOssEnabled") val snykOssEnabled: Boolean? = null,
+  @SerializedName("snykCodeEnabled") val snykCodeEnabled: Boolean? = null,
+  @SerializedName("snykIacEnabled") val snykIacEnabled: Boolean? = null,
+  @SerializedName("issueViewOpenIssues") val issueViewOpenIssues: Boolean? = null,
+  @SerializedName("issueViewIgnoredIssues") val issueViewIgnoredIssues: Boolean? = null,
+  @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
 )
 
 data class ScanCommandConfigData(
