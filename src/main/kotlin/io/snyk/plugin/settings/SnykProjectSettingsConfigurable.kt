@@ -27,6 +27,8 @@ import io.snyk.plugin.ui.settings.HTMLSettingsPanel
 import javax.swing.JComponent
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.withSetting
 
 class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigurable {
   private val settingsStateService
@@ -233,12 +235,18 @@ fun applyFolderConfigChanges(
   val existingConfig = fcs.getFolderConfig(folderPath)
 
   val updatedConfig =
-    existingConfig.copy(
-      additionalParameters = ParametersListUtil.parse(additionalParameters),
-      // Clear the preferredOrg field if the auto org selection is enabled.
-      preferredOrg = if (autoSelectOrgEnabled) "" else preferredOrgText.trim(),
-      orgSetByUser = !autoSelectOrgEnabled,
-    )
+    existingConfig
+      .withSetting(
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        ParametersListUtil.parse(additionalParameters),
+        changed = true,
+      )
+      .withSetting(
+        LsFolderSettingsKeys.PREFERRED_ORG,
+        if (autoSelectOrgEnabled) "" else preferredOrgText.trim(),
+        changed = true,
+      )
+      .withSetting(LsFolderSettingsKeys.ORG_SET_BY_USER, !autoSelectOrgEnabled, changed = true)
   fcs.addFolderConfig(updatedConfig)
 }
 

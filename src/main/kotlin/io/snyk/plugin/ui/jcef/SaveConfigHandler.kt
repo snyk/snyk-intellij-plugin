@@ -23,6 +23,7 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
+import snyk.common.lsp.settings.withSetting
 import snyk.trust.WorkspaceTrustService
 
 class SaveConfigHandler(
@@ -363,55 +364,72 @@ class SaveConfigHandler(
     val fcs = service<FolderConfigSettings>()
 
     for (folderConfig in folderConfigs) {
-      val existingConfig = fcs.getFolderConfig(folderConfig.folderPath)
+      var updated = fcs.getFolderConfig(folderConfig.folderPath)
 
-      // Build updated config, writing values directly from config (use defaults if null)
-      val updatedConfig =
-        existingConfig.copy(
-          additionalParameters = folderConfig.additionalParameters,
-          additionalEnv = folderConfig.additionalEnv,
-          preferredOrg = folderConfig.preferredOrg ?: "",
-          autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
-          orgSetByUser = folderConfig.orgSetByUser ?: false,
-          scanCommandConfig =
-            folderConfig.scanCommandConfig?.let { parseScanCommandConfig(it) }
-              ?: existingConfig.scanCommandConfig,
-        )
-      updatedConfig.migrateExplicitChanges()
-
-      // Track explicit changes made by the user in the UI form
-      if (
-        folderConfig.additionalParameters != null &&
-          folderConfig.additionalParameters != existingConfig.additionalParameters
-      ) {
-        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+      // Apply each field from the UI form, marking as changed
+      folderConfig.additionalParameters?.let {
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, it, changed = true)
       }
-      if (
-        folderConfig.additionalEnv != null &&
-          folderConfig.additionalEnv != existingConfig.additionalEnv
-      ) {
-        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
+      folderConfig.additionalEnv?.let {
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT, it, changed = true)
       }
-      if (
-        folderConfig.preferredOrg != null &&
-          folderConfig.preferredOrg != existingConfig.preferredOrg
-      ) {
-        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.PREFERRED_ORG)
+      folderConfig.preferredOrg?.let {
+        updated = updated.withSetting(LsFolderSettingsKeys.PREFERRED_ORG, it, changed = true)
       }
-      if (
-        folderConfig.orgSetByUser != null &&
-          folderConfig.orgSetByUser != existingConfig.orgSetByUser
-      ) {
-        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.ORG_SET_BY_USER)
+      folderConfig.autoDeterminedOrg?.let {
+        updated = updated.withSetting(LsFolderSettingsKeys.AUTO_DETERMINED_ORG, it)
       }
-      if (folderConfig.scanCommandConfig != null) {
-        val parsedScanCommandConfig = parseScanCommandConfig(folderConfig.scanCommandConfig)
-        if (parsedScanCommandConfig != existingConfig.scanCommandConfig) {
-          updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
-        }
+      folderConfig.orgSetByUser?.let {
+        updated = updated.withSetting(LsFolderSettingsKeys.ORG_SET_BY_USER, it, changed = true)
+      }
+      folderConfig.scanCommandConfig?.let {
+        updated =
+          updated.withSetting(
+            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+            parseScanCommandConfig(it),
+            changed = true,
+          )
       }
 
-      fcs.addFolderConfig(updatedConfig)
+      // Org-scope overrides from processFolderOverrides() in JS
+      folderConfig.scanAutomatic?.let {
+        updated = updated.withSetting(LsSettingsKeys.SCAN_AUTOMATIC, it, changed = true)
+      }
+      folderConfig.scanNetNew?.let {
+        updated = updated.withSetting(LsSettingsKeys.SCAN_NET_NEW, it, changed = true)
+      }
+      folderConfig.enabledSeverities?.let {
+        val sev =
+          snyk.common.lsp.settings.SeverityFilter(
+            critical = it.critical,
+            high = it.high,
+            medium = it.medium,
+            low = it.low,
+          )
+        updated = updated.withSetting(LsSettingsKeys.ENABLED_SEVERITIES, sev, changed = true)
+      }
+      folderConfig.snykOssEnabled?.let {
+        updated = updated.withSetting(LsSettingsKeys.SNYK_OSS_ENABLED, it, changed = true)
+      }
+      folderConfig.snykCodeEnabled?.let {
+        updated = updated.withSetting(LsSettingsKeys.SNYK_CODE_ENABLED, it, changed = true)
+      }
+      folderConfig.snykIacEnabled?.let {
+        updated = updated.withSetting(LsSettingsKeys.SNYK_IAC_ENABLED, it, changed = true)
+      }
+      folderConfig.issueViewOpenIssues?.let {
+        updated = updated.withSetting(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it, changed = true)
+      }
+      folderConfig.issueViewIgnoredIssues?.let {
+        updated = updated.withSetting(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it, changed = true)
+      }
+      folderConfig.riskScoreThreshold?.let {
+        updated = updated.withSetting(LsSettingsKeys.RISK_SCORE_THRESHOLD, it, changed = true)
+      }
+
+      fcs.addFolderConfig(updated)
     }
   }
 

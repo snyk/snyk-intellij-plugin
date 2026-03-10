@@ -71,9 +71,10 @@ import javax.swing.event.DocumentEvent
 import javax.swing.text.BadLocationException
 import org.jetbrains.concurrency.runAsync
 import snyk.SnykBundle
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LspFolderConfig
 
 class SnykSettingsDialog(
   private val project: Project,
@@ -211,7 +212,10 @@ class SnykSettingsDialog(
       cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
       baseBranchInfoLabel.text =
         service<FolderConfigSettings>().getAll().values.joinToString("\n") {
-          "${it.folderPath}: Reference branch: ${it.baseBranch}, Reference directory: ${it.referenceFolderPath}"
+          val branch = it.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
+          val refDir =
+            it.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
+          "${it.folderPath}: Reference branch: $branch, Reference directory: $refDir"
         }
       netNewIssuesDropDown.selectedItem = applicationSettings.issuesToDisplay
     }
@@ -258,7 +262,9 @@ class SnykSettingsDialog(
     cliReleaseChannelDropDown.selectedItem = settings.cliReleaseChannel
     baseBranchInfoLabel.text =
       service<FolderConfigSettings>().getAll().values.joinToString("\n") {
-        "${it.folderPath}: Reference branch: ${it.baseBranch}, Reference directory: ${it.referenceFolderPath}"
+        val branch = it.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
+        val refDir = it.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
+        "${it.folderPath}: Reference branch: $branch, Reference directory: $refDir"
       }
     netNewIssuesDropDown.selectedItem = settings.issuesToDisplay
 
@@ -955,7 +961,7 @@ class SnykSettingsDialog(
 
   fun isAutoSelectOrgEnabled(): Boolean = autoDetectOrgCheckbox.isSelected
 
-  private fun getFolderConfig(): FolderConfig? {
+  private fun getFolderConfig(): LspFolderConfig? {
     val folderConfigSettings = service<FolderConfigSettings>()
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
     return languageServerWrapper
@@ -973,10 +979,11 @@ class SnykSettingsDialog(
     val organization =
       if (autoDetectOrgSelected) {
         // Checkbox checked = auto-detect enabled = use autoDeterminedOrg only
-        folderConfig?.autoDeterminedOrg ?: ""
+        folderConfig?.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value as? String
+          ?: ""
       } else {
         // Checkbox unchecked = manual selection = clear textbox for user input
-        folderConfig?.preferredOrg ?: ""
+        folderConfig?.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value as? String ?: ""
       }
 
     preferredOrgTextField.text = organization

@@ -514,65 +514,6 @@ data class OssIdentifiers(
   }
 }
 
-/**
- * FolderConfig stores the configuration for a workspace folder
- *
- * @param folderPath the path of the folder
- * @param baseBranch the base branch to compare against (if git repository)
- * @param localBranches the local branches in the git repository
- * @param additionalParameters additional parameters to pass to the scan command
- * @param additionalEnv additional environment variables to set for the scan command
- * @param referenceFolderPath the reference folder to scan, if not a git repository
- * @param scanCommandConfig the scan command configuration to specify a command to be executed
- *   before and/or after the scan
- */
-data class FolderConfig(
-  @SerializedName("folderPath") val folderPath: String,
-  @SerializedName("preferredOrg") val preferredOrg: String = "",
-  @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String = "",
-  @SerializedName("baseBranch") val baseBranch: String,
-  @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
-  @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
-  @SerializedName("additionalEnv") val additionalEnv: String? = "",
-  @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
-  @SerializedName("scanCommandConfig")
-  val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
-  @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
-  @Transient val explicitChanges: MutableSet<String> = mutableSetOf(),
-  // Org-scope overrides
-  @SerializedName("scanAutomatic") val scanAutomatic: Boolean? = null,
-  @SerializedName("scanNetNew") val scanNetNew: Boolean? = null,
-  @SerializedName("enabledSeverities")
-  val enabledSeverities: snyk.common.lsp.settings.SeverityFilter? = null,
-  @SerializedName("snykOssEnabled") val snykOssEnabled: Boolean? = null,
-  @SerializedName("snykCodeEnabled") val snykCodeEnabled: Boolean? = null,
-  @SerializedName("snykIacEnabled") val snykIacEnabled: Boolean? = null,
-  @SerializedName("issueViewOpenIssues") val issueViewOpenIssues: Boolean? = null,
-  @SerializedName("issueViewIgnoredIssues") val issueViewIgnoredIssues: Boolean? = null,
-  @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
-) : Comparable<FolderConfig> {
-  override fun compareTo(other: FolderConfig): Int = this.folderPath.compareTo(other.folderPath)
-
-  fun markExplicitlyChanged(settingKey: String) {
-    explicitChanges.add(settingKey)
-  }
-
-  fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
-
-  fun migrateExplicitChanges() {
-    if (explicitChanges.isEmpty()) {
-      if (baseBranch.isNotEmpty()) markExplicitlyChanged("base_branch")
-      if (!additionalEnv.isNullOrEmpty()) markExplicitlyChanged("additional_environment")
-      if (!additionalParameters.isNullOrEmpty()) markExplicitlyChanged("additional_parameters")
-      if (!localBranches.isNullOrEmpty()) markExplicitlyChanged("local_branches")
-      if (!referenceFolderPath.isNullOrEmpty()) markExplicitlyChanged("reference_folder")
-      if (preferredOrg.isNotEmpty()) markExplicitlyChanged("preferred_org")
-      if (orgSetByUser) markExplicitlyChanged("org_set_by_user")
-      if (!scanCommandConfig.isNullOrEmpty()) markExplicitlyChanged("scan_command_config")
-    }
-  }
-}
-
 data class ScanCommandConfig(
   val preScanCommand: String = "",
   val preScanOnlyReferenceFolder: Boolean = true,

@@ -8,17 +8,16 @@ import com.intellij.openapi.ui.Messages
 import io.snyk.plugin.fromUriToPath
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
-import java.util.stream.Collectors
 import org.jetbrains.annotations.NotNull
 import snyk.SnykBundle
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 
 @Suppress("UselessCallOnCollection")
 @Service
 class FolderConfigSettings {
   private val logger = Logger.getInstance(FolderConfigSettings::class.java)
-  private val configs: MutableMap<String, FolderConfig> = ConcurrentHashMap<String, FolderConfig>()
+  private val configs: MutableMap<String, LspFolderConfig> =
+    ConcurrentHashMap<String, LspFolderConfig>()
 
   @Suppress(
     "UselessCallOnNotNull",
@@ -26,22 +25,10 @@ class FolderConfigSettings {
     "UNNECESSARY_SAFE_CALL",
     "RedundantSuppression",
   )
-  fun addFolderConfig(@NotNull folderConfig: FolderConfig) {
+  fun addFolderConfig(@NotNull folderConfig: LspFolderConfig) {
     if (folderConfig.folderPath.isNullOrBlank()) return
     val normalizedAbsolutePath = normalizePath(folderConfig.folderPath)
-
-    // Handle null values from Language Server by providing defaults
-    val configToStore =
-      folderConfig.copy(
-        folderPath = normalizedAbsolutePath,
-        preferredOrg = folderConfig.preferredOrg ?: "",
-        autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
-        baseBranch = folderConfig.baseBranch ?: "",
-        referenceFolderPath = folderConfig.referenceFolderPath ?: "",
-        additionalParameters = folderConfig.additionalParameters ?: emptyList(),
-        additionalEnv = folderConfig.additionalEnv ?: "",
-      )
-    configs[normalizedAbsolutePath] = configToStore
+    configs[normalizedAbsolutePath] = folderConfig.copy(folderPath = normalizedAbsolutePath)
   }
 
   private fun normalizePath(folderPath: String): String {
@@ -49,25 +36,41 @@ class FolderConfigSettings {
     return normalizedAbsolutePath
   }
 
-  internal fun getFolderConfig(folderPath: String): FolderConfig {
+  internal fun getFolderConfig(folderPath: String): LspFolderConfig {
     val normalizedPath = normalizePath(folderPath)
     val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
     return folderConfig
   }
 
-  private fun createEmpty(normalizedAbsolutePath: String): FolderConfig {
-    val newConfig = FolderConfig(folderPath = normalizedAbsolutePath, baseBranch = "main")
-    // Directly add to map, as addFolderConfig would re-normalize and copy, which is redundant here
-    // since normalizedAbsolutePath is already what we want for the key and the object's path.
+  private fun createEmpty(normalizedAbsolutePath: String): LspFolderConfig {
+    val newConfig =
+      LspFolderConfig(
+        folderPath = normalizedAbsolutePath,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main"),
+            LsFolderSettingsKeys.LOCAL_BRANCHES to ConfigSetting(value = emptyList<String>()),
+            LsFolderSettingsKeys.ADDITIONAL_PARAMETERS to
+              ConfigSetting(value = emptyList<String>()),
+            LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT to ConfigSetting(value = ""),
+            LsFolderSettingsKeys.REFERENCE_FOLDER to ConfigSetting(value = ""),
+            LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = ""),
+            LsFolderSettingsKeys.AUTO_DETERMINED_ORG to ConfigSetting(value = ""),
+            LsFolderSettingsKeys.ORG_SET_BY_USER to ConfigSetting(value = false),
+            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to
+              ConfigSetting(value = emptyMap<String, Any>()),
+          ),
+      )
     configs[normalizedAbsolutePath] = newConfig
     return newConfig
   }
 
-  fun getAll(): Map<String, FolderConfig> = HashMap(configs)
+  fun getAll(): Map<String, LspFolderConfig> = HashMap(configs)
 
   fun clear() = configs.clear()
 
-  fun addAll(folderConfigs: List<FolderConfig>) = folderConfigs.mapNotNull { addFolderConfig(it) }
+  fun addAll(folderConfigs: List<LspFolderConfig>) =
+    folderConfigs.mapNotNull { addFolderConfig(it) }
 
   /**
    * Gets all folder configs for a project. This method delegates to getFolderConfigs() to ensure
@@ -76,8 +79,8 @@ class FolderConfigSettings {
    * @param project the project to get the folder configs for
    * @return the folder configs for workspace folders only (no nested paths)
    */
-  fun getAllForProject(project: Project): List<FolderConfig> =
-    getFolderConfigs(project).stream().sorted().collect(Collectors.toList()).toList()
+  fun getAllForProject(project: Project): List<LspFolderConfig> =
+    getFolderConfigs(project).sortedBy { it.folderPath }.toList()
 
   /**
    * Gets the additional parameters for the given project by aggregating the folder configs with
@@ -90,9 +93,12 @@ class FolderConfigSettings {
     // only use folder config with workspace folder path
     val additionalParameters =
       getFolderConfigs(project)
-        .filter { it.additionalParameters?.isNotEmpty() ?: false }
-        .mapNotNull { it.additionalParameters?.joinToString(" ") }
-        .joinToString(" ")
+        .map { config ->
+          (config.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value as? List<*>)
+            ?.filterIsInstance<String>() ?: emptyList()
+        }
+        .filter { it.isNotEmpty() }
+        .joinToString(" ") { it.joinToString(" ") }
     return additionalParameters
   }
 
@@ -103,7 +109,7 @@ class FolderConfigSettings {
    * @param project the project to get the folder configs for
    * @return the folder configs for the project
    */
-  fun getFolderConfigs(project: Project): List<FolderConfig> {
+  fun getFolderConfigs(project: Project): List<LspFolderConfig> {
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
     return languageServerWrapper
       .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
@@ -123,7 +129,11 @@ class FolderConfigSettings {
   fun getPreferredOrg(project: Project): String {
     // Note - this will not work for projects with extra content roots outside of the the main
     // workspace folder.
-    return getFolderConfigs(project).map { it.preferredOrg }.firstOrNull() ?: ""
+    return getFolderConfigs(project)
+      .firstOrNull()
+      ?.settings
+      ?.get(LsFolderSettingsKeys.PREFERRED_ORG)
+      ?.value as? String ?: ""
   }
 
   /**
@@ -134,7 +144,9 @@ class FolderConfigSettings {
    * @return true if auto-organization is enabled
    */
   fun isAutoOrganizationEnabled(project: Project): Boolean =
-    getFolderConfigs(project).firstOrNull()?.orgSetByUser != true
+    getFolderConfigs(project).firstOrNull()?.let {
+      !(it.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false)
+    } ?: true
 
   /**
    * Sets the auto-organization setting for the given project.
@@ -144,7 +156,12 @@ class FolderConfigSettings {
    */
   fun setAutoOrganization(project: Project, autoOrganization: Boolean) {
     getFolderConfigs(project).forEach { folderConfig ->
-      val updatedConfig = folderConfig.copy(orgSetByUser = !autoOrganization)
+      val updatedConfig =
+        folderConfig.withSetting(
+          LsFolderSettingsKeys.ORG_SET_BY_USER,
+          !autoOrganization,
+          changed = true,
+        )
       addFolderConfig(updatedConfig)
     }
   }
@@ -157,7 +174,12 @@ class FolderConfigSettings {
    */
   fun setOrganization(project: Project, organization: String?) {
     getFolderConfigs(project).forEach { folderConfig ->
-      val updatedConfig = folderConfig.copy(preferredOrg = organization ?: "")
+      val updatedConfig =
+        folderConfig.withSetting(
+          LsFolderSettingsKeys.PREFERRED_ORG,
+          organization ?: "",
+          changed = true,
+        )
       addFolderConfig(updatedConfig)
     }
   }
@@ -251,9 +273,9 @@ class FolderConfigSettings {
   private fun handleSingleCustomSubConfig(
     project: Project,
     parentPath: String,
-    parentConfig: FolderConfig,
+    parentConfig: LspFolderConfig,
     subPath: String,
-    subConfig: FolderConfig,
+    subConfig: LspFolderConfig,
   ): Int {
     val choice = promptForSingleSubConfigMigration(project, parentPath, subPath)
 
@@ -285,7 +307,7 @@ class FolderConfigSettings {
   private fun handleMultipleConflictingConfigs(
     project: Project,
     parentPath: String,
-    customNestedConfigs: Map<String, FolderConfig>,
+    customNestedConfigs: Map<String, LspFolderConfig>,
   ): Int {
     val choice =
       promptForMultipleConflictingMigration(project, parentPath, customNestedConfigs.keys.toList())
@@ -394,28 +416,23 @@ class FolderConfigSettings {
    * user-configurable fields: baseBranch, referenceFolderPath, additionalParameters, additionalEnv,
    * preferredOrg, orgSetByUser, scanCommandConfig.
    */
-  internal fun hasNonDefaultValues(config: FolderConfig, parentConfig: FolderConfig): Boolean =
-    config.baseBranch != parentConfig.baseBranch ||
-      config.referenceFolderPath != parentConfig.referenceFolderPath ||
-      config.additionalParameters != parentConfig.additionalParameters ||
-      config.additionalEnv != parentConfig.additionalEnv ||
-      config.preferredOrg != parentConfig.preferredOrg ||
-      config.orgSetByUser != parentConfig.orgSetByUser ||
-      config.scanCommandConfig != parentConfig.scanCommandConfig
+  internal fun hasNonDefaultValues(
+    config: LspFolderConfig,
+    parentConfig: LspFolderConfig,
+  ): Boolean =
+    COMPARABLE_SETTING_KEYS.any { key ->
+      config.settings?.get(key)?.value != parentConfig.settings?.get(key)?.value
+    }
 
   /** Checks if multiple configs have conflicting values between each other. */
-  internal fun hasConflictingConfigs(configs: List<FolderConfig>): Boolean {
+  internal fun hasConflictingConfigs(configs: List<LspFolderConfig>): Boolean {
     if (configs.size < 2) return false
 
     val first = configs.first()
     return configs.drop(1).any { config ->
-      config.baseBranch != first.baseBranch ||
-        config.referenceFolderPath != first.referenceFolderPath ||
-        config.additionalParameters != first.additionalParameters ||
-        config.additionalEnv != first.additionalEnv ||
-        config.preferredOrg != first.preferredOrg ||
-        config.orgSetByUser != first.orgSetByUser ||
-        config.scanCommandConfig != first.scanCommandConfig
+      COMPARABLE_SETTING_KEYS.any { key ->
+        config.settings?.get(key)?.value != first.settings?.get(key)?.value
+      }
     }
   }
 
@@ -423,16 +440,15 @@ class FolderConfigSettings {
    * Merges sub-config values into parent config. Sub-config values take precedence over parent
    * values.
    */
-  internal fun mergeConfigs(parentConfig: FolderConfig, subConfig: FolderConfig): FolderConfig =
-    parentConfig.copy(
-      baseBranch = subConfig.baseBranch,
-      referenceFolderPath = subConfig.referenceFolderPath,
-      additionalParameters = subConfig.additionalParameters,
-      additionalEnv = subConfig.additionalEnv,
-      preferredOrg = subConfig.preferredOrg,
-      orgSetByUser = subConfig.orgSetByUser,
-      scanCommandConfig = subConfig.scanCommandConfig,
-    )
+  internal fun mergeConfigs(
+    parentConfig: LspFolderConfig,
+    subConfig: LspFolderConfig,
+  ): LspFolderConfig {
+    // Merge sub-config settings into parent, sub-config values take precedence
+    val mergedSettings = (parentConfig.settings ?: emptyMap()).toMutableMap()
+    subConfig.settings?.forEach { (key, value) -> mergedSettings[key] = value }
+    return parentConfig.copy(settings = mergedSettings)
+  }
 
   /**
    * Checks if a path is nested under another path.
@@ -456,5 +472,18 @@ class FolderConfigSettings {
     KEEP_AS_IS,
     REMOVE_PARENT,
     KEEP_ALL
+  }
+
+  companion object {
+    private val COMPARABLE_SETTING_KEYS =
+      listOf(
+        LsFolderSettingsKeys.BASE_BRANCH,
+        LsFolderSettingsKeys.REFERENCE_FOLDER,
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.PREFERRED_ORG,
+        LsFolderSettingsKeys.ORG_SET_BY_USER,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+      )
   }
 }

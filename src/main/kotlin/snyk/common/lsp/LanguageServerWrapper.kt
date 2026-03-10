@@ -81,10 +81,8 @@ import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.InitializationOptions
-import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
-import snyk.common.lsp.settings.LspFolderConfig
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -701,134 +699,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         }
         .map {
           val folderPath = it.uri.fromUriToPath().toString()
-          val fc = service<FolderConfigSettings>().getFolderConfig(folderPath)
-
-          val fcSettingsMap = mutableMapOf<String, ConfigSetting>()
-          fcSettingsMap[LsFolderSettingsKeys.BASE_BRANCH] =
-            ConfigSetting(
-              value = fc.baseBranch,
-              changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.BASE_BRANCH),
-            )
-          if (fc.additionalEnv != null) {
-            fcSettingsMap[LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT] =
-              ConfigSetting(
-                value = fc.additionalEnv!!,
-                changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT),
-              )
-          }
-          if (fc.additionalParameters != null) {
-            fcSettingsMap[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS] =
-              ConfigSetting(
-                value = fc.additionalParameters!!,
-                changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS),
-              )
-          }
-          if (fc.localBranches != null) {
-            fcSettingsMap[LsFolderSettingsKeys.LOCAL_BRANCHES] =
-              ConfigSetting(
-                value = fc.localBranches!!,
-                changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.LOCAL_BRANCHES),
-              )
-          }
-          if (fc.referenceFolderPath != null) {
-            fcSettingsMap[LsFolderSettingsKeys.REFERENCE_FOLDER] =
-              ConfigSetting(
-                value = fc.referenceFolderPath!!,
-                changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.REFERENCE_FOLDER),
-              )
-          }
-          fcSettingsMap[LsFolderSettingsKeys.PREFERRED_ORG] =
-            ConfigSetting(
-              value = fc.preferredOrg,
-              changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.PREFERRED_ORG),
-            )
-          fcSettingsMap[LsFolderSettingsKeys.AUTO_DETERMINED_ORG] =
-            ConfigSetting(value = fc.autoDeterminedOrg, changed = false)
-          fcSettingsMap[LsFolderSettingsKeys.ORG_SET_BY_USER] =
-            ConfigSetting(
-              value = fc.orgSetByUser,
-              changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.ORG_SET_BY_USER),
-            )
-          if (fc.scanCommandConfig != null) {
-            fcSettingsMap[LsFolderSettingsKeys.SCAN_COMMAND_CONFIG] =
-              ConfigSetting(
-                value = fc.scanCommandConfig!!,
-                changed = fc.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG),
-              )
-          }
-
-          // Org-scope overrides
-          if (fc.scanAutomatic != null) {
-            fcSettingsMap[LsSettingsKeys.SCAN_AUTOMATIC] =
-              ConfigSetting(
-                value = fc.scanAutomatic,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.SCAN_AUTOMATIC),
-              )
-          }
-          if (fc.scanNetNew != null) {
-            fcSettingsMap[LsSettingsKeys.SCAN_NET_NEW] =
-              ConfigSetting(
-                value = fc.scanNetNew,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.SCAN_NET_NEW),
-              )
-          }
-          if (fc.enabledSeverities != null) {
-            val severityFilter =
-              mapOf(
-                "critical" to fc.enabledSeverities.critical,
-                "high" to fc.enabledSeverities.high,
-                "medium" to fc.enabledSeverities.medium,
-                "low" to fc.enabledSeverities.low,
-              )
-            fcSettingsMap[LsSettingsKeys.ENABLED_SEVERITIES] =
-              ConfigSetting(
-                value = severityFilter,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES),
-              )
-          }
-          if (fc.snykOssEnabled != null) {
-            fcSettingsMap[LsSettingsKeys.SNYK_OSS_ENABLED] =
-              ConfigSetting(
-                value = fc.snykOssEnabled,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.SNYK_OSS_ENABLED),
-              )
-          }
-          if (fc.snykCodeEnabled != null) {
-            fcSettingsMap[LsSettingsKeys.SNYK_CODE_ENABLED] =
-              ConfigSetting(
-                value = fc.snykCodeEnabled,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.SNYK_CODE_ENABLED),
-              )
-          }
-          if (fc.snykIacEnabled != null) {
-            fcSettingsMap[LsSettingsKeys.SNYK_IAC_ENABLED] =
-              ConfigSetting(
-                value = fc.snykIacEnabled,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.SNYK_IAC_ENABLED),
-              )
-          }
-          if (fc.issueViewOpenIssues != null) {
-            fcSettingsMap[LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES] =
-              ConfigSetting(
-                value = fc.issueViewOpenIssues,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES),
-              )
-          }
-          if (fc.issueViewIgnoredIssues != null) {
-            fcSettingsMap[LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES] =
-              ConfigSetting(
-                value = fc.issueViewIgnoredIssues,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES),
-              )
-          }
-          if (fc.riskScoreThreshold != null) {
-            fcSettingsMap[LsSettingsKeys.RISK_SCORE_THRESHOLD] =
-              ConfigSetting(
-                value = fc.riskScoreThreshold,
-                changed = fc.isExplicitlyChanged(LsSettingsKeys.RISK_SCORE_THRESHOLD),
-              )
-          }
-          LspFolderConfig(folderPath = folderPath, settings = fcSettingsMap)
+          service<FolderConfigSettings>().getFolderConfig(folderPath)
         }
         .toList()
 

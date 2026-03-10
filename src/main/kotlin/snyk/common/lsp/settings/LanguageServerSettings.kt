@@ -6,7 +6,6 @@ import com.google.gson.annotations.SerializedName
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.AuthenticationType
 import org.apache.commons.lang3.SystemUtils
-import snyk.common.lsp.FolderConfig
 import snyk.pluginInfo
 
 data class LanguageServerSettings(
@@ -53,7 +52,7 @@ data class LanguageServerSettings(
   @SerializedName("outputFormat") val outputFormat: String = "html",
   @SerializedName("enableDeltaFindings")
   val enableDeltaFindings: String = pluginSettings().isDeltaFindingsEnabled().toString(),
-  @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig> = emptyList(),
+  @SerializedName("folderConfigs") val folderConfigs: List<LspFolderConfig> = emptyList(),
   @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
 )
 
@@ -81,6 +80,24 @@ data class LspFolderConfig(
   @SerializedName("folderPath") val folderPath: String,
   @SerializedName("settings") val settings: Map<String, ConfigSetting>? = null,
 )
+
+fun LspFolderConfig.withSetting(
+  key: String,
+  value: Any,
+  changed: Boolean? = null,
+): LspFolderConfig {
+  val newSettings = (settings ?: emptyMap()).toMutableMap()
+  val existing = newSettings[key]
+  newSettings[key] =
+    ConfigSetting(
+      value = value,
+      changed = changed ?: existing?.changed,
+      source = existing?.source,
+      originScope = existing?.originScope,
+      isLocked = existing?.isLocked,
+    )
+  return copy(settings = newSettings)
+}
 
 data class LspConfigurationParam(
   @SerializedName("settings") val settings: Map<String, ConfigSetting>? = null,

@@ -26,10 +26,10 @@ import org.eclipse.lsp4j.Position
 import org.eclipse.lsp4j.Range
 import snyk.common.annotator.SnykCodeAnnotator
 import snyk.common.lsp.DataFlow
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.IssueData
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.folderConfig
 import snyk.trust.WorkspaceTrustSettings
 
 class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
@@ -61,7 +61,7 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     val contentRootPaths = project.getContentRootPaths()
     service<FolderConfigSettings>()
       .addFolderConfig(
-        FolderConfig(contentRootPaths.first().toAbsolutePath().toString(), baseBranch = "main")
+        folderConfig(contentRootPaths.first().toAbsolutePath().toString(), baseBranch = "main")
       )
     snykToolWindowPanel = SnykToolWindowPanel(project)
     rootOssIssuesTreeNode = RootOssTreeNode(project)

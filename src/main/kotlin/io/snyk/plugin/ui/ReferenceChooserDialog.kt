@@ -16,13 +16,15 @@ import java.awt.GridBagLayout
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LspFolderConfig
+import snyk.common.lsp.settings.withSetting
 
 class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
-  var baseBranches: MutableMap<FolderConfig, ComboBox<String>> = mutableMapOf()
-  internal var referenceFolders: MutableMap<FolderConfig, TextFieldWithBrowseButton> =
+  var baseBranches: MutableMap<LspFolderConfig, ComboBox<String>> = mutableMapOf()
+  internal var referenceFolders: MutableMap<LspFolderConfig, TextFieldWithBrowseButton> =
     mutableMapOf()
   internal var hasChanges = false
 
@@ -46,11 +48,13 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
 
     folderConfigs.forEach { folderConfig ->
       // Only create combo box if there are local branches
-      folderConfig.localBranches
+      (folderConfig.settings?.get(LsFolderSettingsKeys.LOCAL_BRANCHES)?.value as? List<*>)
+        ?.filterIsInstance<String>()
         ?.takeIf { it.isNotEmpty() }
         ?.let { localBranches ->
           val comboBox = ComboBox(localBranches.sorted().toTypedArray())
-          comboBox.selectedItem = folderConfig.baseBranch
+          comboBox.selectedItem =
+            folderConfig.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
           comboBox.name = folderConfig.folderPath
 
           // Add change listener to track modifications
@@ -81,9 +85,10 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
     return scrollPane
   }
 
-  private fun configureReferenceFolder(folderConfig: FolderConfig): TextFieldWithBrowseButton {
+  private fun configureReferenceFolder(folderConfig: LspFolderConfig): TextFieldWithBrowseButton {
     val referenceFolder = TextFieldWithBrowseButton()
-    referenceFolder.text = folderConfig.referenceFolderPath ?: ""
+    referenceFolder.text =
+      folderConfig.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
     referenceFolder.name = folderConfig.folderPath
 
     referenceFolder.toolTipText =
@@ -141,10 +146,13 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
       // Update if either base branch or reference folder is provided
       if (baseBranch.isNotBlank() || referenceFolderControl?.text?.isNotBlank() == true) {
         folderConfigSettings.addFolderConfig(
-          folderConfig.copy(
-            baseBranch = baseBranch,
-            referenceFolderPath = referenceFolderControl?.text ?: "",
-          )
+          folderConfig
+            .withSetting(LsFolderSettingsKeys.BASE_BRANCH, baseBranch, changed = true)
+            .withSetting(
+              LsFolderSettingsKeys.REFERENCE_FOLDER,
+              referenceFolderControl?.text ?: "",
+              changed = true,
+            )
         )
       }
     }
@@ -156,7 +164,9 @@ class ReferenceChooserDialog(val project: Project) : DialogWrapper(true) {
         referenceFolders[folderConfig]?.text?.let { referenceFolder ->
           if (referenceFolder.isNotBlank()) {
             folderConfigSettings.addFolderConfig(
-              folderConfig.copy(baseBranch = "", referenceFolderPath = referenceFolder)
+              folderConfig
+                .withSetting(LsFolderSettingsKeys.BASE_BRANCH, "", changed = true)
+                .withSetting(LsFolderSettingsKeys.REFERENCE_FOLDER, referenceFolder, changed = true)
             )
           }
         }

@@ -63,7 +63,6 @@ import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
-import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.sdk.SdkHelper
@@ -392,52 +391,8 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           val service = service<FolderConfigSettings>()
           val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
-          // convert to FolderConfig
-          val convertedConfigs =
-            folderConfigs.map { lspFolderConfig ->
-              val settings = lspFolderConfig.settings ?: emptyMap()
-              val baseBranch = settings[LsFolderSettingsKeys.BASE_BRANCH]?.value as? String ?: ""
-              val additionalEnv =
-                settings[LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT]?.value as? String
-
-              // local_branches and additional_parameters are sent as arrays/lists of strings
-              val localBranches =
-                (settings[LsFolderSettingsKeys.LOCAL_BRANCHES]?.value as? List<*>)
-                  ?.filterIsInstance<String>() ?: emptyList()
-              val additionalParameters =
-                (settings[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value as? List<*>)
-                  ?.filterIsInstance<String>() ?: emptyList()
-
-              val referenceFolderPath =
-                settings[LsFolderSettingsKeys.REFERENCE_FOLDER]?.value as? String
-              val preferredOrg =
-                settings[LsFolderSettingsKeys.PREFERRED_ORG]?.value as? String ?: ""
-              val autoDeterminedOrg =
-                settings[LsFolderSettingsKeys.AUTO_DETERMINED_ORG]?.value as? String ?: ""
-              val orgSetByUser =
-                settings[LsFolderSettingsKeys.ORG_SET_BY_USER]?.value as? Boolean ?: false
-
-              @Suppress("UNCHECKED_CAST")
-              val scanCommandConfig =
-                settings[LsFolderSettingsKeys.SCAN_COMMAND_CONFIG]?.value
-                  as? Map<String, snyk.common.lsp.ScanCommandConfig>
-
-              FolderConfig(
-                folderPath = lspFolderConfig.folderPath,
-                baseBranch = baseBranch,
-                additionalEnv = additionalEnv,
-                localBranches = localBranches,
-                additionalParameters = additionalParameters,
-                referenceFolderPath = referenceFolderPath,
-                preferredOrg = preferredOrg,
-                autoDeterminedOrg = autoDeterminedOrg,
-                orgSetByUser = orgSetByUser,
-                scanCommandConfig = scanCommandConfig,
-              )
-            }
-
-          service.addAll(convertedConfigs)
-          convertedConfigs.forEach {
+          service.addAll(folderConfigs)
+          folderConfigs.forEach {
             languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true)
           }
 
@@ -448,7 +403,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           try {
             // Already in runAsync, so just use sync publisher here
             getSyncPublisher(project, SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
-              ?.folderConfigsChanged(convertedConfigs.isNotEmpty())
+              ?.folderConfigsChanged(folderConfigs.isNotEmpty())
           } catch (e: Exception) {
             logger.error("Error processing snyk folder configs", e)
           }
