@@ -21,6 +21,7 @@ import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.trust.WorkspaceTrustService
 
@@ -377,6 +378,39 @@ class SaveConfigHandler(
               ?: existingConfig.scanCommandConfig,
         )
       updatedConfig.migrateExplicitChanges()
+
+      // Track explicit changes made by the user in the UI form
+      if (
+        folderConfig.additionalParameters != null &&
+          folderConfig.additionalParameters != existingConfig.additionalParameters
+      ) {
+        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+      }
+      if (
+        folderConfig.additionalEnv != null &&
+          folderConfig.additionalEnv != existingConfig.additionalEnv
+      ) {
+        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
+      }
+      if (
+        folderConfig.preferredOrg != null &&
+          folderConfig.preferredOrg != existingConfig.preferredOrg
+      ) {
+        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.PREFERRED_ORG)
+      }
+      if (
+        folderConfig.orgSetByUser != null &&
+          folderConfig.orgSetByUser != existingConfig.orgSetByUser
+      ) {
+        updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.ORG_SET_BY_USER)
+      }
+      if (folderConfig.scanCommandConfig != null) {
+        val parsedScanCommandConfig = parseScanCommandConfig(folderConfig.scanCommandConfig)
+        if (parsedScanCommandConfig != existingConfig.scanCommandConfig) {
+          updatedConfig.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
+        }
+      }
+
       fcs.addFolderConfig(updatedConfig)
     }
   }
