@@ -63,6 +63,8 @@ import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.sdk.SdkHelper
 import snyk.trust.WorkspaceTrustService
@@ -223,7 +225,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         var settingsChanged = false
 
         configurationParam.settings?.let { settings ->
-          settings["snyk_code_enabled"]?.value?.let {
+          settings[LsSettingsKeys.SNYK_CODE_ENABLED]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.snykCodeSecurityIssuesScanEnable != boolVal) {
                 ps.snykCodeSecurityIssuesScanEnable = boolVal
@@ -231,7 +233,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["snyk_oss_enabled"]?.value?.let {
+          settings[LsSettingsKeys.SNYK_OSS_ENABLED]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.ossScanEnable != boolVal) {
                 ps.ossScanEnable = boolVal
@@ -239,7 +241,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["snyk_iac_enabled"]?.value?.let {
+          settings[LsSettingsKeys.SNYK_IAC_ENABLED]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.iacScanEnabled != boolVal) {
                 ps.iacScanEnabled = boolVal
@@ -247,7 +249,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["snyk_secrets_enabled"]?.value?.let {
+          settings[LsSettingsKeys.SNYK_SECRETS_ENABLED]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.secretsEnabled != boolVal) {
                 ps.secretsEnabled = boolVal
@@ -255,7 +257,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["proxy_insecure"]?.value?.let {
+          settings[LsSettingsKeys.PROXY_INSECURE]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.ignoreUnknownCA != boolVal) {
                 ps.ignoreUnknownCA = boolVal
@@ -263,7 +265,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["api_endpoint"]?.value?.let {
+          settings[LsSettingsKeys.API_ENDPOINT]?.value?.let {
             (it as? String)?.let { strVal ->
               if (ps.customEndpointUrl != strVal) {
                 ps.customEndpointUrl = strVal
@@ -271,7 +273,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["organization"]?.value?.let {
+          settings[LsSettingsKeys.ORGANIZATION]?.value?.let {
             (it as? String)?.let { strVal ->
               if (ps.organization != strVal) {
                 ps.organization = strVal
@@ -279,7 +281,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["automatic_download"]?.value?.let {
+          settings[LsSettingsKeys.AUTOMATIC_DOWNLOAD]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.manageBinariesAutomatically != boolVal) {
                 ps.manageBinariesAutomatically = boolVal
@@ -287,7 +289,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["cli_path"]?.value?.let {
+          settings[LsSettingsKeys.CLI_PATH]?.value?.let {
             (it as? String)?.let { strVal ->
               if (ps.cliPath != strVal) {
                 ps.cliPath = strVal
@@ -295,7 +297,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["binary_base_url"]?.value?.let {
+          settings[LsSettingsKeys.BINARY_BASE_URL]?.value?.let {
             (it as? String)?.let { strVal ->
               if (ps.cliBaseDownloadURL != strVal) {
                 ps.cliBaseDownloadURL = strVal
@@ -303,7 +305,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["token"]?.value?.let {
+          settings[LsSettingsKeys.TOKEN]?.value?.let {
             (it as? String)?.let { strVal ->
               if (ps.token != strVal) {
                 ps.token = strVal
@@ -311,7 +313,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["enabled_severities"]?.value?.let {
+          settings[LsSettingsKeys.ENABLED_SEVERITIES]?.value?.let {
             if (it is Map<*, *>) {
               (it["critical"] as? Boolean)?.let { critical ->
                 if (ps.criticalSeverityEnabled != critical) {
@@ -339,13 +341,13 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["risk_score_threshold"]?.value?.let {
+          settings[LsSettingsKeys.RISK_SCORE_THRESHOLD]?.value?.let {
             if (it is Number && ps.riskScoreThreshold != it.toInt()) {
               ps.riskScoreThreshold = it.toInt()
               settingsChanged = true
             }
           }
-          settings["issue_view_open_issues"]?.value?.let {
+          settings[LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.openIssuesEnabled != boolVal) {
                 ps.openIssuesEnabled = boolVal
@@ -353,7 +355,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["issue_view_ignored_issues"]?.value?.let {
+          settings[LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.ignoredIssuesEnabled != boolVal) {
                 ps.ignoredIssuesEnabled = boolVal
@@ -361,7 +363,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["scan_automatic"]?.value?.let {
+          settings[LsSettingsKeys.SCAN_AUTOMATIC]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.scanOnSave != boolVal) {
                 ps.scanOnSave = boolVal
@@ -369,7 +371,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
-          settings["scan_net_new"]?.value?.let {
+          settings[LsSettingsKeys.SCAN_NET_NEW]?.value?.let {
             (it as? Boolean)?.let { boolVal ->
               if (ps.isDeltaFindingsEnabled() != boolVal) {
                 ps.setDeltaEnabled(boolVal)
@@ -394,25 +396,30 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           val convertedConfigs =
             folderConfigs.map { lspFolderConfig ->
               val settings = lspFolderConfig.settings ?: emptyMap()
-              val baseBranch = settings["base_branch"]?.value as? String ?: ""
-              val additionalEnv = settings["additional_environment"]?.value as? String
+              val baseBranch = settings[LsFolderSettingsKeys.BASE_BRANCH]?.value as? String ?: ""
+              val additionalEnv =
+                settings[LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT]?.value as? String
 
               // local_branches and additional_parameters are sent as arrays/lists of strings
               val localBranches =
-                (settings["local_branches"]?.value as? List<*>)?.filterIsInstance<String>()
-                  ?: emptyList()
+                (settings[LsFolderSettingsKeys.LOCAL_BRANCHES]?.value as? List<*>)
+                  ?.filterIsInstance<String>() ?: emptyList()
               val additionalParameters =
-                (settings["additional_parameters"]?.value as? List<*>)?.filterIsInstance<String>()
-                  ?: emptyList()
+                (settings[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value as? List<*>)
+                  ?.filterIsInstance<String>() ?: emptyList()
 
-              val referenceFolderPath = settings["reference_folder"]?.value as? String
-              val preferredOrg = settings["preferred_org"]?.value as? String ?: ""
-              val autoDeterminedOrg = settings["auto_determined_org"]?.value as? String ?: ""
-              val orgSetByUser = settings["org_set_by_user"]?.value as? Boolean ?: false
+              val referenceFolderPath =
+                settings[LsFolderSettingsKeys.REFERENCE_FOLDER]?.value as? String
+              val preferredOrg =
+                settings[LsFolderSettingsKeys.PREFERRED_ORG]?.value as? String ?: ""
+              val autoDeterminedOrg =
+                settings[LsFolderSettingsKeys.AUTO_DETERMINED_ORG]?.value as? String ?: ""
+              val orgSetByUser =
+                settings[LsFolderSettingsKeys.ORG_SET_BY_USER]?.value as? Boolean ?: false
 
               @Suppress("UNCHECKED_CAST")
               val scanCommandConfig =
-                settings["scan_command_config"]?.value
+                settings[LsFolderSettingsKeys.SCAN_COMMAND_CONFIG]?.value
                   as? Map<String, snyk.common.lsp.ScanCommandConfig>
 
               FolderConfig(
