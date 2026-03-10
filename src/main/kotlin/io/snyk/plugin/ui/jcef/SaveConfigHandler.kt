@@ -20,7 +20,6 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.trust.WorkspaceTrustService
 
@@ -358,44 +357,17 @@ class SaveConfigHandler(
     }
   }
 
-  private fun applyFolderConfigs(folderConfigs: List<FolderConfigData>) {
-    val fcs = service<FolderConfigSettings>()
+  private fun applyFolderConfigs(folderConfigs: List<snyk.common.lsp.settings.LspFolderConfig>) {
+    val snykLanguageClient =
+      snyk.common.lsp.LanguageServerWrapper.getInstance(project).languageClient
 
-    for (folderConfig in folderConfigs) {
-      val existingConfig = fcs.getFolderConfig(folderConfig.folderPath)
-
-      // Build updated config, writing values directly from config (use defaults if null)
-      val updatedConfig =
-        existingConfig.copy(
-          additionalParameters = folderConfig.additionalParameters,
-          additionalEnv = folderConfig.additionalEnv,
-          preferredOrg = folderConfig.preferredOrg ?: "",
-          autoDeterminedOrg = folderConfig.autoDeterminedOrg ?: "",
-          orgSetByUser = folderConfig.orgSetByUser ?: false,
-          scanCommandConfig =
-            folderConfig.scanCommandConfig?.let { parseScanCommandConfig(it) }
-              ?: existingConfig.scanCommandConfig,
-        )
-      updatedConfig.migrateExplicitChanges()
-      fcs.addFolderConfig(updatedConfig)
+    if (snykLanguageClient != null) {
+      // Create a dummy notification param with just the folder configs
+      val param = snyk.common.lsp.settings.LspConfigurationParam(folderConfigs = folderConfigs)
+      // Call SnykLanguageClient internal function directly
+      snykLanguageClient.snykConfiguration(param)
+    } else {
+      logger.warn("Could not apply folder configs as SnykLanguageClient is null")
     }
-  }
-
-  private fun parseScanCommandConfig(
-    scanConfig: Map<String, ScanCommandConfigData>
-  ): Map<String, snyk.common.lsp.ScanCommandConfig> {
-    val result = mutableMapOf<String, snyk.common.lsp.ScanCommandConfig>()
-
-    for ((product, config) in scanConfig) {
-      result[product] =
-        snyk.common.lsp.ScanCommandConfig(
-          preScanCommand = config.preScanCommand ?: "",
-          preScanOnlyReferenceFolder = config.preScanOnlyReferenceFolder ?: false,
-          postScanCommand = config.postScanCommand ?: "",
-          postScanOnlyReferenceFolder = config.postScanOnlyReferenceFolder ?: false,
-        )
-    }
-
-    return result
   }
 }

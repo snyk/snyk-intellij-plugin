@@ -84,7 +84,8 @@ data class SaveConfigRequest(
   @SerializedName("trustedFolders") val trustedFolders: List<String>? = null,
 
   // Folder Configs
-  @SerializedName("folderConfigs") val folderConfigs: List<FolderConfigData>? = null,
+  @SerializedName("folderConfigs")
+  val folderConfigs: List<snyk.common.lsp.settings.LspFolderConfig>? = null,
 
   // Form Type Indicator
   @SerializedName("isFallbackForm") val isFallbackForm: Boolean? = null,
@@ -100,24 +101,4 @@ data class SeverityFilterConfig(
 data class IssueViewOptionsConfig(
   @SerializedName("openIssues") val openIssues: Boolean? = null,
   @SerializedName("ignoredIssues") val ignoredIssues: Boolean? = null,
-)
-
-data class FolderConfigData(
-  @SerializedName("folderPath") val folderPath: String,
-  @SerializedName("additionalParameters")
-  @com.google.gson.annotations.JsonAdapter(StringOrListTypeAdapter::class)
-  val additionalParameters: List<String>? = null,
-  @SerializedName("additionalEnv") val additionalEnv: String? = null,
-  @SerializedName("preferredOrg") val preferredOrg: String? = null,
-  @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String? = null,
-  @SerializedName("orgSetByUser") val orgSetByUser: Boolean? = null,
-  @SerializedName("scanCommandConfig")
-  val scanCommandConfig: Map<String, ScanCommandConfigData>? = null,
-)
-
-data class ScanCommandConfigData(
-  @SerializedName("preScanCommand") val preScanCommand: String? = null,
-  @SerializedName("preScanOnlyReferenceFolder") val preScanOnlyReferenceFolder: Boolean? = null,
-  @SerializedName("postScanCommand") val postScanCommand: String? = null,
-  @SerializedName("postScanOnlyReferenceFolder") val postScanOnlyReferenceFolder: Boolean? = null,
 )
