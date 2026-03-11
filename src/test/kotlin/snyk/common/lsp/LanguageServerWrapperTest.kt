@@ -448,11 +448,24 @@ class LanguageServerWrapperTest {
     assertEquals(settings.iacScanEnabled, actual.settings?.get("snyk_iac_enabled")?.value)
     assertEquals(settings.ossScanEnable, actual.settings?.get("snyk_oss_enabled")?.value)
     assertEquals(settings.token, actual.settings?.get("token")?.value)
+    assertEquals(true, actual.settings?.get("token")?.changed)
     assertEquals(settings.ignoreUnknownCA, actual.settings?.get("proxy_insecure")?.value)
     assertEquals(getCliFile().absolutePath, actual.settings?.get("cli_path")?.value)
     assertEquals(settings.organization, actual.settings?.get("organization")?.value)
     assertEquals(settings.isDeltaFindingsEnabled(), actual.settings?.get("scan_net_new")?.value)
     assertEquals(expectedTrustedFolders, actual.trustedFolders)
+  }
+
+  @Test
+  fun `getSettings should always mark token as changed`() {
+    settings.token = "persistedToken"
+    // token is NOT explicitly changed - simulates loading from persisted settings
+    assertFalse(settings.isExplicitlyChanged("token"))
+
+    val actual = cut.getSettings()
+
+    assertEquals("persistedToken", actual.settings?.get("token")?.value)
+    assertEquals(true, actual.settings?.get("token")?.changed)
   }
 
   @Test

@@ -608,12 +608,11 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
 
     if (!ps.token.isNullOrBlank()) {
-      settingsMap[LsSettingsKeys.TOKEN] =
-        ConfigSetting(value = ps.token!!, changed = ps.isExplicitlyChanged(LsSettingsKeys.TOKEN))
+      settingsMap[LsSettingsKeys.TOKEN] = ConfigSetting(value = ps.token!!, changed = true)
     }
 
     settingsMap[LsSettingsKeys.AUTOMATIC_AUTHENTICATION] =
-      ConfigSetting(value = false, changed = false)
+      ConfigSetting(value = false, changed = true)
 
     // filters
     val severityFilter =
@@ -648,7 +647,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         changed = ps.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES),
       )
 
-    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = false)
+    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = true)
     settingsMap[LsSettingsKeys.SCAN_AUTOMATIC] =
       ConfigSetting(
         value = ps.scanOnSave,
@@ -666,26 +665,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         value = ps.isDeltaFindingsEnabled(),
         changed = ps.isExplicitlyChanged(LsSettingsKeys.SCAN_NET_NEW),
       )
-
-    // Pass environment information in settings
-    settingsMap[LsSettingsKeys.INTEGRATION_NAME] =
-      ConfigSetting(value = pluginInfo.integrationName, changed = false)
-    settingsMap[LsSettingsKeys.INTEGRATION_VERSION] =
-      ConfigSetting(value = pluginInfo.integrationVersion, changed = false)
-    settingsMap[LsSettingsKeys.INTEGRATION_ENVIRONMENT] =
-      ConfigSetting(value = pluginInfo.integrationEnvironment, changed = false)
-    settingsMap[LsSettingsKeys.INTEGRATION_ENVIRONMENT_VERSION] =
-      ConfigSetting(value = pluginInfo.integrationEnvironmentVersion, changed = false)
-    settingsMap[LsSettingsKeys.DEVICE_ID] =
-      ConfigSetting(value = ps.userAnonymousId, changed = false)
-    settingsMap[LsSettingsKeys.OS_PLATFORM] =
-      ConfigSetting(value = SystemUtils.OS_NAME, changed = false)
-    settingsMap[LsSettingsKeys.OS_ARCH] =
-      ConfigSetting(value = SystemUtils.OS_ARCH, changed = false)
-    settingsMap[LsSettingsKeys.RUNTIME_NAME] =
-      ConfigSetting(value = SystemUtils.JAVA_RUNTIME_NAME, changed = false)
-    settingsMap[LsSettingsKeys.RUNTIME_VERSION] =
-      ConfigSetting(value = SystemUtils.JAVA_VERSION, changed = false)
 
     val folderConfigsList =
       configuredWorkspaceFolders
