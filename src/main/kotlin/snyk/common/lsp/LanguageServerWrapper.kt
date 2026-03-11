@@ -19,7 +19,6 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -537,9 +536,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   fun getSettings(): LspConfigurationParam {
     val ps = pluginSettings()
-    val defaultSettings = SnykApplicationSettingsStateService()
-    val trustService = service<WorkspaceTrustService>()
-    val trustedFolders = trustService.settings.getTrustedPaths()
 
     val settingsMap = mutableMapOf<String, ConfigSetting>()
 
