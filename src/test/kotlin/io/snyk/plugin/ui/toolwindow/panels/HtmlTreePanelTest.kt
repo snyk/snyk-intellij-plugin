@@ -146,6 +146,18 @@ class HtmlTreePanelTest : LightPlatform4TestCase() {
   }
 
   @Test
+  fun `init HTML should include Secrets product root with other products`() {
+    val html =
+      HtmlTreePanel::class.java.classLoader.getResource(HtmlTreePanel.HTML_INIT_FILE)!!.readText()
+
+    assertTrue(html.contains("data-node-id=\"product-oss\""))
+    assertTrue(html.contains("data-node-id=\"product-code\""))
+    assertTrue(html.contains("data-node-id=\"product-iac\""))
+    assertTrue(html.contains("data-node-id=\"product-secrets\""))
+    assertTrue(html.contains("<strong>Secrets</strong>"))
+  }
+
+  @Test
   fun `getFormattedHtml should replace all placeholders in init HTML`() {
     val html =
       HtmlTreePanel::class.java.classLoader.getResource(HtmlTreePanel.HTML_INIT_FILE)!!.readText()
