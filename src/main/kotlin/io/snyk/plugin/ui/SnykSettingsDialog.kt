@@ -81,8 +81,7 @@ class SnykSettingsDialog(
   snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable,
 ) {
   companion object {
-    @Volatile
-    var instance: SnykSettingsDialog? = null
+    @Volatile var instance: SnykSettingsDialog? = null
   }
 
   private val rootPanel =
@@ -250,15 +249,16 @@ class SnykSettingsDialog(
   fun getRootPanel(): JComponent = rootPanel
 
   fun updateAuthFields(token: String, apiUrl: String?) {
-    ApplicationManager.getApplication().invokeLater(
-      {
-        tokenTextField.text = token
-        if (!apiUrl.isNullOrBlank()) {
-          customEndpointTextField.text = apiUrl
-        }
-      },
-      com.intellij.openapi.application.ModalityState.any(),
-    )
+    ApplicationManager.getApplication()
+      .invokeLater(
+        {
+          tokenTextField.text = token
+          if (!apiUrl.isNullOrBlank()) {
+            customEndpointTextField.text = apiUrl
+          }
+        },
+        com.intellij.openapi.application.ModalityState.any(),
+      )
   }
 
   fun initializeFromSettings() {
