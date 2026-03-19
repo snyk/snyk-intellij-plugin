@@ -36,6 +36,7 @@ import io.snyk.plugin.sha256
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.toVirtualFileOrNull
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.settings.HTMLSettingsPanel
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.net.URI
@@ -328,8 +329,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     logger.debug("is same token?  ${oldToken == param.token}")
     logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}")
 
-    // Always inject into the webview so the settings page shows the token immediately.
+    // Always inject into both settings UIs so the settings page shows the token immediately.
     HTMLSettingsPanel.instance?.setAuthToken(param.token ?: "", param.apiUrl)
+    SnykSettingsDialog.instance?.updateAuthFields(param.token ?: "", param.apiUrl)
 
     if (!param.apiUrl.isNullOrBlank()) {
       pluginSettings().customEndpointUrl = param.apiUrl
