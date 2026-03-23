@@ -3,16 +3,20 @@ package io.snyk.plugin.ui.jcef
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import snyk.common.lsp.LanguageServerWrapper
 
 class SaveConfigHandlerTest : BasePlatformTestCase() {
   private lateinit var settings: SnykApplicationSettingsStateService
   private lateinit var cut: SaveConfigHandler
+  private lateinit var lsWrapperMock: LanguageServerWrapper
 
   override fun setUp() {
     super.setUp()
@@ -22,6 +26,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     mockkStatic("io.snyk.plugin.UtilsKt")
     settings = mockk(relaxed = true)
     every { pluginSettings() } returns settings
+
+    lsWrapperMock = mockk(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(project) } returns lsWrapperMock
 
     cut = SaveConfigHandler(project, onModified = {})
   }
@@ -405,6 +413,23 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals("/new/path/to/cli", realSettings.cliPath)
     assertFalse(realSettings.ossScanEnable) // Changed
     assertEquals("new-org", realSettings.organization) // Changed
+  }
+
+  fun `test saveConfig sends didChangeConfiguration to language server`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val testCases =
+      listOf(
+        "full form" to """{"activateSnykOpenSource": true}""",
+        "fallback form" to """{"isFallbackForm": true, "cliPath": "/usr/bin/snyk"}""",
+        "empty config" to "{}",
+      )
+
+    for ((name, json) in testCases) {
+      invokeParseAndSaveConfig(json)
+      verify(atLeast = 1) { lsWrapperMock.updateConfiguration() }
+    }
   }
 
   private fun invokeParseAndSaveConfig(jsonString: String) {

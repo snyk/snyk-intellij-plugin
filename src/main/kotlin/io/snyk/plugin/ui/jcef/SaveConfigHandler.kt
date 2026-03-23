@@ -194,6 +194,8 @@ class SaveConfigHandler(
     if (!isFallback) {
       config.folderConfigs?.let { applyFolderConfigs(it) }
     }
+
+    LanguageServerWrapper.getInstance(project).updateConfiguration()
   }
 
   private fun applyGlobalSettings(
@@ -225,18 +227,18 @@ class SaveConfigHandler(
 
     if (!isFallback) {
       settings.ossScanEnable = config.activateSnykOpenSource ?: false
-      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_OSS_ENABLED)
+      settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED)
       settings.snykCodeSecurityIssuesScanEnable = config.activateSnykCode ?: false
-      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_CODE_ENABLED)
+      settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
       settings.iacScanEnabled = config.activateSnykIac ?: false
-      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_IAC_ENABLED)
+      settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
       settings.secretsEnabled = config.activateSnykSecrets ?: false
-      settings.markExplicitlyChanged(LsSettingsKeys.SNYK_SECRETS_ENABLED)
+      settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)
 
       // Scanning mode
       config.scanningMode?.let {
         settings.scanOnSave = (it == "auto")
-        settings.markExplicitlyChanged(LsSettingsKeys.SCAN_AUTOMATIC)
+        settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC)
       }
 
       // Connection settings
@@ -269,19 +271,19 @@ class SaveConfigHandler(
       config.filterSeverity?.let { severity ->
         severity.critical?.let {
           settings.criticalSeverityEnabled = it
-          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES)
         }
         severity.high?.let {
           settings.highSeverityEnabled = it
-          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES)
         }
         severity.medium?.let {
           settings.mediumSeverityEnabled = it
-          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES)
         }
         severity.low?.let {
           settings.lowSeverityEnabled = it
-          settings.markExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES)
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES)
         }
       }
 
@@ -289,24 +291,24 @@ class SaveConfigHandler(
       config.issueViewOptions?.let { options ->
         options.openIssues?.let {
           settings.openIssuesEnabled = it
-          settings.markExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES)
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES)
         }
         options.ignoredIssues?.let {
           settings.ignoredIssuesEnabled = it
-          settings.markExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES)
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES)
         }
       }
 
       // Delta findings
       config.enableDeltaFindings?.let {
         settings.setDeltaEnabled(it)
-        settings.markExplicitlyChanged(LsSettingsKeys.SCAN_NET_NEW)
+        settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
       }
 
       // Risk score threshold
       config.riskScoreThreshold?.let {
         settings.riskScoreThreshold = it
-        settings.markExplicitlyChanged(LsSettingsKeys.RISK_SCORE_THRESHOLD)
+        settings.markExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
       }
 
       // Trusted folders - sync the list (add new, remove missing)
@@ -395,10 +397,10 @@ class SaveConfigHandler(
 
       // Org-scope overrides from processFolderOverrides() in JS
       folderConfig.scanAutomatic?.let {
-        updated = updated.withSetting(LsSettingsKeys.SCAN_AUTOMATIC, it, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.SCAN_AUTOMATIC, it, changed = true)
       }
       folderConfig.scanNetNew?.let {
-        updated = updated.withSetting(LsSettingsKeys.SCAN_NET_NEW, it, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.SCAN_NET_NEW, it, changed = true)
       }
       folderConfig.enabledSeverities?.let {
         val sev =
@@ -408,25 +410,27 @@ class SaveConfigHandler(
             medium = it.medium,
             low = it.low,
           )
-        updated = updated.withSetting(LsSettingsKeys.ENABLED_SEVERITIES, sev, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.ENABLED_SEVERITIES, sev, changed = true)
       }
       folderConfig.snykOssEnabled?.let {
-        updated = updated.withSetting(LsSettingsKeys.SNYK_OSS_ENABLED, it, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.SNYK_OSS_ENABLED, it, changed = true)
       }
       folderConfig.snykCodeEnabled?.let {
-        updated = updated.withSetting(LsSettingsKeys.SNYK_CODE_ENABLED, it, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.SNYK_CODE_ENABLED, it, changed = true)
       }
       folderConfig.snykIacEnabled?.let {
-        updated = updated.withSetting(LsSettingsKeys.SNYK_IAC_ENABLED, it, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.SNYK_IAC_ENABLED, it, changed = true)
       }
       folderConfig.issueViewOpenIssues?.let {
-        updated = updated.withSetting(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it, changed = true)
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it, changed = true)
       }
       folderConfig.issueViewIgnoredIssues?.let {
-        updated = updated.withSetting(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it, changed = true)
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it, changed = true)
       }
       folderConfig.riskScoreThreshold?.let {
-        updated = updated.withSetting(LsSettingsKeys.RISK_SCORE_THRESHOLD, it, changed = true)
+        updated = updated.withSetting(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, it, changed = true)
       }
 
       fcs.addFolderConfig(updated)

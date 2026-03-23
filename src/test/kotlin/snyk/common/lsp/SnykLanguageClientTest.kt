@@ -396,10 +396,16 @@ class SnykLanguageClientTest {
 
     val param =
       LspConfigurationParam(
-        settings =
-          mapOf(
-            "snyk_code_enabled" to ConfigSetting(value = true, isLocked = true),
-            "snyk_oss_enabled" to ConfigSetting(value = true, isLocked = false),
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test",
+              settings =
+                mapOf(
+                  "snyk_code_enabled" to ConfigSetting(value = true, isLocked = true),
+                  "snyk_oss_enabled" to ConfigSetting(value = true, isLocked = false),
+                ),
+            )
           )
       )
 

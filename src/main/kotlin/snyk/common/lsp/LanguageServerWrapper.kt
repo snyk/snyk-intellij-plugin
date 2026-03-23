@@ -80,6 +80,7 @@ import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.InitializationOptions
+import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.common.removeSuffix
@@ -537,29 +538,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   fun getSettings(): LspConfigurationParam {
     val ps = pluginSettings()
 
+    // Machine-scope settings (top-level settings map → user:global)
     val settingsMap = mutableMapOf<String, ConfigSetting>()
 
-    // Global settings mapped to canonical pflag names
-    settingsMap[LsSettingsKeys.SNYK_CODE_ENABLED] =
-      ConfigSetting(
-        value = ps.snykCodeSecurityIssuesScanEnable,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.SNYK_CODE_ENABLED),
-      )
-    settingsMap[LsSettingsKeys.SNYK_OSS_ENABLED] =
-      ConfigSetting(
-        value = ps.ossScanEnable,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.SNYK_OSS_ENABLED),
-      )
-    settingsMap[LsSettingsKeys.SNYK_IAC_ENABLED] =
-      ConfigSetting(
-        value = ps.iacScanEnabled,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.SNYK_IAC_ENABLED),
-      )
-    settingsMap[LsSettingsKeys.SNYK_SECRETS_ENABLED] =
-      ConfigSetting(
-        value = ps.secretsEnabled,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.SNYK_SECRETS_ENABLED),
-      )
     settingsMap[LsSettingsKeys.PROXY_INSECURE] =
       ConfigSetting(
         value = ps.ignoreUnknownCA,
@@ -583,7 +564,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         )
     }
 
-    settingsMap[LsSettingsKeys.SEND_ERROR_REPORTS] = ConfigSetting(value = true, changed = false)
     settingsMap[LsSettingsKeys.AUTOMATIC_DOWNLOAD] =
       ConfigSetting(
         value = ps.manageBinariesAutomatically,
@@ -607,14 +587,72 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         )
     }
 
-    if (!ps.token.isNullOrBlank()) {
-      settingsMap[LsSettingsKeys.TOKEN] = ConfigSetting(value = ps.token!!, changed = true)
-    }
+    settingsMap[LsSettingsKeys.CLI_RELEASE_CHANNEL] =
+      ConfigSetting(
+        value = ps.cliReleaseChannel,
+        changed = ps.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL),
+      )
 
+    settingsMap[LsSettingsKeys.AUTHENTICATION_METHOD] =
+      ConfigSetting(
+        value = ps.authenticationType.languageServerSettingsName,
+        changed = ps.isExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD),
+      )
+
+    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = true)
     settingsMap[LsSettingsKeys.AUTOMATIC_AUTHENTICATION] =
       ConfigSetting(value = false, changed = true)
 
-    // filters
+    settingsMap[LsSettingsKeys.FORMAT] = ConfigSetting(value = "html", changed = true)
+    settingsMap[LsSettingsKeys.HOVER_VERBOSITY] = ConfigSetting(value = 0, changed = true)
+    settingsMap[LsSettingsKeys.CLIENT_PROTOCOL_VERSION] =
+      ConfigSetting(value = ps.requiredLsProtocolVersion, changed = true)
+    settingsMap[LsSettingsKeys.DEVICE_ID] =
+      ConfigSetting(value = ps.userAnonymousId, changed = true)
+    settingsMap[LsSettingsKeys.OS_PLATFORM] =
+      ConfigSetting(value = SystemUtils.OS_NAME, changed = true)
+    settingsMap[LsSettingsKeys.OS_ARCH] = ConfigSetting(value = SystemUtils.OS_ARCH, changed = true)
+    settingsMap[LsSettingsKeys.RUNTIME_NAME] =
+      ConfigSetting(value = SystemUtils.JAVA_RUNTIME_NAME, changed = true)
+    settingsMap[LsSettingsKeys.RUNTIME_VERSION] =
+      ConfigSetting(value = SystemUtils.JAVA_VERSION, changed = true)
+
+    val trustService = service<WorkspaceTrustService>()
+    settingsMap[LsSettingsKeys.TRUSTED_FOLDERS] =
+      ConfigSetting(value = trustService.settings.getTrustedPaths(), changed = true)
+
+    // Write-only settings (IDE → LS only, never sent back by LS)
+    if (!ps.token.isNullOrBlank()) {
+      settingsMap[LsSettingsKeys.TOKEN] = ConfigSetting(value = ps.token!!, changed = true)
+    }
+    settingsMap[LsSettingsKeys.SEND_ERROR_REPORTS] = ConfigSetting(value = true, changed = false)
+    settingsMap[LsSettingsKeys.ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS] =
+      ConfigSetting(value = true, changed = false)
+    settingsMap[LsSettingsKeys.ENABLE_SNYK_OPEN_BROWSER_ACTIONS] =
+      ConfigSetting(value = true, changed = false)
+
+    // Folder-scope settings sent as user:global defaults
+    settingsMap[LsFolderSettingsKeys.SNYK_CODE_ENABLED] =
+      ConfigSetting(
+        value = ps.snykCodeSecurityIssuesScanEnable,
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED),
+      )
+    settingsMap[LsFolderSettingsKeys.SNYK_OSS_ENABLED] =
+      ConfigSetting(
+        value = ps.ossScanEnable,
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED),
+      )
+    settingsMap[LsFolderSettingsKeys.SNYK_IAC_ENABLED] =
+      ConfigSetting(
+        value = ps.iacScanEnabled,
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED),
+      )
+    settingsMap[LsFolderSettingsKeys.SNYK_SECRETS_ENABLED] =
+      ConfigSetting(
+        value = ps.secretsEnabled,
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED),
+      )
+
     val severityFilter =
       mapOf<String, Boolean>(
         "critical" to ps.criticalSeverityEnabled,
@@ -622,50 +660,42 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         "medium" to ps.mediumSeverityEnabled,
         "low" to ps.lowSeverityEnabled,
       )
-    settingsMap[LsSettingsKeys.ENABLED_SEVERITIES] =
+    settingsMap[LsFolderSettingsKeys.ENABLED_SEVERITIES] =
       ConfigSetting(
         value = severityFilter,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.ENABLED_SEVERITIES),
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES),
       )
 
     if (ps.riskScoreThreshold != null) {
-      settingsMap[LsSettingsKeys.RISK_SCORE_THRESHOLD] =
+      settingsMap[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD] =
         ConfigSetting(
           value = ps.riskScoreThreshold!!,
-          changed = ps.isExplicitlyChanged(LsSettingsKeys.RISK_SCORE_THRESHOLD),
+          changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD),
         )
     }
 
-    settingsMap[LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES] =
+    settingsMap[LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES] =
       ConfigSetting(
         value = ps.openIssuesEnabled,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_OPEN_ISSUES),
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES),
       )
-    settingsMap[LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES] =
+    settingsMap[LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES] =
       ConfigSetting(
         value = ps.ignoredIssuesEnabled,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES),
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES),
       )
-
-    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = true)
-    settingsMap[LsSettingsKeys.SCAN_AUTOMATIC] =
+    settingsMap[LsFolderSettingsKeys.SCAN_AUTOMATIC] =
       ConfigSetting(
         value = ps.scanOnSave,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.SCAN_AUTOMATIC),
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC),
       )
-    settingsMap[LsSettingsKeys.AUTHENTICATION_METHOD] =
-      ConfigSetting(
-        value = ps.authenticationType.languageServerSettingsName,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD),
-      )
-    settingsMap[LsSettingsKeys.ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS] =
-      ConfigSetting(value = true, changed = false)
-    settingsMap[LsSettingsKeys.SCAN_NET_NEW] =
+    settingsMap[LsFolderSettingsKeys.SCAN_NET_NEW] =
       ConfigSetting(
         value = ps.isDeltaFindingsEnabled(),
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.SCAN_NET_NEW),
+        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW),
       )
 
+    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org)
     val folderConfigsList =
       configuredWorkspaceFolders
         .filter {
