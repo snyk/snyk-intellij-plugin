@@ -11,6 +11,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.util.concurrent.CountDownLatch
@@ -55,9 +56,9 @@ class SaveConfigHandlerExecuteCommandTest {
   @Test
   fun `dispatchSettingsCommand routes snyk login to language server with auth args`() {
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.login",
-        args = listOf("oauth2", "https://api.snyk.io", false),
+        args = listOf("oauth", "https://api.snyk.io", false),
       )
     val payload = gson.toJson(request)
 
@@ -67,7 +68,7 @@ class SaveConfigHandlerExecuteCommandTest {
       verify {
         lsWrapperMock.executeCommandWithArgs(
           "snyk.login",
-          listOf("oauth2", "https://api.snyk.io", false),
+          listOf("oauth", "https://api.snyk.io", false),
           120_000L,
         )
       }
@@ -80,7 +81,7 @@ class SaveConfigHandlerExecuteCommandTest {
     every { pluginSettings() } returns settings
 
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.login",
         args = listOf("pat", "https://api.eu.snyk.io", true),
       )
@@ -89,15 +90,68 @@ class SaveConfigHandlerExecuteCommandTest {
     handler.dispatchSettingsCommand(payload)
 
     await().atMost(2, TimeUnit.SECONDS).untilAsserted {
-      assertEquals(io.snyk.plugin.services.AuthenticationType.PAT, settings.authenticationType)
+      assertEquals(AuthenticationType.PAT, settings.authenticationType)
       assertEquals("https://api.eu.snyk.io", settings.customEndpointUrl)
       assertTrue(settings.ignoreUnknownCA)
     }
   }
 
   @Test
+  fun `dispatchSettingsCommand saves oauth auth type to plugin settings`() {
+    val settings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns settings
+
+    val request =
+      ExecuteCommandRequest(
+        command = "snyk.login",
+        args = listOf("oauth", "https://api.snyk.io", false),
+      )
+    handler.dispatchSettingsCommand(gson.toJson(request))
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      assertEquals(AuthenticationType.OAUTH2, settings.authenticationType)
+      assertEquals("https://api.snyk.io", settings.customEndpointUrl)
+      assertEquals(false, settings.ignoreUnknownCA)
+    }
+  }
+
+  @Test
+  fun `dispatchSettingsCommand saves token auth type to plugin settings`() {
+    val settings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns settings
+
+    val request =
+      ExecuteCommandRequest(
+        command = "snyk.login",
+        args = listOf("token", "https://api.snyk.io", false),
+      )
+    handler.dispatchSettingsCommand(gson.toJson(request))
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      assertEquals(AuthenticationType.API_TOKEN, settings.authenticationType)
+    }
+  }
+
+  @Test
+  fun `dispatchSettingsCommand defaults unknown auth method to OAUTH2`() {
+    val settings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns settings
+
+    val request =
+      ExecuteCommandRequest(
+        command = "snyk.login",
+        args = listOf("unknown_method", "https://api.snyk.io", false),
+      )
+    handler.dispatchSettingsCommand(gson.toJson(request))
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      assertEquals(AuthenticationType.OAUTH2, settings.authenticationType)
+    }
+  }
+
+  @Test
   fun `dispatchSettingsCommand routes snyk logout to language server`() {
-    val request = TreeViewCommandRequest(command = "snyk.logout", args = emptyList())
+    val request = ExecuteCommandRequest(command = "snyk.logout", args = emptyList())
     val payload = gson.toJson(request)
 
     handler.dispatchSettingsCommand(payload)
@@ -109,7 +163,7 @@ class SaveConfigHandlerExecuteCommandTest {
 
   @Test
   fun `dispatchSettingsCommand ignores empty command`() {
-    val request = TreeViewCommandRequest(command = "", args = emptyList())
+    val request = ExecuteCommandRequest(command = "", args = emptyList())
     val payload = gson.toJson(request)
 
     handler.dispatchSettingsCommand(payload)
@@ -128,9 +182,9 @@ class SaveConfigHandlerExecuteCommandTest {
     var receivedResult: String? = null
 
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.login",
-        args = listOf("oauth2", "https://api.snyk.io", false),
+        args = listOf("oauth", "https://api.snyk.io", false),
         callbackId = "__cb_1",
       )
     val payload = gson.toJson(request)

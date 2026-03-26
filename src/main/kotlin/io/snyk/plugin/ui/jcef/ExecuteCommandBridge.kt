@@ -19,6 +19,12 @@ import snyk.common.lsp.LanguageServerWrapper
  * - Dispatch incoming command requests to the Language Server.
  * - Return results to the JS callback via `window.__ideCallbacks__`.
  */
+data class ExecuteCommandRequest(
+  val command: String = "",
+  val args: List<Any> = emptyList(),
+  val callbackId: String? = null,
+)
+
 class ExecuteCommandBridge(private val project: Project) {
   private val log = logger<ExecuteCommandBridge>()
   private val gson = Gson()
@@ -82,7 +88,7 @@ class ExecuteCommandBridge(private val project: Project) {
    */
   internal fun dispatch(value: String, callbackExecutor: ((String, String) -> Unit)? = null) {
     try {
-      val request = gson.fromJson(value, TreeViewCommandRequest::class.java)
+      val request = gson.fromJson(value, ExecuteCommandRequest::class.java)
       log.debug("ExecuteCommandBridge: received command=${request.command}, args=${request.args}")
       if (request.command.isBlank()) {
         log.warn("ExecuteCommandBridge: received empty command, ignoring")

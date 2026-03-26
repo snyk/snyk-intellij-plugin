@@ -58,7 +58,7 @@ class TreeViewBridgeHandlerTest {
   @Test
   fun `dispatchCommand should dispatch command to language server`() {
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.toggleTreeFilter",
         args = listOf("severity", "high", true),
       )
@@ -84,7 +84,7 @@ class TreeViewBridgeHandlerTest {
 
   @Test
   fun `dispatchCommand should ignore empty command`() {
-    val request = TreeViewCommandRequest(command = "", args = emptyList())
+    val request = ExecuteCommandRequest(command = "", args = emptyList())
     val payload = gson.toJson(request)
 
     handler.dispatchCommand(payload)
@@ -103,7 +103,7 @@ class TreeViewBridgeHandlerTest {
     var receivedResult: String? = null
 
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.getTreeViewIssueChunk",
         args = listOf("req1", "/path", "code", 0, 10),
         callbackId = "__cb_1",
@@ -129,7 +129,7 @@ class TreeViewBridgeHandlerTest {
     val latch = CountDownLatch(1)
     var receivedResult: String? = "not-called"
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.navigateToRange",
         args = listOf("/file.kt"),
         callbackId = "__cb_2",
@@ -150,8 +150,7 @@ class TreeViewBridgeHandlerTest {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
 
     val callbackInvoked = AtomicBoolean(false)
-    val request =
-      TreeViewCommandRequest(command = "snyk.navigateToRange", args = listOf("/file.kt"))
+    val request = ExecuteCommandRequest(command = "snyk.navigateToRange", args = listOf("/file.kt"))
     val payload = gson.toJson(request)
 
     handler.dispatchCommand(payload) { _, _ -> callbackInvoked.set(true) }
@@ -164,10 +163,10 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `TreeViewCommandRequest deserialization should work correctly`() {
+  fun `ExecuteCommandRequest deserialization should work correctly`() {
     val json =
       """{"command":"snyk.navigateToRange","args":["/file.kt",{"start":{"line":1,"character":0}}],"callbackId":null}"""
-    val request = gson.fromJson(json, TreeViewCommandRequest::class.java)
+    val request = gson.fromJson(json, ExecuteCommandRequest::class.java)
 
     assertEquals("snyk.navigateToRange", request.command)
     assertEquals(2, request.args.size)
@@ -175,8 +174,8 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `TreeViewCommandRequest defaults should be correct`() {
-    val request = TreeViewCommandRequest()
+  fun `ExecuteCommandRequest defaults should be correct`() {
+    val request = ExecuteCommandRequest()
 
     assertEquals("", request.command)
     assertEquals(emptyList<Any>(), request.args)
@@ -190,7 +189,7 @@ class TreeViewBridgeHandlerTest {
     val latch = CountDownLatch(1)
     var receivedResult: String? = null
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.setNodeExpanded",
         args = listOf("arg1"),
         callbackId = "__cb_err",
@@ -211,7 +210,7 @@ class TreeViewBridgeHandlerTest {
   fun `dispatchCommand should not throw when language server throws and no callback`() {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } throws RuntimeException("LS error")
 
-    val request = TreeViewCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg1"))
+    val request = ExecuteCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg1"))
     val payload = gson.toJson(request)
 
     // should not throw
@@ -227,7 +226,7 @@ class TreeViewBridgeHandlerTest {
     every { lsWrapperMock.executeCommandWithArgs(any(), any()) } returns "result"
 
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.setNodeExpanded",
         args = emptyList(),
         callbackId = "__cb_3",
@@ -253,7 +252,7 @@ class TreeViewBridgeHandlerTest {
       Thread {
           try {
             val request =
-              TreeViewCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg$i"))
+              ExecuteCommandRequest(command = "snyk.setNodeExpanded", args = listOf("arg$i"))
             handler.dispatchCommand(gson.toJson(request))
           } catch (e: Exception) {
             synchronized(errors) { errors.add(e) }
@@ -274,7 +273,7 @@ class TreeViewBridgeHandlerTest {
 
     val maliciousCallbackId = "'];alert('xss');//"
     val request =
-      TreeViewCommandRequest(
+      ExecuteCommandRequest(
         command = "snyk.setNodeExpanded",
         args = emptyList(),
         callbackId = maliciousCallbackId,
@@ -307,9 +306,9 @@ class TreeViewBridgeHandlerTest {
   }
 
   @Test
-  fun `TreeViewCommandRequest deserialization with missing fields should use defaults`() {
+  fun `ExecuteCommandRequest deserialization with missing fields should use defaults`() {
     val json = """{"command":"snyk.test"}"""
-    val request = gson.fromJson(json, TreeViewCommandRequest::class.java)
+    val request = gson.fromJson(json, ExecuteCommandRequest::class.java)
 
     assertEquals("snyk.test", request.command)
     assertNotNull(request.args)
@@ -319,7 +318,7 @@ class TreeViewBridgeHandlerTest {
   @Test
   fun `dispatchCommand should reject non-snyk commands and not call language server`() {
     val request =
-      TreeViewCommandRequest(command = "workbench.action.terminal.new", args = emptyList())
+      ExecuteCommandRequest(command = "workbench.action.terminal.new", args = emptyList())
     val payload = gson.toJson(request)
 
     handler.dispatchCommand(payload)
@@ -331,7 +330,7 @@ class TreeViewBridgeHandlerTest {
 
   @Test
   fun `dispatchCommand should dispatch snyk dot-prefixed commands`() {
-    val request = TreeViewCommandRequest(command = "snyk.anyCommand", args = emptyList())
+    val request = ExecuteCommandRequest(command = "snyk.anyCommand", args = emptyList())
     val payload = gson.toJson(request)
 
     handler.dispatchCommand(payload)

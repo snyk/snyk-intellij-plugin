@@ -7,12 +7,6 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 
-data class TreeViewCommandRequest(
-  val command: String = "",
-  val args: List<Any> = emptyList(),
-  val callbackId: String? = null,
-)
-
 class TreeViewBridgeHandler(private val project: Project) {
   private val bridge = ExecuteCommandBridge(project)
 
