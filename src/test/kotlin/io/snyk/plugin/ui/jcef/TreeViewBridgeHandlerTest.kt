@@ -315,4 +315,29 @@ class TreeViewBridgeHandlerTest {
     assertNotNull(request.args)
     assertEquals(null, request.callbackId)
   }
+
+  @Test
+  fun `dispatchCommand should reject non-snyk commands and not call language server`() {
+    val request =
+      TreeViewCommandRequest(command = "workbench.action.terminal.new", args = emptyList())
+    val payload = gson.toJson(request)
+
+    handler.dispatchCommand(payload)
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify(exactly = 0) { lsWrapperMock.executeCommandWithArgs(any(), any()) }
+    }
+  }
+
+  @Test
+  fun `dispatchCommand should dispatch snyk dot-prefixed commands`() {
+    val request = TreeViewCommandRequest(command = "snyk.anyCommand", args = emptyList())
+    val payload = gson.toJson(request)
+
+    handler.dispatchCommand(payload)
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted {
+      verify { lsWrapperMock.executeCommandWithArgs("snyk.anyCommand", emptyList()) }
+    }
+  }
 }

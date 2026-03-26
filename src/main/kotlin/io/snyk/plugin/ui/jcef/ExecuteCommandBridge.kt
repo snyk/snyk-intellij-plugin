@@ -88,6 +88,12 @@ class ExecuteCommandBridge(private val project: Project) {
         log.warn("ExecuteCommandBridge: received empty command, ignoring")
         return
       }
+      if (!request.command.startsWith("snyk.")) {
+        log.warn(
+          "ExecuteCommandBridge: webview attempted to execute disallowed command: ${request.command}"
+        )
+        return
+      }
       if (request.callbackId != null && !SAFE_CALLBACK_ID.matches(request.callbackId)) {
         log.warn("ExecuteCommandBridge: invalid callbackId '${request.callbackId}', ignoring")
         return
