@@ -117,7 +117,14 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
       settingsStateService.customEndpointUrl = customEndpoint
     }
 
-    settingsStateService.token = snykSettingsDialog.getToken()
+    // When the auth method changes, clear the stored token. The old token is incompatible
+    // with the new method and must not be forwarded to the LS via workspace/didChangeConfiguration,
+    // which would cause spurious "invalid credentials" notifications on the server side.
+    if (isAuthenticationMethodModified()) {
+      settingsStateService.token = ""
+    } else {
+      settingsStateService.token = snykSettingsDialog.getToken()
+    }
     settingsStateService.authenticationType = snykSettingsDialog.getAuthenticationType()
     settingsStateService.organization = snykSettingsDialog.getOrganization()
     settingsStateService.ignoreUnknownCA = snykSettingsDialog.isIgnoreUnknownCA()

@@ -80,13 +80,19 @@ class SnykSettingsDialog(
   applicationSettings: SnykApplicationSettingsStateService,
   snykProjectSettingsConfigurable: SnykProjectSettingsConfigurable,
 ) {
+  companion object {
+    @Volatile var instance: SnykSettingsDialog? = null
+  }
+
   private val rootPanel =
     object : JPanel(), Disposable {
       init {
         Disposer.register(SnykPluginDisposable.getInstance(project), this)
       }
 
-      override fun dispose() = Unit
+      override fun dispose() {
+        instance = null
+      }
     }
 
   private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, rootPanel)
@@ -153,6 +159,7 @@ class SnykSettingsDialog(
   private val logger = Logger.getInstance(this::class.java)
 
   init {
+    instance = this
     initializeUiComponents()
     initializeValidation()
 
@@ -240,6 +247,19 @@ class SnykSettingsDialog(
   }
 
   fun getRootPanel(): JComponent = rootPanel
+
+  fun updateAuthFields(token: String, apiUrl: String?) {
+    ApplicationManager.getApplication()
+      .invokeLater(
+        {
+          tokenTextField.text = token
+          if (!apiUrl.isNullOrBlank()) {
+            customEndpointTextField.text = apiUrl
+          }
+        },
+        com.intellij.openapi.application.ModalityState.any(),
+      )
+  }
 
   fun initializeFromSettings() {
     val settings = pluginSettings()

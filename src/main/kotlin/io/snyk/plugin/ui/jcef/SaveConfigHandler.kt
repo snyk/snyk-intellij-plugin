@@ -8,18 +8,14 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
-import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getDefaultCliPath
-import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.runInBackground
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import java.nio.file.Paths
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
-import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.trust.WorkspaceTrustService
 
@@ -31,6 +27,14 @@ class SaveConfigHandler(
 ) {
   private val logger = Logger.getInstance(SaveConfigHandler::class.java)
   private val gson = GsonBuilder().create()
+  private val executeCommandBridge = ExecuteCommandBridge(project)
+
+  internal fun dispatchSettingsCommand(
+    value: String,
+    callbackExecutor: ((String, String) -> Unit)? = null,
+  ) {
+    executeCommandBridge.dispatch(value, callbackExecutor)
+  }
 
   fun generateSaveConfigHandler(
     jbCefBrowser: JBCefBrowserBase,
@@ -38,9 +42,8 @@ class SaveConfigHandler(
   ): CefLoadHandlerAdapter {
     val saveConfigQuery = JBCefJSQuery.create(jbCefBrowser)
     val saveAttemptFinishedQuery = JBCefJSQuery.create(jbCefBrowser)
-    val loginQuery = JBCefJSQuery.create(jbCefBrowser)
-    val logoutQuery = JBCefJSQuery.create(jbCefBrowser)
     val onFormDirtyChangeQuery = JBCefJSQuery.create(jbCefBrowser)
+    val executeCommandQuery = JBCefJSQuery.create(jbCefBrowser)
 
     saveConfigQuery.addHandler { jsonString ->
       var response: JBCefJSQuery.Response
@@ -101,54 +104,24 @@ class SaveConfigHandler(
       JBCefJSQuery.Response("success")
     }
 
-    // Subscribe to settings changes to update auth token in browser
-    project.messageBus
-      .connect()
-      .subscribe(
-        SnykSettingsListener.SNYK_SETTINGS_TOPIC,
-        object : SnykSettingsListener {
-          override fun settingsChanged() {
-            // Defer JavaScript execution to avoid EDT blocking
-            invokeLater {
-              val token = pluginSettings().token
-              if (token?.isNotEmpty() == true) {
-                val escapedToken = token.replace("\\", "\\\\").replace("'", "\\'")
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                  "if (typeof window.setAuthToken === 'function') { window.setAuthToken('$escapedToken'); }",
-                  jbCefBrowser.cefBrowser.url,
-                  0,
-                )
-              } else {
-                jbCefBrowser.cefBrowser.executeJavaScript(
-                  "if (typeof window.setAuthToken === 'function') { window.setAuthToken(''); }",
-                  jbCefBrowser.cefBrowser.url,
-                  0,
-                )
-              }
-            }
-          }
-        },
-      )
-
-    loginQuery.addHandler {
-      // Don't use runInBackground - authenticate() handles its own threading
-      getSnykCliAuthenticationService(project)?.authenticate()
-      JBCefJSQuery.Response("success")
-    }
-
-    logoutQuery.addHandler {
-      runInBackground("Snyk: logging out...") {
-        pluginSettings().token = ""
-        LanguageServerWrapper.getInstance(project).logout()
+    executeCommandQuery.addHandler { value ->
+      dispatchSettingsCommand(value) { callbackId, escaped ->
+        invokeLater {
+          jbCefBrowser.cefBrowser.executeJavaScript(
+            "if(window.__ideCallbacks__&&window.__ideCallbacks__['$callbackId'])" +
+              "{window.__ideCallbacks__['$callbackId']($escaped);}",
+            jbCefBrowser.cefBrowser.url,
+            0,
+          )
+        }
       }
-      JBCefJSQuery.Response("success")
+      JBCefJSQuery.Response("ok")
     }
 
     return object : CefLoadHandlerAdapter() {
       override fun onLoadEnd(browser: CefBrowser, frame: CefFrame, httpStatusCode: Int) {
         if (frame.isMain) {
-          // Inject IDE bridge functions
-          val script =
+          val configBridgeScript =
             """
                     (function() {
                         if (typeof window.__saveIdeConfig__ !== 'function') {
@@ -160,15 +133,14 @@ class SaveConfigHandler(
                         if (typeof window.__onFormDirtyChange__ !== 'function') {
                             window.__onFormDirtyChange__ = function(isDirty) { ${onFormDirtyChangeQuery.inject("String(isDirty)")} };
                         }
-                        if (typeof window.__ideLogin__ !== 'function') {
-                            window.__ideLogin__ = function() { ${loginQuery.inject("'login'")} };
-                        }
-                        if (typeof window.__ideLogout__ !== 'function') {
-                            window.__ideLogout__ = function() { ${logoutQuery.inject("'logout'")} };
-                        }
                     })();
                     """
-          browser.executeJavaScript(script, browser.url, 0)
+          browser.executeJavaScript(configBridgeScript, browser.url, 0)
+          browser.executeJavaScript(
+            executeCommandBridge.buildBridgeScript(executeCommandQuery),
+            browser.url,
+            0,
+          )
         }
       }
     }
