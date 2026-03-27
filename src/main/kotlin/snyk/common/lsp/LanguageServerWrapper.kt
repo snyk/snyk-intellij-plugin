@@ -19,6 +19,7 @@ import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -83,6 +84,7 @@ import snyk.common.lsp.settings.InitializationOptions
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
+import snyk.common.lsp.settings.LspFolderConfig
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -704,11 +706,29 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         }
         .map {
           val folderPath = it.uri.fromUriToPath().toString()
-          service<FolderConfigSettings>().getFolderConfig(folderPath)
+          val config = service<FolderConfigSettings>().getFolderConfig(folderPath)
+          applyPersistedFolderChangedFlags(config, ps)
         }
         .toList()
 
     return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
+  }
+
+  private fun applyPersistedFolderChangedFlags(
+    config: LspFolderConfig,
+    ps: SnykApplicationSettingsStateService,
+  ): LspFolderConfig {
+    val settings = config.settings ?: return config
+    val enriched =
+      settings.mapValues { (key, setting) ->
+        val isUserOverride = ps.isExplicitlyChanged(config.folderPath, key)
+        if (isUserOverride != (setting.changed == true)) {
+          setting.copy(changed = isUserOverride)
+        } else {
+          setting
+        }
+      }
+    return config.copy(settings = enriched)
   }
 
   fun getInitializationOptions(): InitializationOptions {

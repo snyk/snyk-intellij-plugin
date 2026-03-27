@@ -42,4 +42,37 @@ class SettingsApplyFunctionsTest : BasePlatformTestCase() {
     assertNotNull(::handleDeltaFindingsChange)
     assertNotNull(::applyFolderConfigChanges)
   }
+
+  fun `test folder-level markExplicitlyChanged and isExplicitlyChanged`() {
+    data class Case(
+      val folder: String,
+      val key: String,
+      val markIt: Boolean,
+      val expected: Boolean,
+    )
+
+    val cases =
+      listOf(
+        Case("/project/a", "snyk_code_enabled", true, true),
+        Case("/project/a", "snyk_oss_enabled", false, false),
+        Case("/project/b", "snyk_code_enabled", true, true),
+        Case("/project/a", "scan_automatic", true, true),
+      )
+
+    val svc = SnykApplicationSettingsStateService()
+
+    for (case in cases) {
+      if (case.markIt) svc.markExplicitlyChanged(case.folder, case.key)
+      assertEquals(
+        "folder=${case.folder} key=${case.key}",
+        case.expected,
+        svc.isExplicitlyChanged(case.folder, case.key),
+      )
+    }
+
+    // cross-folder isolation: /project/b should not have scan_automatic
+    assertFalse(svc.isExplicitlyChanged("/project/b", "scan_automatic"))
+    // global should not be affected
+    assertFalse(svc.isExplicitlyChanged("snyk_code_enabled"))
+  }
 }

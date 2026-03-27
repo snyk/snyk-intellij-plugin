@@ -304,8 +304,8 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
           service.addAll(folderConfigs)
-          folderConfigs.forEach {
-            languageServerWrapper.updateFolderConfigRefresh(it.folderPath, true)
+          folderConfigs.forEach { fc ->
+            languageServerWrapper.updateFolderConfigRefresh(fc.folderPath, true)
           }
 
           // Migrate any nested folder configs that may have been created by earlier plugin versions

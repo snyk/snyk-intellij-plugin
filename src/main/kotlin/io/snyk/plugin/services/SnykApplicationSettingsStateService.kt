@@ -42,11 +42,21 @@ class SnykApplicationSettingsStateService :
 
   var explicitChanges: MutableSet<String> = mutableSetOf()
 
+  // folder path -> set of setting keys explicitly changed for that folder
+  var folderExplicitChanges: MutableMap<String, MutableSet<String>> = mutableMapOf()
+
   fun markExplicitlyChanged(settingKey: String) {
     explicitChanges.add(settingKey)
   }
 
+  fun markExplicitlyChanged(folderPath: String, settingKey: String) {
+    folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
+  }
+
   fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
+
+  fun isExplicitlyChanged(folderPath: String, settingKey: String): Boolean =
+    folderExplicitChanges[folderPath]?.contains(settingKey) == true
 
   // TODO migrate to
   // https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
