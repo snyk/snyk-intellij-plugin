@@ -218,9 +218,9 @@ class ThemeBasedStylingGenerator {
           "circle-color" to linkColor,
           // Fallback HTML variables
           "default-font" to "'$fontFamily', system-ui, -apple-system, sans-serif",
-          "section-background-color" to sectionBackground,
-          "input-background-color" to inputBgColor,
-          "focus-color" to focusBorderColor,
+          "section-background" to sectionBackground,
+          "input-background" to inputBgColor,
+          "focus-border" to focusBorderColor,
         )
 
       // Declaration prefix map for CSS variable declarations (e.g., --default-font: sans-serif ->
