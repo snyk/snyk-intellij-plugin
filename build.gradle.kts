@@ -47,6 +47,8 @@ repositories {
   maven { url = uri("https://cache-redirector.jetbrains.com/intellij-dependencies") }
 }
 
+configurations.all { resolutionStrategy.force("com.fasterxml.jackson.core:jackson-core:2.21.2") }
+
 dependencies {
   intellijPlatform {
     intellijIdeaCommunity(properties("platformVersion"))

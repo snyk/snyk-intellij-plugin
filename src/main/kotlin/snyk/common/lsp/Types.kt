@@ -186,7 +186,7 @@ data class ScanIssue(
   fun longTitle(): String {
     val rangeBracket = "[${this.range.start.line + 1},${this.range.start.character}]"
     val packageInfo =
-      if (this.additionalData.packageName.isNotEmpty()) {
+      if (!this.additionalData.packageName.isNullOrEmpty()) {
         "${this.additionalData.packageName}@${this.additionalData.version}: "
       } else {
         ""
