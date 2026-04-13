@@ -15,4 +15,8 @@ ignore:
         reason: Test data
         expires: 2032-07-14T12:33:33.331Z
         created: 2022-06-14T12:33:33.333Z
+  'SNYK-JAVA-COMFASTERXMLJACKSONCORE-15907551':
+  - '*':
+      reason: temporary exception
+      expires: '2026-06-01'
 patch: {}
