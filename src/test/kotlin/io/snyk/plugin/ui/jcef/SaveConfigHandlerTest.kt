@@ -12,6 +12,8 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LsSettingsKeys
 
 class SaveConfigHandlerTest : BasePlatformTestCase() {
   private lateinit var settings: SnykApplicationSettingsStateService
@@ -429,6 +431,97 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     for ((name, json) in testCases) {
       invokeParseAndSaveConfig(json)
       verify(atLeast = 1) { lsWrapperMock.updateConfiguration() }
+    }
+  }
+
+  fun `test applyGlobalSettings does not mark folder-scoped keys as explicitly changed`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "activateSnykOpenSource": true,
+            "activateSnykCode": true,
+            "activateSnykIac": true,
+            "activateSnykSecrets": true,
+            "scanningMode": "auto",
+            "filterSeverity": {
+                "critical": true,
+                "high": true,
+                "medium": false,
+                "low": false
+            },
+            "issueViewOptions": {
+                "openIssues": true,
+                "ignoredIssues": false
+            },
+            "enableDeltaFindings": true,
+            "riskScoreThreshold": 500
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val folderScopedKeys =
+      listOf(
+        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+        LsFolderSettingsKeys.SCAN_AUTOMATIC,
+        LsFolderSettingsKeys.ENABLED_SEVERITIES,
+        LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+        LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+        LsFolderSettingsKeys.SCAN_NET_NEW,
+        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+      )
+
+    for (key in folderScopedKeys) {
+      assertFalse(
+        "Folder-scoped key '$key' should not be in explicitChanges",
+        realSettings.isExplicitlyChanged(key),
+      )
+    }
+  }
+
+  fun `test applyGlobalSettings marks machine-scoped keys as explicitly changed`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "manageBinariesAutomatically": true,
+            "cliPath": "/test",
+            "insecure": true,
+            "organization": "test-org",
+            "endpoint": "https://test.snyk.io",
+            "token": "test-token",
+            "authenticationMethod": "oauth"
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val machineScopedKeys =
+      listOf(
+        LsSettingsKeys.AUTOMATIC_DOWNLOAD,
+        LsSettingsKeys.CLI_PATH,
+        LsSettingsKeys.PROXY_INSECURE,
+        LsSettingsKeys.ORGANIZATION,
+        LsSettingsKeys.API_ENDPOINT,
+        LsSettingsKeys.TOKEN,
+        LsSettingsKeys.AUTHENTICATION_METHOD,
+      )
+
+    for (key in machineScopedKeys) {
+      assertTrue(
+        "Machine-scoped key '$key' should be in explicitChanges",
+        realSettings.isExplicitlyChanged(key),
+      )
     }
   }
 
