@@ -39,6 +39,7 @@ import snyk.common.lsp.commands.COMMAND_WORKSPACE_CONFIGURATION
 import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspFolderConfig
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -623,6 +624,59 @@ class LanguageServerWrapperTest {
       false,
       outputSettings?.get(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)?.value,
     )
+  }
+
+  @Test
+  fun `getSettings includes API_ENDPOINT from settings state`() {
+    settings.customEndpointUrl = "https://api.custom.io"
+
+    val actual = cut.getSettings()
+
+    assertEquals("https://api.custom.io", actual.settings?.get(LsSettingsKeys.API_ENDPOINT)?.value)
+  }
+
+  @Test
+  fun `getSettings includes CLI_PATH from settings state`() {
+    settings.cliPath = "/usr/local/bin/snyk"
+
+    val actual = cut.getSettings()
+
+    assertEquals("/usr/local/bin/snyk", actual.settings?.get(LsSettingsKeys.CLI_PATH)?.value)
+  }
+
+  @Test
+  fun `getSettings includes all round-trip machine-scope keys`() {
+    settings.customEndpointUrl = "https://api.custom.io"
+    settings.ignoreUnknownCA = true
+    settings.organization = "test-org"
+    settings.manageBinariesAutomatically = false
+    settings.cliPath = "/usr/local/bin/snyk"
+    settings.cliBaseDownloadURL = "https://static.snyk.io"
+    settings.cliReleaseChannel = "preview"
+
+    val actual = cut.getSettings()
+    val s = actual.settings!!
+
+    assertEquals("https://api.custom.io", s[LsSettingsKeys.API_ENDPOINT]?.value)
+    assertEquals(true, s[LsSettingsKeys.PROXY_INSECURE]?.value)
+    assertEquals("test-org", s[LsSettingsKeys.ORGANIZATION]?.value)
+    assertEquals(false, s[LsSettingsKeys.AUTOMATIC_DOWNLOAD]?.value)
+    assertEquals("/usr/local/bin/snyk", s[LsSettingsKeys.CLI_PATH]?.value)
+    assertEquals("https://static.snyk.io", s[LsSettingsKeys.BINARY_BASE_URL]?.value)
+    assertEquals("preview", s[LsSettingsKeys.CLI_RELEASE_CHANNEL]?.value)
+  }
+
+  @Test
+  fun `getSettings includes write-only keys`() {
+    settings.token = "test-token-value"
+
+    val actual = cut.getSettings()
+    val s = actual.settings!!
+
+    assertEquals("test-token-value", s[LsSettingsKeys.TOKEN]?.value)
+    assertEquals(true, s[LsSettingsKeys.SEND_ERROR_REPORTS]?.value)
+    assertEquals(true, s[LsSettingsKeys.ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS]?.value)
+    assertEquals(true, s[LsSettingsKeys.ENABLE_SNYK_OPEN_BROWSER_ACTIONS]?.value)
   }
 
   private fun simulateRunningLS() {

@@ -55,6 +55,7 @@ import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.common.lsp.settings.LspFolderConfig
 import snyk.pluginInfo
@@ -965,6 +966,100 @@ class SnykLanguageClientTest {
       inputSecretsEnabled,
       settings.secretsEnabled,
     )
+  }
+
+  @Test
+  fun `snykConfiguration reads API_ENDPOINT from LS payload`() {
+    settings.customEndpointUrl = ""
+
+    val param =
+      LspConfigurationParam(
+        settings =
+          mapOf(LsSettingsKeys.API_ENDPOINT to ConfigSetting(value = "https://api.eu.snyk.io"))
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    assertEquals("https://api.eu.snyk.io", settings.customEndpointUrl)
+  }
+
+  @Test
+  fun `snykConfiguration reads all round-trip machine-scope keys`() {
+    settings.customEndpointUrl = ""
+    settings.ignoreUnknownCA = false
+    settings.organization = ""
+    settings.manageBinariesAutomatically = true
+    settings.cliPath = ""
+    settings.cliBaseDownloadURL = ""
+    settings.cliReleaseChannel = "stable"
+
+    val param =
+      LspConfigurationParam(
+        settings =
+          mapOf(
+            LsSettingsKeys.API_ENDPOINT to ConfigSetting(value = "https://api.eu.snyk.io"),
+            LsSettingsKeys.PROXY_INSECURE to ConfigSetting(value = true),
+            LsSettingsKeys.ORGANIZATION to ConfigSetting(value = "my-org"),
+            LsSettingsKeys.AUTOMATIC_DOWNLOAD to ConfigSetting(value = false),
+            LsSettingsKeys.CLI_PATH to ConfigSetting(value = "/opt/snyk/cli"),
+            LsSettingsKeys.BINARY_BASE_URL to ConfigSetting(value = "https://static.snyk.io"),
+            LsSettingsKeys.CLI_RELEASE_CHANNEL to ConfigSetting(value = "preview"),
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    assertEquals("https://api.eu.snyk.io", settings.customEndpointUrl)
+    assertEquals(true, settings.ignoreUnknownCA)
+    assertEquals("my-org", settings.organization)
+    assertEquals(false, settings.manageBinariesAutomatically)
+    assertEquals("/opt/snyk/cli", settings.cliPath)
+    assertEquals("https://static.snyk.io", settings.cliBaseDownloadURL)
+    assertEquals("preview", settings.cliReleaseChannel)
+  }
+
+  @Test
+  fun `machine-scope round-trip preserves all values`() {
+    // Simulate the outgoing payload that getSettings() would produce
+    // (getSettings serializes each setting as a ConfigSetting with the value from plugin state)
+    val outgoingSettings =
+      mapOf(
+        LsSettingsKeys.API_ENDPOINT to ConfigSetting(value = "https://api.eu.snyk.io"),
+        LsSettingsKeys.PROXY_INSECURE to ConfigSetting(value = true),
+        LsSettingsKeys.ORGANIZATION to ConfigSetting(value = "round-trip-org"),
+        LsSettingsKeys.AUTOMATIC_DOWNLOAD to ConfigSetting(value = false),
+        LsSettingsKeys.CLI_PATH to ConfigSetting(value = "/usr/local/bin/snyk"),
+        LsSettingsKeys.BINARY_BASE_URL to ConfigSetting(value = "https://static.snyk.io"),
+        LsSettingsKeys.CLI_RELEASE_CHANNEL to ConfigSetting(value = "preview"),
+      )
+
+    // Reset settings to different values to prove snykConfiguration writes them back
+    settings.customEndpointUrl = "https://changed.example.com"
+    settings.ignoreUnknownCA = false
+    settings.organization = "changed-org"
+    settings.manageBinariesAutomatically = true
+    settings.cliPath = "/changed/path"
+    settings.cliBaseDownloadURL = "https://changed.example.com"
+    settings.cliReleaseChannel = "stable"
+
+    // Feed the outgoing settings back as an incoming LS payload
+    val incomingParam = LspConfigurationParam(settings = outgoingSettings)
+    cut.snykConfiguration(incomingParam)
+
+    Thread.sleep(500)
+
+    // Verify the round-tripped values match the originals
+    assertEquals("https://api.eu.snyk.io", settings.customEndpointUrl)
+    assertEquals(true, settings.ignoreUnknownCA)
+    assertEquals("round-trip-org", settings.organization)
+    assertEquals(false, settings.manageBinariesAutomatically)
+    assertEquals("/usr/local/bin/snyk", settings.cliPath)
+    assertEquals("https://static.snyk.io", settings.cliBaseDownloadURL)
+    assertEquals("preview", settings.cliReleaseChannel)
   }
 
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
