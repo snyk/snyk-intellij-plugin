@@ -19,15 +19,18 @@ import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.Test
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
-import snyk.common.lsp.settings.LanguageServerSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LspConfigurationParam
+import snyk.common.lsp.settings.LspFolderConfig
+import snyk.common.lsp.settings.folderConfig
+import snyk.common.lsp.settings.withSetting
 import snyk.trust.WorkspaceTrustSettings
 
 class ReferenceChooserDialogTest : LightPlatform4TestCase() {
   private val lsMock: LanguageServer = mockk(relaxed = true)
-  private lateinit var folderConfig: FolderConfig
+  private lateinit var folderConfig: LspFolderConfig
   private lateinit var cut: ReferenceChooserDialog
   private lateinit var workspaceFolder: WorkspaceFolder
   private lateinit var languageServerWrapper: LanguageServerWrapper
@@ -48,7 +51,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
 
       // Create a folder config with local branches for the original tests
       folderConfig =
-        FolderConfig(
+        folderConfig(
           absolutePathString,
           baseBranch = "testBranch",
           localBranches = listOf("main", "dev"),
@@ -84,10 +87,11 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
   }
 
   /** Helper method to create a folder config with no local branches for testing */
-  private fun createFolderConfigWithNoBranches(): FolderConfig {
+  private fun createFolderConfigWithNoBranches(): LspFolderConfig {
     val folderConfigSettings = service<FolderConfigSettings>()
     val existingConfig = folderConfigSettings.getFolderConfig(folderConfig.folderPath)
-    val modifiedConfig = existingConfig.copy(localBranches = emptyList())
+    val modifiedConfig =
+      existingConfig.withSetting(LsFolderSettingsKeys.LOCAL_BRANCHES, emptyList<String>())
     folderConfigSettings.addFolderConfig(modifiedConfig)
     return modifiedConfig
   }
@@ -116,11 +120,17 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
 
     val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
     verify { lsMock.workspaceService.didChangeConfiguration(capture(capturedParam)) }
-    val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
+    val transmittedSettings = capturedParam.captured.settings as LspConfigurationParam
     // we expect the selected item
-    assertEquals("main", transmittedSettings.folderConfigs[0].baseBranch)
+    assertEquals(
+      "main",
+      transmittedSettings.folderConfigs?.get(0)?.settings?.get("base_branch")?.value,
+    )
     // we also expect the reference folder to be transmitted
-    assertEquals("/some/reference/path", transmittedSettings.folderConfigs[0].referenceFolderPath)
+    assertEquals(
+      "/some/reference/path",
+      transmittedSettings.folderConfigs?.get(0)?.settings?.get("reference_folder")?.value,
+    )
   }
 
   @Test
@@ -129,13 +139,15 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     val comboBox =
       ComboBox(arrayOf("main", "dev")).apply {
         name = folderConfig.folderPath
-        selectedItem = folderConfig.baseBranch // Use original value, not "main"
+        selectedItem =
+          folderConfig.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
       }
 
     // Create a reference folder control with original value (no changes)
     val referenceFolder =
       JTextField().apply {
-        text = folderConfig.referenceFolderPath ?: "" // Use original value
+        text =
+          folderConfig.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
       }
     val referenceFolderControl = TextFieldWithBrowseButton(referenceFolder)
 
@@ -173,7 +185,8 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     // Create a folder config with null local branches
     val folderConfigSettings = service<FolderConfigSettings>()
     val existingConfig = folderConfigSettings.getFolderConfig(folderConfig.folderPath)
-    val configNullBranches = existingConfig.copy(localBranches = null)
+    val configNullBranches =
+      existingConfig.withSetting(LsFolderSettingsKeys.LOCAL_BRANCHES, emptyList<String>())
     folderConfigSettings.addFolderConfig(configNullBranches)
 
     // Create new dialog instance
@@ -221,13 +234,16 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
     val capturedParam = CapturingSlot<DidChangeConfigurationParams>()
     verify { lsMock.workspaceService.didChangeConfiguration(capture(capturedParam)) }
 
-    val transmittedSettings = capturedParam.captured.settings as LanguageServerSettings
+    val transmittedSettings = capturedParam.captured.settings as LspConfigurationParam
     val transmittedConfig =
-      transmittedSettings.folderConfigs.find { it.folderPath == configNoBranches.folderPath }
+      transmittedSettings.folderConfigs?.find { it.folderPath == configNoBranches.folderPath }
 
     assertNotNull(transmittedConfig)
-    assertEquals("", transmittedConfig!!.baseBranch) // Should be empty string
-    assertEquals("/some/reference/path", transmittedConfig.referenceFolderPath)
+    assertEquals(
+      "",
+      transmittedConfig!!.settings?.get("base_branch")?.value,
+    ) // Should be empty string
+    assertEquals("/some/reference/path", transmittedConfig.settings?.get("reference_folder")?.value)
   }
 
   @Test

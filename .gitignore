@@ -47,3 +47,6 @@ Thumbs.db
 .cursor/rules/snyk_rules.mdc
 docs/performance-analysis.md
 IDE-*
+
+# Claude Code local settings (machine-specific, not shared)
+.claude/settings.local.json

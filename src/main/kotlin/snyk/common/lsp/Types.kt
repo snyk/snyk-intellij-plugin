@@ -514,38 +514,6 @@ data class OssIdentifiers(
   }
 }
 
-data class FolderConfigsParam(
-  @SerializedName("folderConfigs") val folderConfigs: List<FolderConfig>?
-)
-
-/**
- * FolderConfig stores the configuration for a workspace folder
- *
- * @param folderPath the path of the folder
- * @param baseBranch the base branch to compare against (if git repository)
- * @param localBranches the local branches in the git repository
- * @param additionalParameters additional parameters to pass to the scan command
- * @param additionalEnv additional environment variables to set for the scan command
- * @param referenceFolderPath the reference folder to scan, if not a git repository
- * @param scanCommandConfig the scan command configuration to specify a command to be executed
- *   before and/or after the scan
- */
-data class FolderConfig(
-  @SerializedName("folderPath") val folderPath: String,
-  @SerializedName("preferredOrg") val preferredOrg: String = "",
-  @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String = "",
-  @SerializedName("baseBranch") val baseBranch: String,
-  @SerializedName("localBranches") val localBranches: List<String>? = emptyList(),
-  @SerializedName("additionalParameters") val additionalParameters: List<String>? = emptyList(),
-  @SerializedName("additionalEnv") val additionalEnv: String? = "",
-  @SerializedName("referenceFolderPath") val referenceFolderPath: String? = "",
-  @SerializedName("scanCommandConfig")
-  val scanCommandConfig: Map<String, ScanCommandConfig>? = emptyMap(),
-  @SerializedName("orgSetByUser") val orgSetByUser: Boolean = false,
-) : Comparable<FolderConfig> {
-  override fun compareTo(other: FolderConfig): Int = this.folderPath.compareTo(other.folderPath)
-}
-
 data class ScanCommandConfig(
   val preScanCommand: String = "",
   val preScanOnlyReferenceFolder: Boolean = true,

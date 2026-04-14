@@ -58,6 +58,7 @@ dependencies {
     testFramework(TestFrameworkType.Platform)
   }
 
+  implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.1"))
   implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
   implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
   implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.23.1")

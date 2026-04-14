@@ -39,7 +39,7 @@
                  restartRequired="false"
     />
     <registryKey key="snyk.useNewConfigDialog"
-                 defaultValue="false"
+                 defaultValue="true"
                  description="Use new HTML based config dialog served by language server"
                  restartRequired="false"
     />

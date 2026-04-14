@@ -72,12 +72,13 @@ import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykError
 import snyk.common.lsp.AiFixParams
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LspFolderConfig
 
 /** Main panel for Snyk tool window. */
 @Service(Service.Level.PROJECT)
@@ -100,12 +101,16 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     Tree(rootTreeNode).apply { this.isRootVisible = pluginSettings().isDeltaFindingsEnabled() }
   }
 
-  private fun getRootNodeText(folderConfig: FolderConfig): String {
+  private fun getRootNodeText(folderConfig: LspFolderConfig): String {
+    val refPath =
+      folderConfig.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
+    val branch =
+      folderConfig.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
     val detail =
-      if (folderConfig.referenceFolderPath.isNullOrBlank()) {
-        folderConfig.baseBranch
+      if (refPath.isBlank()) {
+        branch
       } else {
-        folderConfig.referenceFolderPath
+        refPath
       }
     val path = folderConfig.folderPath.toNioPathOrNull()
     return "Click to choose base branch or reference folder for ${path?.fileName ?: path.toString()}: [ current: $detail ]"

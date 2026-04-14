@@ -439,20 +439,33 @@ class LanguageServerWrapperTest {
     val expectedTrustedFolders = listOf("/path/to/trusted1", "/path/to/trusted2")
     every { trustServiceMock.settings.getTrustedPaths() } returns expectedTrustedFolders
 
-    val actual = cut.getSettings()
+    val actual = cut.getInitializationOptions()
 
     assertEquals(
-      settings.snykCodeSecurityIssuesScanEnable.toString(),
-      actual.activateSnykCodeSecurity,
+      settings.snykCodeSecurityIssuesScanEnable,
+      actual.settings?.get("snyk_code_enabled")?.value,
     )
-    assertEquals(settings.iacScanEnabled.toString(), actual.activateSnykIac)
-    assertEquals(settings.ossScanEnable.toString(), actual.activateSnykOpenSource)
-    assertEquals(settings.token, actual.token)
-    assertEquals("${settings.ignoreUnknownCA}", actual.insecure)
-    assertEquals(getCliFile().absolutePath, actual.cliPath)
-    assertEquals(settings.organization, actual.organization)
-    assertEquals(settings.isDeltaFindingsEnabled().toString(), actual.enableDeltaFindings)
+    assertEquals(settings.iacScanEnabled, actual.settings?.get("snyk_iac_enabled")?.value)
+    assertEquals(settings.ossScanEnable, actual.settings?.get("snyk_oss_enabled")?.value)
+    assertEquals(settings.token, actual.settings?.get("token")?.value)
+    assertEquals(true, actual.settings?.get("token")?.changed)
+    assertEquals(settings.ignoreUnknownCA, actual.settings?.get("proxy_insecure")?.value)
+    assertEquals(getCliFile().absolutePath, actual.settings?.get("cli_path")?.value)
+    assertEquals(settings.organization, actual.settings?.get("organization")?.value)
+    assertEquals(settings.isDeltaFindingsEnabled(), actual.settings?.get("scan_net_new")?.value)
     assertEquals(expectedTrustedFolders, actual.trustedFolders)
+  }
+
+  @Test
+  fun `getSettings should always mark token as changed`() {
+    settings.token = "persistedToken"
+    // token is NOT explicitly changed - simulates loading from persisted settings
+    assertFalse(settings.isExplicitlyChanged("token"))
+
+    val actual = cut.getSettings()
+
+    assertEquals("persistedToken", actual.settings?.get("token")?.value)
+    assertEquals(true, actual.settings?.get("token")?.changed)
   }
 
   @Test
@@ -461,7 +474,7 @@ class LanguageServerWrapperTest {
 
     val actual = cut.getSettings()
 
-    assertEquals("true", actual.manageBinariesAutomatically)
+    assertEquals(true, actual.settings?.get("automatic_download")?.value)
   }
 
   @Test
@@ -470,7 +483,7 @@ class LanguageServerWrapperTest {
 
     val actual = cut.getSettings()
 
-    assertEquals("false", actual.manageBinariesAutomatically)
+    assertEquals(false, actual.settings?.get("automatic_download")?.value)
   }
 
   @Test

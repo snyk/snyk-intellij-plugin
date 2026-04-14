@@ -16,7 +16,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 
 class FolderConfigSettingsTest {
@@ -39,7 +38,7 @@ class FolderConfigSettingsTest {
     val path = "/test/projectA"
     val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
     val config =
-      FolderConfig(
+      folderConfig(
         folderPath = path,
         baseBranch = "main",
         additionalParameters = listOf("--scan-all-unmanaged"),
@@ -50,11 +49,15 @@ class FolderConfigSettingsTest {
     val retrievedConfig = settings.getFolderConfig(path)
     assertNotNull("Retrieved config should not be null", retrievedConfig)
     assertEquals("Normalized path should match", normalizedPath, retrievedConfig.folderPath)
-    assertEquals("Base branch should match", "main", retrievedConfig.baseBranch)
+    assertEquals(
+      "Base branch should match",
+      "main",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "Additional parameters should match",
       listOf("--scan-all-unmanaged"),
-      retrievedConfig.additionalParameters,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
     )
 
     assertEquals("Settings map size should be 1", 1, settings.getAll().size)
@@ -69,13 +72,17 @@ class FolderConfigSettingsTest {
     val rawPath = "/test/projectB/./subfolder/../othersubfolder"
     val expectedNormalizedPath = Paths.get(rawPath).normalize().toAbsolutePath().toString()
 
-    val config = FolderConfig(folderPath = rawPath, baseBranch = "develop")
+    val config = folderConfig(folderPath = rawPath, baseBranch = "develop")
     settings.addFolderConfig(config)
 
     val retrievedConfig = settings.getFolderConfig(rawPath)
     assertNotNull("Retrieved config should not be null", retrievedConfig)
     assertEquals("Normalized path should match", expectedNormalizedPath, retrievedConfig.folderPath)
-    assertEquals("Base branch should match", "develop", retrievedConfig.baseBranch)
+    assertEquals(
+      "Base branch should match",
+      "develop",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
 
     val retrievedAgain = settings.getFolderConfig(expectedNormalizedPath)
     assertNotNull("Retrieved again config should not be null", retrievedAgain)
@@ -93,60 +100,72 @@ class FolderConfigSettingsTest {
     val path3 = "/my/project/../project/folder"
     val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
 
-    val config = FolderConfig(folderPath = path1, baseBranch = "feature-branch")
+    val config = folderConfig(folderPath = path1, baseBranch = "feature-branch")
     settings.addFolderConfig(config)
 
     val retrievedConfig1 = settings.getFolderConfig(path1)
     assertEquals("Path1 normalized path should match", normalizedPath1, retrievedConfig1.folderPath)
-    assertEquals("Path1 base branch should match", "feature-branch", retrievedConfig1.baseBranch)
+    assertEquals(
+      "Path1 base branch should match",
+      "feature-branch",
+      retrievedConfig1.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
 
     val retrievedConfig2 = settings.getFolderConfig(path2)
     assertEquals("Path2 normalized path should match", normalizedPath1, retrievedConfig2.folderPath)
-    assertEquals("Path2 base branch should match", "feature-branch", retrievedConfig2.baseBranch)
+    assertEquals(
+      "Path2 base branch should match",
+      "feature-branch",
+      retrievedConfig2.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
 
     val retrievedConfig3 = settings.getFolderConfig(path3)
     assertEquals("Path3 normalized path should match", normalizedPath1, retrievedConfig3.folderPath)
-    assertEquals("Path3 base branch should match", "feature-branch", retrievedConfig3.baseBranch)
-  }
-
-  @Test
-  fun `addFolderConfig ignores empty or blank folderPaths`() {
-    settings.addFolderConfig(FolderConfig(folderPath = "", baseBranch = "main"))
-    assertEquals("Config with empty path should be ignored", 0, settings.getAll().size)
-
-    settings.addFolderConfig(FolderConfig(folderPath = "   ", baseBranch = "main"))
-    assertEquals("Config with blank path should be ignored", 0, settings.getAll().size)
-  }
-
-  @Test
-  fun `addFolderConfig handles null additionalParameters by defaulting to emptyList`() {
-    val path = "/test/project"
-    val config = FolderConfig(folderPath = path, baseBranch = "main", additionalParameters = null)
-
-    settings.addFolderConfig(config)
-
-    val retrievedConfig = settings.getFolderConfig(path)
-    assertNotNull("Retrieved config should not be null", retrievedConfig)
     assertEquals(
-      "additionalParameters should be emptyList when null",
-      emptyList<String>(),
-      retrievedConfig.additionalParameters,
+      "Path3 base branch should match",
+      "feature-branch",
+      retrievedConfig3.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
     )
   }
 
   @Test
-  fun `addFolderConfig handles null additionalEnv by defaulting to empty string`() {
+  fun `addFolderConfig ignores empty or blank folderPaths`() {
+    settings.addFolderConfig(folderConfig(folderPath = "", baseBranch = "main"))
+    assertEquals("Config with empty path should be ignored", 0, settings.getAll().size)
+
+    settings.addFolderConfig(folderConfig(folderPath = "   ", baseBranch = "main"))
+    assertEquals("Config with blank path should be ignored", 0, settings.getAll().size)
+  }
+
+  @Test
+  fun `addFolderConfig handles null additionalParameters by not setting key`() {
     val path = "/test/project"
-    val config = FolderConfig(folderPath = path, baseBranch = "main", additionalEnv = null)
+    val config = folderConfig(folderPath = path, baseBranch = "main", additionalParameters = null)
 
     settings.addFolderConfig(config)
 
     val retrievedConfig = settings.getFolderConfig(path)
     assertNotNull("Retrieved config should not be null", retrievedConfig)
     assertEquals(
-      "additionalEnv should be empty string when null",
-      "",
-      retrievedConfig.additionalEnv,
+      "additionalParameters should be null when not set",
+      null,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+  }
+
+  @Test
+  fun `addFolderConfig handles null additionalEnv by not setting key`() {
+    val path = "/test/project"
+    val config = folderConfig(folderPath = path, baseBranch = "main", additionalEnv = null)
+
+    settings.addFolderConfig(config)
+
+    val retrievedConfig = settings.getFolderConfig(path)
+    assertNotNull("Retrieved config should not be null", retrievedConfig)
+    assertEquals(
+      "additionalEnv should be null when not set",
+      null,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value,
     )
   }
 
@@ -164,26 +183,30 @@ class FolderConfigSettingsTest {
       expectedNormalizedPath,
       newConfig.folderPath,
     )
-    assertEquals("New config should have default baseBranch", "main", newConfig.baseBranch)
+    assertEquals(
+      "New config should have default baseBranch",
+      "main",
+      newConfig.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "New config additionalParameters should be emptyList",
       emptyList<String>(),
-      newConfig.additionalParameters,
+      newConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
     )
     assertEquals(
       "New config localBranches should be emptyList",
       emptyList<String>(),
-      newConfig.localBranches,
+      newConfig.settings?.get(LsFolderSettingsKeys.LOCAL_BRANCHES)?.value,
     )
     assertEquals(
       "New config referenceFolderPath should be empty string",
       "",
-      newConfig.referenceFolderPath,
+      newConfig.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value,
     )
     assertEquals(
       "New config scanCommandConfig should be emptyMap",
       emptyMap<String, Any>(),
-      newConfig.scanCommandConfig,
+      newConfig.settings?.get(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)?.value,
     )
 
     val allConfigs = settings.getAll()
@@ -206,20 +229,24 @@ class FolderConfigSettingsTest {
     val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
 
     val config1 =
-      FolderConfig(folderPath = path, baseBranch = "v1", additionalParameters = listOf("param1"))
+      folderConfig(folderPath = path, baseBranch = "v1", additionalParameters = listOf("param1"))
     settings.addFolderConfig(config1)
 
     var retrieved = settings.getFolderConfig(path)
-    assertEquals("Retrieved v1 baseBranch", "v1", retrieved.baseBranch)
+    assertEquals(
+      "Retrieved v1 baseBranch",
+      "v1",
+      retrieved.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "Retrieved v1 additionalParameters",
       listOf("param1"),
-      retrieved.additionalParameters,
+      retrieved.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
     )
     assertEquals("Retrieved v1 normalizedPath", normalizedPath, retrieved.folderPath)
 
     val config2 =
-      FolderConfig(
+      folderConfig(
         folderPath = equivalentPath,
         baseBranch = "v2",
         additionalParameters = listOf("param2"),
@@ -227,11 +254,15 @@ class FolderConfigSettingsTest {
     settings.addFolderConfig(config2)
 
     retrieved = settings.getFolderConfig(path)
-    assertEquals("BaseBranch should be from the overriding config", "v2", retrieved.baseBranch)
+    assertEquals(
+      "BaseBranch should be from the overriding config",
+      "v2",
+      retrieved.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "AdditionalParameters should be from the overriding config",
       listOf("param2"),
-      retrieved.additionalParameters,
+      retrieved.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
     )
     assertEquals(
       "NormalizedPath should remain the same after overwrite",
@@ -250,10 +281,10 @@ class FolderConfigSettingsTest {
     val normalizedUpper = Paths.get(pathUpper).normalize().toAbsolutePath().toString()
     val normalizedLower = Paths.get(pathLower).normalize().toAbsolutePath().toString()
 
-    val configUpper = FolderConfig(folderPath = pathUpper, baseBranch = "upper")
+    val configUpper = folderConfig(folderPath = pathUpper, baseBranch = "upper")
     settings.addFolderConfig(configUpper)
 
-    val configLower = FolderConfig(folderPath = pathLower, baseBranch = "lower")
+    val configLower = folderConfig(folderPath = pathLower, baseBranch = "lower")
     settings.addFolderConfig(configLower)
 
     if (
@@ -268,12 +299,12 @@ class FolderConfigSettingsTest {
       assertEquals(
         "BaseBranch for upper case path",
         "upper",
-        settings.getFolderConfig(pathUpper).baseBranch,
+        settings.getFolderConfig(pathUpper).settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
       )
       assertEquals(
         "BaseBranch for lower case path",
         "lower",
-        settings.getFolderConfig(pathLower).baseBranch,
+        settings.getFolderConfig(pathLower).settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
       )
     } else if (normalizedUpper == normalizedLower) {
       assertEquals(
@@ -284,12 +315,12 @@ class FolderConfigSettingsTest {
       assertEquals(
         "Lower should overwrite if normalized paths are identical (upper retrieval)",
         "lower",
-        settings.getFolderConfig(pathUpper).baseBranch,
+        settings.getFolderConfig(pathUpper).settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
       )
       assertEquals(
         "Lower should overwrite if normalized paths are identical (lower retrieval)",
         "lower",
-        settings.getFolderConfig(pathLower).baseBranch,
+        settings.getFolderConfig(pathLower).settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
       )
     } else {
       assertEquals(
@@ -300,12 +331,12 @@ class FolderConfigSettingsTest {
       assertEquals(
         "BaseBranch for upper case path (distinct)",
         "upper",
-        settings.getFolderConfig(pathUpper).baseBranch,
+        settings.getFolderConfig(pathUpper).settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
       )
       assertEquals(
         "BaseBranch for lower case path (distinct)",
         "lower",
-        settings.getFolderConfig(pathLower).baseBranch,
+        settings.getFolderConfig(pathLower).settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
       )
     }
   }
@@ -318,7 +349,7 @@ class FolderConfigSettingsTest {
     val expectedNormalizedPath = Paths.get(pathWithoutSlash).normalize().toAbsolutePath().toString()
 
     // Add with slash
-    val config1 = FolderConfig(folderPath = pathWithSlash, baseBranch = "main")
+    val config1 = folderConfig(folderPath = pathWithSlash, baseBranch = "main")
     settings.addFolderConfig(config1)
 
     // Retrieve with and without slash
@@ -350,7 +381,7 @@ class FolderConfigSettingsTest {
 
     // Clear and test adding without slash first
     settings.clear()
-    val config2 = FolderConfig(folderPath = pathWithoutSlash, baseBranch = "develop")
+    val config2 = folderConfig(folderPath = pathWithoutSlash, baseBranch = "develop")
     settings.addFolderConfig(config2)
 
     val retrieved2With = settings.getFolderConfig(pathWithSlash)
@@ -362,7 +393,10 @@ class FolderConfigSettingsTest {
       expectedNormalizedPath,
       retrieved2With.folderPath,
     )
-    assertEquals("develop", retrieved2With.baseBranch) // Ensure correct config is retrieved
+    assertEquals(
+      "develop",
+      retrieved2With.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    ) // Ensure correct config is retrieved
     assertNotNull(
       "Config (added without slash) should be retrievable without slash",
       retrieved2Without,
@@ -372,7 +406,10 @@ class FolderConfigSettingsTest {
       expectedNormalizedPath,
       retrieved2Without.folderPath,
     )
-    assertEquals("develop", retrieved2Without.baseBranch)
+    assertEquals(
+      "develop",
+      retrieved2Without.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "Both retrievals should yield the same object instance",
       retrieved2With,
@@ -393,7 +430,7 @@ class FolderConfigSettingsTest {
     val rootPathWithSlash = "/"
     val rootPathNormalized = Paths.get(rootPathWithSlash).normalize().toAbsolutePath().toString()
 
-    val config = FolderConfig(folderPath = rootPathWithSlash, baseBranch = "rootBranch")
+    val config = folderConfig(folderPath = rootPathWithSlash, baseBranch = "rootBranch")
     settings.addFolderConfig(config)
     val retrieved = settings.getFolderConfig(rootPathWithSlash)
     assertNotNull("Retrieved config for root path should not be null", retrieved)
@@ -422,19 +459,23 @@ class FolderConfigSettingsTest {
   @Test
   fun `addFolderConfig stores and retrieves preferredOrg`() {
     val path = "/test/project"
-    val config = FolderConfig(folderPath = path, baseBranch = "main", preferredOrg = "my-org-uuid")
+    val config = folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "my-org-uuid")
 
     settings.addFolderConfig(config)
 
     val retrievedConfig = settings.getFolderConfig(path)
     assertNotNull("Retrieved config should not be null", retrievedConfig)
-    assertEquals("Preferred org should match", "my-org-uuid", retrievedConfig.preferredOrg)
+    assertEquals(
+      "Preferred org should match",
+      "my-org-uuid",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
   }
 
   @Test
   fun `addFolderConfig with empty preferredOrg uses default`() {
     val path = "/test/project"
-    val config = FolderConfig(folderPath = path, baseBranch = "main")
+    val config = folderConfig(folderPath = path, baseBranch = "main")
 
     settings.addFolderConfig(config)
 
@@ -443,7 +484,7 @@ class FolderConfigSettingsTest {
     assertEquals(
       "Preferred org should be empty string by default",
       "",
-      retrievedConfig.preferredOrg,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
     )
   }
 
@@ -453,23 +494,35 @@ class FolderConfigSettingsTest {
 
     val newConfig = settings.getFolderConfig(path)
     assertNotNull("New config should not be null", newConfig)
-    assertEquals("New config preferredOrg should be empty string", "", newConfig.preferredOrg)
+    assertEquals(
+      "New config preferredOrg should be empty string",
+      "",
+      newConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
   }
 
   @Test
   fun `addFolderConfig overwrites preferredOrg when config is updated`() {
     val path = "/test/project"
-    val config1 = FolderConfig(folderPath = path, baseBranch = "main", preferredOrg = "first-org")
+    val config1 = folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "first-org")
     settings.addFolderConfig(config1)
 
     val retrieved1 = settings.getFolderConfig(path)
-    assertEquals("First preferredOrg should match", "first-org", retrieved1.preferredOrg)
+    assertEquals(
+      "First preferredOrg should match",
+      "first-org",
+      retrieved1.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
 
-    val config2 = FolderConfig(folderPath = path, baseBranch = "main", preferredOrg = "second-org")
+    val config2 = folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "second-org")
     settings.addFolderConfig(config2)
 
     val retrieved2 = settings.getFolderConfig(path)
-    assertEquals("PreferredOrg should be updated", "second-org", retrieved2.preferredOrg)
+    assertEquals(
+      "PreferredOrg should be updated",
+      "second-org",
+      retrieved2.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
   }
 
   @Test
@@ -499,8 +552,8 @@ class FolderConfigSettingsTest {
     val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
 
     // Add configs with preferredOrg
-    val config1 = FolderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "org-uuid-1")
-    val config2 = FolderConfig(folderPath = path2, baseBranch = "main", preferredOrg = "org-uuid-2")
+    val config1 = folderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "org-uuid-1")
+    val config2 = folderConfig(folderPath = path2, baseBranch = "main", preferredOrg = "org-uuid-2")
     settings.addFolderConfig(config1)
     settings.addFolderConfig(config2)
 
@@ -535,7 +588,7 @@ class FolderConfigSettingsTest {
     val path1 = "/test/project1"
     val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
 
-    val config1 = FolderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "")
+    val config1 = folderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "")
     settings.addFolderConfig(config1)
 
     val workspaceFolder1 =
@@ -565,8 +618,8 @@ class FolderConfigSettingsTest {
     val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
     val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
 
-    val config1 = FolderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "org-uuid-1")
-    val config2 = FolderConfig(folderPath = path2, baseBranch = "main", preferredOrg = "org-uuid-2")
+    val config1 = folderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "org-uuid-1")
+    val config2 = folderConfig(folderPath = path2, baseBranch = "main", preferredOrg = "org-uuid-2")
     settings.addFolderConfig(config1)
     settings.addFolderConfig(config2)
 
@@ -596,41 +649,57 @@ class FolderConfigSettingsTest {
   @Test
   fun `addFolderConfig stores and retrieves orgSetByUser with default false`() {
     val path = "/test/project"
-    val config = FolderConfig(folderPath = path, baseBranch = "main")
+    val config = folderConfig(folderPath = path, baseBranch = "main")
 
     settings.addFolderConfig(config)
 
     val retrievedConfig = settings.getFolderConfig(path)
     assertNotNull("Retrieved config should not be null", retrievedConfig)
-    assertEquals("orgSetByUser should default to false", false, retrievedConfig.orgSetByUser)
+    assertEquals(
+      "orgSetByUser should default to false",
+      false,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
   }
 
   @Test
   fun `addFolderConfig stores and retrieves orgSetByUser set to true`() {
     val path = "/test/project"
-    val config = FolderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
+    val config = folderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
 
     settings.addFolderConfig(config)
 
     val retrievedConfig = settings.getFolderConfig(path)
     assertNotNull("Retrieved config should not be null", retrievedConfig)
-    assertEquals("orgSetByUser should be true", true, retrievedConfig.orgSetByUser)
+    assertEquals(
+      "orgSetByUser should be true",
+      true,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
   }
 
   @Test
   fun `addFolderConfig overwrites orgSetByUser when config is updated`() {
     val path = "/test/project"
-    val config1 = FolderConfig(folderPath = path, baseBranch = "main", orgSetByUser = false)
+    val config1 = folderConfig(folderPath = path, baseBranch = "main", orgSetByUser = false)
     settings.addFolderConfig(config1)
 
     val retrieved1 = settings.getFolderConfig(path)
-    assertEquals("First orgSetByUser should be false", false, retrieved1.orgSetByUser)
+    assertEquals(
+      "First orgSetByUser should be false",
+      false,
+      retrieved1.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
 
-    val config2 = FolderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
+    val config2 = folderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
     settings.addFolderConfig(config2)
 
     val retrieved2 = settings.getFolderConfig(path)
-    assertEquals("orgSetByUser should be updated to true", true, retrieved2.orgSetByUser)
+    assertEquals(
+      "orgSetByUser should be updated to true",
+      true,
+      retrieved2.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
   }
 
   @Test
@@ -639,7 +708,11 @@ class FolderConfigSettingsTest {
 
     val newConfig = settings.getFolderConfig(path)
     assertNotNull("New config should not be null", newConfig)
-    assertEquals("New config orgSetByUser should be false", false, newConfig.orgSetByUser)
+    assertEquals(
+      "New config orgSetByUser should be false",
+      false,
+      newConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
   }
 
   @Test
@@ -650,7 +723,7 @@ class FolderConfigSettingsTest {
     val path = "/test/project"
     val workspaceFolder = WorkspaceFolder().apply { uri = path.fromPathToUriString() }
 
-    val config = FolderConfig(folderPath = path, baseBranch = "main", orgSetByUser = false)
+    val config = folderConfig(folderPath = path, baseBranch = "main", orgSetByUser = false)
 
     settings.addFolderConfig(config)
 
@@ -673,7 +746,7 @@ class FolderConfigSettingsTest {
     val path = "/test/project"
     val workspaceFolder = WorkspaceFolder().apply { uri = path.fromPathToUriString() }
 
-    val config = FolderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
+    val config = folderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
 
     settings.addFolderConfig(config)
 
@@ -696,7 +769,7 @@ class FolderConfigSettingsTest {
     val path = "/test/project"
     val workspaceFolder = WorkspaceFolder().apply { uri = path.fromPathToUriString() }
 
-    val config = FolderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
+    val config = folderConfig(folderPath = path, baseBranch = "main", orgSetByUser = true)
 
     settings.addFolderConfig(config)
 
@@ -728,7 +801,7 @@ class FolderConfigSettingsTest {
     val path = "/test/project"
     val workspaceFolder = WorkspaceFolder().apply { uri = path.fromPathToUriString() }
 
-    val config = FolderConfig(folderPath = path, baseBranch = "main", preferredOrg = "old-org")
+    val config = folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "old-org")
 
     settings.addFolderConfig(config)
 
@@ -764,8 +837,8 @@ class FolderConfigSettingsTest {
     val normalizedNestedPath = Paths.get(nestedPath).normalize().toAbsolutePath().toString()
 
     // Add both configs with SAME values (nested has default/same values as parent)
-    val workspaceConfig = FolderConfig(folderPath = workspacePath, baseBranch = "main")
-    val nestedConfig = FolderConfig(folderPath = nestedPath, baseBranch = "main") // Same as parent
+    val workspaceConfig = folderConfig(folderPath = workspacePath, baseBranch = "main")
+    val nestedConfig = folderConfig(folderPath = nestedPath, baseBranch = "main") // Same as parent
     settings.addFolderConfig(workspaceConfig)
     settings.addFolderConfig(nestedConfig)
 
@@ -809,8 +882,8 @@ class FolderConfigSettingsTest {
     val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
     val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
 
-    val config1 = FolderConfig(folderPath = path1, baseBranch = "main")
-    val config2 = FolderConfig(folderPath = path2, baseBranch = "develop")
+    val config1 = folderConfig(folderPath = path1, baseBranch = "main")
+    val config2 = folderConfig(folderPath = path2, baseBranch = "develop")
     settings.addFolderConfig(config1)
     settings.addFolderConfig(config2)
 
@@ -846,7 +919,7 @@ class FolderConfigSettingsTest {
     val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
 
     val path = "/test/project"
-    settings.addFolderConfig(FolderConfig(folderPath = path, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = path, baseBranch = "main"))
 
     assertEquals("Should have 1 config before migration", 1, settings.getAll().size)
 
@@ -872,8 +945,8 @@ class FolderConfigSettingsTest {
     val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
 
     // Add both configs
-    settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
-    settings.addFolderConfig(FolderConfig(folderPath = nestedPath, baseBranch = "develop"))
+    settings.addFolderConfig(folderConfig(folderPath = workspacePath, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath, baseBranch = "develop"))
 
     val workspaceFolder =
       WorkspaceFolder().apply {
@@ -901,8 +974,8 @@ class FolderConfigSettingsTest {
 
   @Test
   fun `hasNonDefaultValues returns true when config differs from parent`() {
-    val parentConfig = FolderConfig(folderPath = "/parent", baseBranch = "main")
-    val childConfig = FolderConfig(folderPath = "/child", baseBranch = "develop")
+    val parentConfig = folderConfig(folderPath = "/parent", baseBranch = "main")
+    val childConfig = folderConfig(folderPath = "/child", baseBranch = "develop")
 
     assertTrue(
       "Should detect different baseBranch",
@@ -912,8 +985,8 @@ class FolderConfigSettingsTest {
 
   @Test
   fun `hasNonDefaultValues returns false when config matches parent`() {
-    val parentConfig = FolderConfig(folderPath = "/parent", baseBranch = "main")
-    val childConfig = FolderConfig(folderPath = "/child", baseBranch = "main")
+    val parentConfig = folderConfig(folderPath = "/parent", baseBranch = "main")
+    val childConfig = folderConfig(folderPath = "/child", baseBranch = "main")
 
     assertFalse(
       "Should not detect differences when configs match",
@@ -923,8 +996,8 @@ class FolderConfigSettingsTest {
 
   @Test
   fun `hasConflictingConfigs returns true when configs differ`() {
-    val config1 = FolderConfig(folderPath = "/path1", baseBranch = "main")
-    val config2 = FolderConfig(folderPath = "/path2", baseBranch = "develop")
+    val config1 = folderConfig(folderPath = "/path1", baseBranch = "main")
+    val config2 = folderConfig(folderPath = "/path2", baseBranch = "develop")
 
     assertTrue(
       "Should detect conflicting configs",
@@ -934,8 +1007,8 @@ class FolderConfigSettingsTest {
 
   @Test
   fun `hasConflictingConfigs returns false when configs match`() {
-    val config1 = FolderConfig(folderPath = "/path1", baseBranch = "main")
-    val config2 = FolderConfig(folderPath = "/path2", baseBranch = "main")
+    val config1 = folderConfig(folderPath = "/path1", baseBranch = "main")
+    val config2 = folderConfig(folderPath = "/path2", baseBranch = "main")
 
     assertFalse(
       "Should not detect conflicts when configs match",
@@ -946,14 +1019,14 @@ class FolderConfigSettingsTest {
   @Test
   fun `mergeConfigs copies sub-config values into parent`() {
     val parentConfig =
-      FolderConfig(
+      folderConfig(
         folderPath = "/parent",
         baseBranch = "main",
         referenceFolderPath = "/old/ref",
         additionalParameters = listOf("--old"),
       )
     val subConfig =
-      FolderConfig(
+      folderConfig(
         folderPath = "/child",
         baseBranch = "develop",
         referenceFolderPath = "/new/ref",
@@ -963,16 +1036,20 @@ class FolderConfigSettingsTest {
     val merged = settings.mergeConfigs(parentConfig, subConfig)
 
     assertEquals("Should keep parent folderPath", "/parent", merged.folderPath)
-    assertEquals("Should use sub-config baseBranch", "develop", merged.baseBranch)
+    assertEquals(
+      "Should use sub-config baseBranch",
+      "develop",
+      merged.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "Should use sub-config referenceFolderPath",
       "/new/ref",
-      merged.referenceFolderPath,
+      merged.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value,
     )
     assertEquals(
       "Should use sub-config additionalParameters",
       listOf("--new"),
-      merged.additionalParameters,
+      merged.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
     )
   }
 
@@ -996,9 +1073,9 @@ class FolderConfigSettingsTest {
     val normalizedNestedPath = Paths.get(nestedPath).normalize().toAbsolutePath().toString()
 
     // Parent and nested have DIFFERENT values
-    settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = workspacePath, baseBranch = "main"))
     settings.addFolderConfig(
-      FolderConfig(
+      folderConfig(
         folderPath = nestedPath,
         baseBranch = "develop",
         referenceFolderPath = "/custom/ref",
@@ -1029,11 +1106,15 @@ class FolderConfigSettingsTest {
 
     // Verify parent was updated with sub-config values
     val parentConfig = settingsSpy.getAll()[normalizedWorkspacePath]
-    assertEquals("Parent should have merged baseBranch", "develop", parentConfig?.baseBranch)
+    assertEquals(
+      "Parent should have merged baseBranch",
+      "develop",
+      parentConfig?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
     assertEquals(
       "Parent should have merged referenceFolderPath",
       "/custom/ref",
-      parentConfig?.referenceFolderPath,
+      parentConfig?.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value,
     )
   }
 
@@ -1048,8 +1129,8 @@ class FolderConfigSettingsTest {
     val normalizedNestedPath = Paths.get(nestedPath).normalize().toAbsolutePath().toString()
 
     // Parent and nested have DIFFERENT values
-    settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
-    settings.addFolderConfig(FolderConfig(folderPath = nestedPath, baseBranch = "develop"))
+    settings.addFolderConfig(folderConfig(folderPath = workspacePath, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath, baseBranch = "develop"))
 
     val workspaceFolder =
       WorkspaceFolder().apply {
@@ -1075,7 +1156,11 @@ class FolderConfigSettingsTest {
 
     // Verify parent was NOT updated
     val parentConfig = settingsSpy.getAll()[normalizedWorkspacePath]
-    assertEquals("Parent should keep original baseBranch", "main", parentConfig?.baseBranch)
+    assertEquals(
+      "Parent should keep original baseBranch",
+      "main",
+      parentConfig?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
   }
 
   @Test
@@ -1091,9 +1176,9 @@ class FolderConfigSettingsTest {
     val normalizedNestedPath2 = Paths.get(nestedPath2).normalize().toAbsolutePath().toString()
 
     // Parent and two nested configs with DIFFERENT values from each other
-    settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
-    settings.addFolderConfig(FolderConfig(folderPath = nestedPath1, baseBranch = "develop"))
-    settings.addFolderConfig(FolderConfig(folderPath = nestedPath2, baseBranch = "feature"))
+    settings.addFolderConfig(folderConfig(folderPath = workspacePath, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath1, baseBranch = "develop"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath2, baseBranch = "feature"))
 
     val workspaceFolder =
       WorkspaceFolder().apply {
@@ -1147,9 +1232,9 @@ class FolderConfigSettingsTest {
     val normalizedNestedPath2 = Paths.get(nestedPath2).normalize().toAbsolutePath().toString()
 
     // Parent and two nested configs with DIFFERENT values from each other
-    settings.addFolderConfig(FolderConfig(folderPath = workspacePath, baseBranch = "main"))
-    settings.addFolderConfig(FolderConfig(folderPath = nestedPath1, baseBranch = "develop"))
-    settings.addFolderConfig(FolderConfig(folderPath = nestedPath2, baseBranch = "feature"))
+    settings.addFolderConfig(folderConfig(folderPath = workspacePath, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath1, baseBranch = "develop"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath2, baseBranch = "feature"))
 
     val workspaceFolder =
       WorkspaceFolder().apply {

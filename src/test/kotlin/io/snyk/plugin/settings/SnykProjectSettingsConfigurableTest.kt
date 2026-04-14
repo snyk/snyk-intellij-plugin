@@ -14,9 +14,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import snyk.common.lsp.FolderConfig
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.folderConfig
 
 class SnykProjectSettingsConfigurableTest {
 
@@ -53,7 +54,7 @@ class SnykProjectSettingsConfigurableTest {
 
     // Setup initial config with orgSetByUser = true
     val initialConfig =
-      FolderConfig(
+      folderConfig(
         folderPath = path,
         baseBranch = "main",
         preferredOrg = "some-org",
@@ -84,8 +85,15 @@ class SnykProjectSettingsConfigurableTest {
 
     // Verify the result
     val resultConfig = folderConfigSettings.getFolderConfig(path)
-    assertEquals("preferredOrg should be empty", "", resultConfig.preferredOrg)
-    assertFalse("orgSetByUser should be false (auto-detect enabled)", resultConfig.orgSetByUser)
+    assertEquals(
+      "preferredOrg should be empty",
+      "",
+      resultConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertFalse(
+      "orgSetByUser should be false (auto-detect enabled)",
+      resultConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
     assertTrue(
       "isAutoOrganizationEnabled should return true",
       folderConfigSettings.isAutoOrganizationEnabled(projectMock),
@@ -103,7 +111,7 @@ class SnykProjectSettingsConfigurableTest {
 
     // Setup initial config with orgSetByUser = true
     val initialConfig =
-      FolderConfig(
+      folderConfig(
         folderPath = path,
         baseBranch = "main",
         preferredOrg = "some-org",
@@ -138,11 +146,11 @@ class SnykProjectSettingsConfigurableTest {
     assertEquals(
       "preferredOrg should be empty to enable global org fallback",
       "",
-      resultConfig.preferredOrg,
+      resultConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
     )
     assertTrue(
       "orgSetByUser should be true (manual mode, empty preferredOrg falls back to global)",
-      resultConfig.orgSetByUser,
+      resultConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
     )
     assertFalse(
       "isAutoOrganizationEnabled should return false",
@@ -161,7 +169,7 @@ class SnykProjectSettingsConfigurableTest {
 
     // Setup initial config with auto-detect enabled
     val initialConfig =
-      FolderConfig(folderPath = path, baseBranch = "main", preferredOrg = "", orgSetByUser = false)
+      folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "", orgSetByUser = false)
     folderConfigSettings.addFolderConfig(initialConfig)
 
     // Mock the dialog to return a specific org
@@ -187,8 +195,15 @@ class SnykProjectSettingsConfigurableTest {
 
     // Verify the result
     val resultConfig = folderConfigSettings.getFolderConfig(path)
-    assertEquals("preferredOrg should be set", "my-specific-org", resultConfig.preferredOrg)
-    assertTrue("orgSetByUser should be true (manual org)", resultConfig.orgSetByUser)
+    assertEquals(
+      "preferredOrg should be set",
+      "my-specific-org",
+      resultConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertTrue(
+      "orgSetByUser should be true (manual org)",
+      resultConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
     assertFalse(
       "isAutoOrganizationEnabled should return false",
       folderConfigSettings.isAutoOrganizationEnabled(projectMock),
@@ -252,7 +267,7 @@ class SnykProjectSettingsConfigurableTest {
 
     for (case in cases) {
       fcs.clear()
-      fcs.addFolderConfig(FolderConfig(folderPath = path, baseBranch = "main"))
+      fcs.addFolderConfig(folderConfig(folderPath = path, baseBranch = "main"))
 
       applyFolderConfigChanges(
         fcs = fcs,
@@ -262,7 +277,8 @@ class SnykProjectSettingsConfigurableTest {
         additionalParameters = case.input,
       )
 
-      val result = fcs.getFolderConfig(path).additionalParameters
+      val result =
+        fcs.getFolderConfig(path).settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value
       assertEquals("Case '${case.description}': unexpected parsed tokens", case.expected, result)
     }
   }
@@ -278,7 +294,7 @@ class SnykProjectSettingsConfigurableTest {
 
     // Setup initial config
     val initialConfig =
-      FolderConfig(
+      folderConfig(
         folderPath = path,
         baseBranch = "main",
         preferredOrg = "old-org",
@@ -309,8 +325,15 @@ class SnykProjectSettingsConfigurableTest {
 
     // Verify the result - should use auto-detect since checkbox is checked
     val resultConfig = folderConfigSettings.getFolderConfig(path)
-    assertEquals("preferredOrg should be empty (auto-detect)", "", resultConfig.preferredOrg)
-    assertFalse("orgSetByUser should be false (auto-detect enabled)", resultConfig.orgSetByUser)
+    assertEquals(
+      "preferredOrg should be empty (auto-detect)",
+      "",
+      resultConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertFalse(
+      "orgSetByUser should be false (auto-detect enabled)",
+      resultConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
     assertTrue(
       "isAutoOrganizationEnabled should return true",
       folderConfigSettings.isAutoOrganizationEnabled(projectMock),

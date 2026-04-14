@@ -25,7 +25,7 @@ class SnykApplicationSettingsStateService :
   // events
   var pluginInstalledSent: Boolean = false
 
-  val requiredLsProtocolVersion = 24
+  val requiredLsProtocolVersion = 25
 
   @Deprecated("left for old users migration only") var useTokenAuthentication = false
   var authenticationType = AuthenticationType.OAUTH2
@@ -39,6 +39,24 @@ class SnykApplicationSettingsStateService :
 
   // testing flag
   var fileListenerEnabled: Boolean = true
+
+  var explicitChanges: MutableSet<String> = mutableSetOf()
+
+  // folder path -> set of setting keys explicitly changed for that folder
+  var folderExplicitChanges: MutableMap<String, MutableSet<String>> = mutableMapOf()
+
+  fun markExplicitlyChanged(settingKey: String) {
+    explicitChanges.add(settingKey)
+  }
+
+  fun markExplicitlyChanged(folderPath: String, settingKey: String) {
+    folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
+  }
+
+  fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
+
+  fun isExplicitlyChanged(folderPath: String, settingKey: String): Boolean =
+    folderExplicitChanges[folderPath]?.contains(settingKey) == true
 
   // TODO migrate to
   // https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
