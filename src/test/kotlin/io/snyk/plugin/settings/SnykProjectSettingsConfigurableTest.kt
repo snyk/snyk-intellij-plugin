@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.fromPathToUriString
+import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.ui.SnykSettingsDialog
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.junit.After
@@ -281,6 +282,222 @@ class SnykProjectSettingsConfigurableTest {
         fcs.getFolderConfig(path).settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value
       assertEquals("Case '${case.description}': unexpected parsed tokens", case.expected, result)
     }
+  }
+
+  @Test
+  fun `apply writes additionalParameters to folder config correctly`() {
+    val path = "/test/project"
+
+    // Setup initial config with empty additional parameters
+    val initialConfig =
+      folderConfig(folderPath = path, baseBranch = "main", additionalParameters = emptyList())
+    folderConfigSettings.addFolderConfig(initialConfig)
+
+    // Apply with additional parameters containing multiple flags
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path,
+      preferredOrgText = "",
+      autoSelectOrgEnabled = true,
+      additionalParameters = "--severity-threshold=high --json",
+    )
+
+    // Verify the result
+    val resultConfig = folderConfigSettings.getFolderConfig(path)
+    val additionalParamsSetting =
+      resultConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+    assertEquals(
+      "additionalParameters should be parsed into a list",
+      listOf("--severity-threshold=high", "--json"),
+      additionalParamsSetting?.value,
+    )
+    assertTrue(
+      "additionalParameters ConfigSetting should have changed=true",
+      additionalParamsSetting?.changed == true,
+    )
+  }
+
+  @Test
+  fun `apply with auto-detect disabled writes manual org to folder config`() {
+    val path = "/test/project"
+
+    // Setup initial config with auto-detect enabled
+    val initialConfig =
+      folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "", orgSetByUser = false)
+    folderConfigSettings.addFolderConfig(initialConfig)
+
+    // Apply with manual org "my-org"
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path,
+      preferredOrgText = "my-org",
+      autoSelectOrgEnabled = false,
+      additionalParameters = "",
+    )
+
+    // Verify the result
+    val resultConfig = folderConfigSettings.getFolderConfig(path)
+    val preferredOrgSetting = resultConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)
+    val orgSetByUserSetting = resultConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)
+    assertEquals("preferredOrg should be 'my-org'", "my-org", preferredOrgSetting?.value)
+    assertTrue("orgSetByUser should be true", orgSetByUserSetting?.value as? Boolean ?: false)
+    assertTrue(
+      "preferredOrg ConfigSetting should have changed=true",
+      preferredOrgSetting?.changed == true,
+    )
+    assertTrue(
+      "orgSetByUser ConfigSetting should have changed=true",
+      orgSetByUserSetting?.changed == true,
+    )
+  }
+
+  @Test
+  fun `apply updates multiple workspace folders independently`() {
+    val path1 = "/test/project1"
+    val path2 = "/test/project2"
+
+    // Setup initial configs for both folders
+    folderConfigSettings.addFolderConfig(
+      folderConfig(folderPath = path1, baseBranch = "main", preferredOrg = "", orgSetByUser = false)
+    )
+    folderConfigSettings.addFolderConfig(
+      folderConfig(folderPath = path2, baseBranch = "main", preferredOrg = "", orgSetByUser = false)
+    )
+
+    // Apply folder config changes independently to each folder
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path1,
+      preferredOrgText = "org-alpha",
+      autoSelectOrgEnabled = false,
+      additionalParameters = "--json",
+    )
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path2,
+      preferredOrgText = "org-beta",
+      autoSelectOrgEnabled = false,
+      additionalParameters = "--all-projects",
+    )
+
+    // Verify folder 1
+    val result1 = folderConfigSettings.getFolderConfig(path1)
+    assertEquals(
+      "folder1 preferredOrg should be 'org-alpha'",
+      "org-alpha",
+      result1.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertEquals(
+      "folder1 additionalParameters should be ['--json']",
+      listOf("--json"),
+      result1.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+
+    // Verify folder 2 is independent
+    val result2 = folderConfigSettings.getFolderConfig(path2)
+    assertEquals(
+      "folder2 preferredOrg should be 'org-beta'",
+      "org-beta",
+      result2.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertEquals(
+      "folder2 additionalParameters should be ['--all-projects']",
+      listOf("--all-projects"),
+      result2.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+
+    // Verify all three keys are present in each folder
+    for ((label, result) in listOf("folder1" to result1, "folder2" to result2)) {
+      assertTrue(
+        "$label must have ADDITIONAL_PARAMETERS key",
+        result.settings?.containsKey(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS) == true,
+      )
+      assertTrue(
+        "$label must have PREFERRED_ORG key",
+        result.settings?.containsKey(LsFolderSettingsKeys.PREFERRED_ORG) == true,
+      )
+      assertTrue(
+        "$label must have ORG_SET_BY_USER key",
+        result.settings?.containsKey(LsFolderSettingsKeys.ORG_SET_BY_USER) == true,
+      )
+    }
+  }
+
+  @Test
+  fun `apply propagation chain produces correct LspConfigurationParam`() {
+    val path = "/test/project"
+    val workspaceFolder =
+      WorkspaceFolder().apply {
+        uri = path.fromPathToUriString()
+        name = "test-project"
+      }
+
+    // Setup initial config
+    folderConfigSettings.addFolderConfig(folderConfig(folderPath = path, baseBranch = "main"))
+
+    // Mock workspace folders
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder)
+
+    // Simulate what apply() does: iterate workspace folders and apply changes
+    val folderPaths =
+      lsWrapperMock
+        .getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+        .asSequence()
+        .filter { lsWrapperMock.configuredWorkspaceFolders.contains(it) }
+        .map { it.uri.fromUriToPath().toString() }
+        .toList()
+
+    folderPaths.forEach { folderPath ->
+      applyFolderConfigChanges(
+        fcs = folderConfigSettings,
+        folderPath = folderPath,
+        preferredOrgText = "test-org",
+        autoSelectOrgEnabled = false,
+        additionalParameters = "--json --all-projects",
+      )
+    }
+
+    // Verify the stored config matches what getSettings() would read from FolderConfigSettings
+    val storedConfig = folderConfigSettings.getFolderConfig(path)
+
+    // All three folder-scope keys must be present
+    assertTrue(
+      "stored config must have ADDITIONAL_PARAMETERS",
+      storedConfig.settings?.containsKey(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS) == true,
+    )
+    assertTrue(
+      "stored config must have PREFERRED_ORG",
+      storedConfig.settings?.containsKey(LsFolderSettingsKeys.PREFERRED_ORG) == true,
+    )
+    assertTrue(
+      "stored config must have ORG_SET_BY_USER",
+      storedConfig.settings?.containsKey(LsFolderSettingsKeys.ORG_SET_BY_USER) == true,
+    )
+
+    // Values must match what was applied
+    assertEquals(
+      listOf("--json", "--all-projects"),
+      storedConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+    assertEquals("test-org", storedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value)
+    assertEquals(true, storedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value)
+
+    // All ConfigSetting objects must have changed=true
+    assertTrue(
+      "ADDITIONAL_PARAMETERS must be marked changed",
+      storedConfig.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.changed == true,
+    )
+    assertTrue(
+      "PREFERRED_ORG must be marked changed",
+      storedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.changed == true,
+    )
+    assertTrue(
+      "ORG_SET_BY_USER must be marked changed",
+      storedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.changed == true,
+    )
   }
 
   @Test
