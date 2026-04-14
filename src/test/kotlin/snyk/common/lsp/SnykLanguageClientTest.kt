@@ -1392,6 +1392,119 @@ class SnykLanguageClientTest {
     assertFalse(result.isSuccess)
   }
 
+  @Test
+  fun `snykScan with InProgress status triggers scanningStarted`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    ScanState.scanInProgress.clear()
+
+    val param = SnykScanParams("inProgress", "code", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningStarted(param) }
+  }
+
+  @Test
+  fun `snykScan with Success status triggers scanningSnykCodeFinished`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanSuccessTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "code", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningSnykCodeFinished() }
+  }
+
+  @Test
+  fun `snykScan with Error status triggers scanningError`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanErrorTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("error", "code", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningError(param) }
+  }
+
+  @Test
+  fun `snykScan with OSS Success triggers scanningOssFinished`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanOssTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "oss", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningOssFinished() }
+  }
+
+  @Test
+  fun `snykScan with IaC Success triggers scanningIacFinished`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanIacTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "iac", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningIacFinished() }
+  }
+
+  @Test
+  fun `publishDiagnostics with non-empty diagnostics publishes issues for product`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempFile = Files.createTempFile("testPublishDiag", ".java")
+    val filePath = tempFile.fileName.toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = tempFile.toUri().toString()
+    every { fileUri.toVirtualFileOrNull() } returns vf
+    every { filePath.toVirtualFile() } returns vf
+    val document = mockk<Document>(relaxed = true)
+    every { vf.getDocument() } returns document
+    every { document.getLineStartOffset(any()) } returns 0
+
+    val range = Range(Position(0, 0), Position(0, 1))
+    val diagnostic = createMockDiagnostic(range, "Issue1", filePath)
+    diagnostic.source = "Snyk Code"
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, listOf(diagnostic))
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(500)
+    verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), match { it.size == 1 }) }
+  }
+
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
     val rangeString = Gson().toJson(range)
     val jsonString =
