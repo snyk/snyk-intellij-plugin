@@ -36,7 +36,10 @@ import org.junit.Test
 import snyk.common.lsp.analytics.ScanDoneEvent
 import snyk.common.lsp.commands.COMMAND_CODE_FIX_APPLY_AI_EDIT
 import snyk.common.lsp.commands.COMMAND_WORKSPACE_CONFIGURATION
+import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LspFolderConfig
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
 
@@ -569,6 +572,57 @@ class LanguageServerWrapperTest {
     val result = cut.executeCommandWithArgs("snyk.navigateToRange", listOf("/file.kt"))
 
     assertEquals(null, result)
+  }
+
+  @Test
+  fun `getSettings includes per-folder product toggles from FolderConfigSettings`() {
+    val folderPath = "/test/folder-toggles"
+    val normalizedPath = java.nio.file.Paths.get(folderPath).normalize().toAbsolutePath().toString()
+    val folderUri = java.nio.file.Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
+
+    val folderConfig =
+      LspFolderConfig(
+        folderPath = normalizedPath,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = true),
+            LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = false),
+            LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = true),
+            LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = false),
+          ),
+      )
+
+    every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
+
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "folder-toggles"))
+    cut.updateFolderConfigRefresh(normalizedPath, true)
+
+    val result = cut.getSettings()
+
+    val outputFolderConfigs = result.folderConfigs
+    assertEquals("Should have one folder config", 1, outputFolderConfigs?.size)
+
+    val outputSettings = outputFolderConfigs?.first()?.settings
+    assertEquals(
+      "code toggle should be true",
+      true,
+      outputSettings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value,
+    )
+    assertEquals(
+      "oss toggle should be false",
+      false,
+      outputSettings?.get(LsFolderSettingsKeys.SNYK_OSS_ENABLED)?.value,
+    )
+    assertEquals(
+      "iac toggle should be true",
+      true,
+      outputSettings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)?.value,
+    )
+    assertEquals(
+      "secrets toggle should be false",
+      false,
+      outputSettings?.get(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)?.value,
+    )
   }
 
   private fun simulateRunningLS() {

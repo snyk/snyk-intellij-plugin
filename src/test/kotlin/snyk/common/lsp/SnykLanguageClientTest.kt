@@ -748,6 +748,225 @@ class SnykLanguageClientTest {
     )
   }
 
+  @Test
+  fun `snykConfiguration stores per-folder product toggles in FolderConfigSettings`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val lspFolderConfig =
+      LspFolderConfig(
+        folderPath = "/test/project",
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = true),
+            LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = false),
+            LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = true),
+            LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = false),
+          ),
+      )
+    val param = LspConfigurationParam(folderConfigs = listOf(lspFolderConfig))
+
+    cut.snykConfiguration(param)
+
+    val capturedConfigs = slot<List<LspFolderConfig>>()
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(capture(capturedConfigs)) }
+
+    val storedConfig = capturedConfigs.captured.first()
+    assertEquals(
+      "snyk_code_enabled should be stored as true",
+      true,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value,
+    )
+    assertEquals(
+      "snyk_oss_enabled should be stored as false",
+      false,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_OSS_ENABLED)?.value,
+    )
+    assertEquals(
+      "snyk_iac_enabled should be stored as true",
+      true,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)?.value,
+    )
+    assertEquals(
+      "snyk_secrets_enabled should be stored as false",
+      false,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)?.value,
+    )
+  }
+
+  @Test
+  fun `applyFolderScopeSettingsToPluginState maps asymmetric toggles to global state`() {
+    settings.snykCodeSecurityIssuesScanEnable = true
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = true
+    settings.secretsEnabled = false
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    assertFalse(
+      "Code should be disabled (from folder config)",
+      settings.snykCodeSecurityIssuesScanEnable,
+    )
+    assertTrue("OSS should be enabled (from folder config)", settings.ossScanEnable)
+    assertFalse("IaC should be disabled (from folder config)", settings.iacScanEnabled)
+    assertTrue("Secrets should be enabled (from folder config)", settings.secretsEnabled)
+  }
+
+  @Test
+  fun `product toggle round-trip preserves values through full cycle`() {
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = false
+    settings.secretsEnabled = false
+
+    // Use real FolderConfigSettings for round-trip verification
+    val realFolderConfigSettings = FolderConfigSettings()
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      realFolderConfigSettings
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val inputCodeEnabled = true
+    val inputOssEnabled = false
+    val inputIacEnabled = true
+    val inputSecretsEnabled = false
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/roundtrip",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = inputCodeEnabled),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = inputOssEnabled),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = inputIacEnabled),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to
+                    ConfigSetting(value = inputSecretsEnabled),
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    // Verify storage: retrieve from FolderConfigSettings directly
+    val normalizedPath =
+      java.nio.file.Paths.get("/test/roundtrip").normalize().toAbsolutePath().toString()
+    val storedConfig = realFolderConfigSettings.getFolderConfig(normalizedPath)
+
+    assertEquals(
+      "Stored code toggle should match input",
+      inputCodeEnabled,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value,
+    )
+    assertEquals(
+      "Stored oss toggle should match input",
+      inputOssEnabled,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_OSS_ENABLED)?.value,
+    )
+    assertEquals(
+      "Stored iac toggle should match input",
+      inputIacEnabled,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)?.value,
+    )
+    assertEquals(
+      "Stored secrets toggle should match input",
+      inputSecretsEnabled,
+      storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)?.value,
+    )
+
+    // Verify global state mapping (from first folder)
+    assertEquals(
+      "Global code setting should match first folder",
+      inputCodeEnabled,
+      settings.snykCodeSecurityIssuesScanEnable,
+    )
+    assertEquals(
+      "Global oss setting should match first folder",
+      inputOssEnabled,
+      settings.ossScanEnable,
+    )
+    assertEquals(
+      "Global iac setting should match first folder",
+      inputIacEnabled,
+      settings.iacScanEnabled,
+    )
+    assertEquals(
+      "Global secrets setting should match first folder",
+      inputSecretsEnabled,
+      settings.secretsEnabled,
+    )
+  }
+
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
     val rangeString = Gson().toJson(range)
     val jsonString =
