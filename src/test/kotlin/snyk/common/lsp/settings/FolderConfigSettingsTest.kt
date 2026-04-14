@@ -1270,4 +1270,67 @@ class FolderConfigSettingsTest {
       settingsSpy.getAll().containsKey(normalizedNestedPath2),
     )
   }
+
+  @Test
+  fun `autoDeterminedOrg survives addAll and getFolderConfig round-trip`() {
+    val path = "/test/project"
+    val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
+
+    val config =
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        autoDeterminedOrg = "auto-org",
+        orgSetByUser = false,
+        preferredOrg = "",
+      )
+
+    settings.addAll(listOf(config))
+
+    val retrievedConfig = settings.getFolderConfig(path)
+    assertEquals(
+      "autoDeterminedOrg should survive addAll and getFolderConfig round-trip",
+      "auto-org",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value,
+    )
+    assertEquals(
+      "orgSetByUser should be false",
+      false,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
+    assertEquals(
+      "preferredOrg should be empty",
+      "",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertEquals("folderPath should be normalized", normalizedPath, retrievedConfig.folderPath)
+  }
+
+  @Test
+  fun `autoDeterminedOrg is preserved in settings map after store and retrieve`() {
+    val path = "/test/project"
+
+    val config =
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        autoDeterminedOrg = "auto-org-from-ls",
+        orgSetByUser = false,
+      )
+    settings.addFolderConfig(config)
+
+    // Retrieve and verify the autoDeterminedOrg is present in the settings map
+    val retrievedConfig = settings.getFolderConfig(path)
+    val settingsMap = retrievedConfig.settings
+    assertNotNull("Settings map should not be null", settingsMap)
+    assertTrue(
+      "Settings map should contain AUTO_DETERMINED_ORG key",
+      settingsMap!!.containsKey(LsFolderSettingsKeys.AUTO_DETERMINED_ORG),
+    )
+    assertEquals(
+      "autoDeterminedOrg value should match what was stored",
+      "auto-org-from-ls",
+      settingsMap[LsFolderSettingsKeys.AUTO_DETERMINED_ORG]?.value,
+    )
+  }
 }

@@ -501,6 +501,86 @@ class SnykProjectSettingsConfigurableTest {
   }
 
   @Test
+  fun `autoDeterminedOrg is not clobbered by applyFolderConfigChanges when auto-detect enabled`() {
+    val path = "/test/project"
+
+    // Setup initial config simulating LS sending auto-determined org
+    val initialConfig =
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        autoDeterminedOrg = "auto-org-from-ls",
+        orgSetByUser = false,
+        preferredOrg = "",
+      )
+    folderConfigSettings.addFolderConfig(initialConfig)
+
+    // Apply folder config changes with auto-detect enabled (simulating settings UI save)
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path,
+      preferredOrgText = "",
+      autoSelectOrgEnabled = true,
+      additionalParameters = "",
+    )
+
+    // Verify autoDeterminedOrg is preserved
+    val resultConfig = folderConfigSettings.getFolderConfig(path)
+    assertEquals(
+      "autoDeterminedOrg should not be clobbered",
+      "auto-org-from-ls",
+      resultConfig.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value,
+    )
+    assertFalse(
+      "orgSetByUser should remain false",
+      resultConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
+    assertEquals(
+      "preferredOrg should be empty when auto-detect enabled",
+      "",
+      resultConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+  }
+
+  @Test
+  fun `getSettings output preserves autoDeterminedOrg in folder config settings`() {
+    val path = "/test/project"
+
+    // Setup initial config with autoDeterminedOrg set
+    val config =
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        autoDeterminedOrg = "auto-org-preserved",
+        orgSetByUser = false,
+        preferredOrg = "",
+      )
+    folderConfigSettings.addFolderConfig(config)
+
+    // Verify autoDeterminedOrg is in the stored config that getSettings() would read
+    val storedConfig = folderConfigSettings.getFolderConfig(path)
+    assertTrue(
+      "stored config must have AUTO_DETERMINED_ORG key",
+      storedConfig.settings?.containsKey(LsFolderSettingsKeys.AUTO_DETERMINED_ORG) == true,
+    )
+    assertEquals(
+      "autoDeterminedOrg should be preserved in folder config settings",
+      "auto-org-preserved",
+      storedConfig.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value,
+    )
+
+    // Verify all org-related keys are present together
+    assertTrue(
+      "stored config must have PREFERRED_ORG key",
+      storedConfig.settings?.containsKey(LsFolderSettingsKeys.PREFERRED_ORG) == true,
+    )
+    assertTrue(
+      "stored config must have ORG_SET_BY_USER key",
+      storedConfig.settings?.containsKey(LsFolderSettingsKeys.ORG_SET_BY_USER) == true,
+    )
+  }
+
+  @Test
   fun `apply respects auto-detect checkbox when preferredOrgTextField has value and checkbox is checked`() {
     val path = "/test/project"
     val workspaceFolder =
