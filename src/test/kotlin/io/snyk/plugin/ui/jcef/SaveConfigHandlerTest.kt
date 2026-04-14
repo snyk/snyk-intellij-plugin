@@ -733,6 +733,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         LsSettingsKeys.AUTOMATIC_DOWNLOAD,
         LsSettingsKeys.CLI_PATH,
         LsSettingsKeys.BINARY_BASE_URL,
+        LsSettingsKeys.CLI_RELEASE_CHANNEL,
         LsSettingsKeys.PROXY_INSECURE,
         LsSettingsKeys.ORGANIZATION,
         LsSettingsKeys.API_ENDPOINT,
@@ -777,6 +778,37 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertFalse(
       "CLI_PATH should be cleared (field absent)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
+    )
+  }
+
+  fun `test applyGlobalSettings with changed cliReleaseChannel marks CLI_RELEASE_CHANNEL`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.cliReleaseChannel = "stable"
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig = """{"cliReleaseChannel": "preview"}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertTrue(
+      "CLI_RELEASE_CHANNEL should be marked as changed",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL),
+    )
+    assertEquals("preview", realSettings.cliReleaseChannel)
+  }
+
+  fun `test applyGlobalSettings with null cliReleaseChannel clears CLI_RELEASE_CHANNEL`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL))
+    every { pluginSettings() } returns realSettings
+
+    // Send config WITHOUT cliReleaseChannel (null) to trigger the clear
+    val jsonConfig = """{"activateSnykOpenSource": true}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertFalse(
+      "CLI_RELEASE_CHANNEL should be cleared when cliReleaseChannel is absent",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL),
     )
   }
 
