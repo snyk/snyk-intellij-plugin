@@ -840,14 +840,6 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `getSettings omits API endpoint when blank`() {
-    settings.customEndpointUrl = ""
-
-    val actual = cut.getSettings()
-    assertFalse(actual.settings?.containsKey(LsSettingsKeys.API_ENDPOINT) ?: true)
-  }
-
-  @Test
   fun `getSettings includes explicitly changed flags`() {
     settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
 

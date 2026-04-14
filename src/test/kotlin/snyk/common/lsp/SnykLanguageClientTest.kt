@@ -97,6 +97,7 @@ class SnykLanguageClientTest {
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
     every { projectMock.isDisposed } returns false
+    every { projectMock.name } returns "test-project"
     every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
     every { projectMock.messageBus } returns messageBusMock
     every { messageBusMock.isDisposed } returns false
@@ -1332,7 +1333,7 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `showDocument navigates to file without selection`() {
+  fun `showDocument returns true for valid file without selection`() {
     val fileUri = "file:///tmp/test-no-selection.kt"
     val virtualFile = mockk<VirtualFile>(relaxed = true)
 
@@ -1340,7 +1341,9 @@ class SnykLanguageClientTest {
     every { virtualFile.isValid } returns true
     mockkStatic("io.snyk.plugin.UtilsKt")
     every { pluginSettings() } returns settings
-    every { io.snyk.plugin.navigateToSource(any(), any(), any()) } returns Unit
+    every {
+      io.snyk.plugin.navigateToSource(any<Project>(), any<VirtualFile>(), any<Int>(), any())
+    } returns Unit
 
     val params = ShowDocumentParams(fileUri)
     val result = cut.showDocument(params).get()
