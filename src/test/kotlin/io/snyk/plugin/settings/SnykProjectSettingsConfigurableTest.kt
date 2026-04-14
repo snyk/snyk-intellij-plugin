@@ -90,9 +90,9 @@ class SnykProjectSettingsConfigurableTest {
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
     // Setup dialog to return current values (no changes)
-    every { snykSettingsDialogMock.getToken() } returns settings.token
-    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getToken() } returns (settings.token ?: "")
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns (settings.customEndpointUrl ?: "")
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
@@ -132,8 +132,8 @@ class SnykProjectSettingsConfigurableTest {
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
     every { snykSettingsDialogMock.getToken() } returns "new-token"
-    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns (settings.customEndpointUrl ?: "")
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
@@ -172,9 +172,9 @@ class SnykProjectSettingsConfigurableTest {
     val configurable = SnykProjectSettingsConfigurable(projectMock)
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
-    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getToken() } returns (settings.token ?: "")
     every { snykSettingsDialogMock.getCustomEndpoint() } returns "https://api.eu.snyk.io"
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
@@ -213,9 +213,9 @@ class SnykProjectSettingsConfigurableTest {
     val configurable = SnykProjectSettingsConfigurable(projectMock)
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
-    every { snykSettingsDialogMock.getToken() } returns settings.token
-    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getToken() } returns (settings.token ?: "")
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns (settings.customEndpointUrl ?: "")
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns true
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
@@ -254,9 +254,9 @@ class SnykProjectSettingsConfigurableTest {
     val configurable = SnykProjectSettingsConfigurable(projectMock)
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
-    every { snykSettingsDialogMock.getToken() } returns settings.token
-    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getToken() } returns (settings.token ?: "")
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns (settings.customEndpointUrl ?: "")
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
@@ -295,9 +295,9 @@ class SnykProjectSettingsConfigurableTest {
     val configurable = SnykProjectSettingsConfigurable(projectMock)
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
-    every { snykSettingsDialogMock.getToken() } returns settings.token
-    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getToken() } returns (settings.token ?: "")
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns (settings.customEndpointUrl ?: "")
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
@@ -335,9 +335,9 @@ class SnykProjectSettingsConfigurableTest {
     val configurable = SnykProjectSettingsConfigurable(projectMock)
     configurable.snykSettingsDialog = snykSettingsDialogMock
 
-    every { snykSettingsDialogMock.getToken() } returns settings.token
-    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
-    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.getToken() } returns (settings.token ?: "")
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns (settings.customEndpointUrl ?: "")
+    every { snykSettingsDialogMock.getOrganization() } returns (settings.organization ?: "")
     every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
     every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
       settings.manageBinariesAutomatically
