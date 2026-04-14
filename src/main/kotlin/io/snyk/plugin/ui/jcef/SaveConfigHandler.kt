@@ -182,7 +182,11 @@ class SaveConfigHandler(
         settings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
       }
       settings.manageBinariesAutomatically = it
-    } ?: settings.clearExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    }
+      ?: run {
+        settings.clearExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+        settings.addPendingReset(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+      }
 
     // Use the provided cliPath from the config if present, or the default CLI path if not.
     config.cliPath?.let { path ->
@@ -191,26 +195,42 @@ class SaveConfigHandler(
         settings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
       }
       settings.cliPath = resolved
-    } ?: settings.clearExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+    }
+      ?: run {
+        settings.clearExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+        settings.addPendingReset(LsSettingsKeys.CLI_PATH)
+      }
 
     config.cliBaseDownloadURL?.let {
       if (it != settings.cliBaseDownloadURL) {
         settings.markExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
       }
       settings.cliBaseDownloadURL = it
-    } ?: settings.clearExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
+    }
+      ?: run {
+        settings.clearExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
+        settings.addPendingReset(LsSettingsKeys.BINARY_BASE_URL)
+      }
     config.cliReleaseChannel?.let {
       if (it != settings.cliReleaseChannel) {
         settings.markExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
       }
       settings.cliReleaseChannel = it
-    } ?: settings.clearExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
+    }
+      ?: run {
+        settings.clearExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
+        settings.addPendingReset(LsSettingsKeys.CLI_RELEASE_CHANNEL)
+      }
     config.insecure?.let {
       if (it != settings.ignoreUnknownCA) {
         settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
       }
       settings.ignoreUnknownCA = it
-    } ?: settings.clearExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
+    }
+      ?: run {
+        settings.clearExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
+        settings.addPendingReset(LsSettingsKeys.PROXY_INSECURE)
+      }
 
     if (!isFallback) {
       settings.ossScanEnable = config.activateSnykOpenSource ?: false
@@ -227,19 +247,31 @@ class SaveConfigHandler(
           settings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
         }
         settings.organization = it
-      } ?: settings.clearExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+      }
+        ?: run {
+          settings.clearExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+          settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
+        }
       config.endpoint?.let {
         if (it != settings.customEndpointUrl) {
           settings.markExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
         }
         settings.customEndpointUrl = it
-      } ?: settings.clearExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
+      }
+        ?: run {
+          settings.clearExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
+          settings.addPendingReset(LsSettingsKeys.API_ENDPOINT)
+        }
       config.token?.let {
         if (it != settings.token) {
           settings.markExplicitlyChanged(LsSettingsKeys.TOKEN)
         }
         settings.token = it
-      } ?: settings.clearExplicitlyChanged(LsSettingsKeys.TOKEN)
+      }
+        ?: run {
+          settings.clearExplicitlyChanged(LsSettingsKeys.TOKEN)
+          settings.addPendingReset(LsSettingsKeys.TOKEN)
+        }
 
       // Authentication method
       config.authenticationMethod?.let { method ->
@@ -254,7 +286,11 @@ class SaveConfigHandler(
           settings.markExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
         }
         settings.authenticationType = resolved
-      } ?: settings.clearExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
+      }
+        ?: run {
+          settings.clearExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
+          settings.addPendingReset(LsSettingsKeys.AUTHENTICATION_METHOD)
+        }
 
       // Severity filters
       config.filterSeverity?.let { severity ->

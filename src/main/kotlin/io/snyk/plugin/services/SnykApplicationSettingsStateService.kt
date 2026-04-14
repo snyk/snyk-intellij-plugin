@@ -45,6 +45,20 @@ class SnykApplicationSettingsStateService :
   // folder path -> set of setting keys explicitly changed for that folder
   var folderExplicitChanges: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
+  // Keys pending a reset signal ({ value: null, changed: true }) to the LS.
+  // Transient: not persisted, consumed once by getSettings().
+  @Transient private val pendingResets: MutableSet<String> = mutableSetOf()
+
+  fun addPendingReset(key: String) {
+    pendingResets.add(key)
+  }
+
+  fun consumePendingResets(): Set<String> {
+    val snapshot = pendingResets.toSet()
+    pendingResets.clear()
+    return snapshot
+  }
+
   fun markExplicitlyChanged(settingKey: String) {
     explicitChanges.add(settingKey)
   }

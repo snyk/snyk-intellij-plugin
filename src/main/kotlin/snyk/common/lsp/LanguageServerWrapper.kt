@@ -697,6 +697,12 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW),
       )
 
+    // Emit one-shot reset signals for keys the user cleared
+    val resets = ps.consumePendingResets()
+    for (key in resets) {
+      settingsMap[key] = ConfigSetting(value = null, changed = true)
+    }
+
     // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org)
     val folderConfigsList =
       configuredWorkspaceFolders

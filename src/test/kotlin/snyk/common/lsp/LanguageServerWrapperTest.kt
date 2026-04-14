@@ -846,6 +846,53 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `getSettings emits reset signal for pending resets`() {
+    settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
+
+    val actual = cut.getSettings()
+
+    val orgSetting = actual.settings?.get(LsSettingsKeys.ORGANIZATION)
+    assertNotNull("Organization should be present in settings", orgSetting)
+    assertEquals("Reset signal value should be null", null, orgSetting!!.value)
+    assertEquals("Reset signal changed should be true", true, orgSetting.changed)
+  }
+
+  @Test
+  fun `getSettings consumes pending resets (one-shot)`() {
+    settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
+
+    // First call should include the reset signal
+    val first = cut.getSettings()
+    val orgFirst = first.settings?.get(LsSettingsKeys.ORGANIZATION)
+    assertNotNull(orgFirst)
+    assertEquals(null, orgFirst!!.value)
+    assertEquals(true, orgFirst.changed)
+
+    // Second call should NOT include the reset signal (consumed)
+    settings.organization = "real-org"
+    val second = cut.getSettings()
+    val orgSecond = second.settings?.get(LsSettingsKeys.ORGANIZATION)
+    assertNotNull(orgSecond)
+    // Should now have the real value, not null
+    assertEquals("real-org", orgSecond!!.value)
+  }
+
+  @Test
+  fun `getSettings reset signal overrides normal value for pending key`() {
+    // Set a normal value for organization
+    settings.organization = "my-org"
+    // Then add a pending reset -- the reset should win
+    settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
+
+    val actual = cut.getSettings()
+
+    val orgSetting = actual.settings?.get(LsSettingsKeys.ORGANIZATION)
+    assertNotNull(orgSetting)
+    assertEquals("Reset should override the normal value with null", null, orgSetting!!.value)
+    assertEquals(true, orgSetting.changed)
+  }
+
+  @Test
   fun `getSettings includes explicitly changed flags`() {
     settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
 
