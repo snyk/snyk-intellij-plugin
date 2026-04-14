@@ -178,24 +178,33 @@ class SaveConfigHandler(
     val isFallback = config.isFallbackForm == true
 
     config.manageBinariesAutomatically?.let {
+      if (it != settings.manageBinariesAutomatically) {
+        settings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+      }
       settings.manageBinariesAutomatically = it
-      settings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
     }
 
     // Use the provided cliPath from the config if present, or the default CLI path if not.
     config.cliPath?.let { path ->
-      settings.cliPath = path.ifEmpty { getDefaultCliPath() }
-      settings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+      val resolved = path.ifEmpty { getDefaultCliPath() }
+      if (resolved != settings.cliPath) {
+        settings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+      }
+      settings.cliPath = resolved
     }
 
     config.cliBaseDownloadURL?.let {
+      if (it != settings.cliBaseDownloadURL) {
+        settings.markExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
+      }
       settings.cliBaseDownloadURL = it
-      settings.markExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
     }
     config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
     config.insecure?.let {
+      if (it != settings.ignoreUnknownCA) {
+        settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
+      }
       settings.ignoreUnknownCA = it
-      settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
     }
 
     if (!isFallback) {
@@ -209,28 +218,37 @@ class SaveConfigHandler(
 
       // Connection settings
       config.organization?.let {
+        if (it != settings.organization) {
+          settings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+        }
         settings.organization = it
-        settings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
       }
       config.endpoint?.let {
+        if (it != settings.customEndpointUrl) {
+          settings.markExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
+        }
         settings.customEndpointUrl = it
-        settings.markExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
       }
       config.token?.let {
+        if (it != settings.token) {
+          settings.markExplicitlyChanged(LsSettingsKeys.TOKEN)
+        }
         settings.token = it
-        settings.markExplicitlyChanged(LsSettingsKeys.TOKEN)
       }
 
       // Authentication method
       config.authenticationMethod?.let { method ->
-        settings.authenticationType =
+        val resolved =
           when (method) {
             "oauth" -> AuthenticationType.OAUTH2
             "token" -> AuthenticationType.API_TOKEN
             "pat" -> AuthenticationType.PAT
             else -> AuthenticationType.OAUTH2
           }
-        settings.markExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
+        if (resolved != settings.authenticationType) {
+          settings.markExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
+        }
+        settings.authenticationType = resolved
       }
 
       // Severity filters
