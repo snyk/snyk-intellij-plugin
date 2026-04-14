@@ -1,13 +1,20 @@
 package io.snyk.plugin.settings
 
+import com.intellij.openapi.application.Application
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.fromPathToUriString
 import io.snyk.plugin.fromUriToPath
+import io.snyk.plugin.isProjectSettingsAvailable
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.SnykSettingsDialog
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -42,6 +49,332 @@ class SnykProjectSettingsConfigurableTest {
   @After
   fun tearDown() {
     unmockkAll()
+  }
+
+  @Test
+  fun `getId returns correct id`() {
+    val settings = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    assertEquals("io.snyk.plugin.settings.SnykProjectSettingsConfigurable", configurable.getId())
+  }
+
+  @Test
+  fun `getDisplayName returns Snyk`() {
+    val settings = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    assertEquals("Snyk", configurable.getDisplayName())
+  }
+
+  @Test
+  fun `isModified returns false when nothing changed`() {
+    val settings = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns false
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    // Setup dialog to return current values (no changes)
+    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns settings.scanOnSave
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns settings.cliReleaseChannel
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
+
+    assertFalse(configurable.isModified())
+  }
+
+  @Test
+  fun `isModified returns true when token changed`() {
+    val settings = SnykApplicationSettingsStateService()
+    settings.token = "original-token"
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns false
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    every { snykSettingsDialogMock.getToken() } returns "new-token"
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns settings.scanOnSave
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns settings.cliReleaseChannel
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
+
+    assertTrue(configurable.isModified())
+  }
+
+  @Test
+  fun `isModified returns true when custom endpoint changed`() {
+    val settings = SnykApplicationSettingsStateService()
+    settings.customEndpointUrl = "https://api.snyk.io"
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns false
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns "https://api.eu.snyk.io"
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns settings.scanOnSave
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns settings.cliReleaseChannel
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
+
+    assertTrue(configurable.isModified())
+  }
+
+  @Test
+  fun `isModified returns true when ignoreUnknownCA changed`() {
+    val settings = SnykApplicationSettingsStateService()
+    settings.ignoreUnknownCA = false
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns false
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns true
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns settings.scanOnSave
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns settings.cliReleaseChannel
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
+
+    assertTrue(configurable.isModified())
+  }
+
+  @Test
+  fun `isModified returns true when scan on save changed`() {
+    val settings = SnykApplicationSettingsStateService()
+    settings.scanOnSave = true
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns false
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns false
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns settings.cliReleaseChannel
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
+
+    assertTrue(configurable.isModified())
+  }
+
+  @Test
+  fun `isModified returns true when cli release channel changed`() {
+    val settings = SnykApplicationSettingsStateService()
+    settings.cliReleaseChannel = "stable"
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns false
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns settings.scanOnSave
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns "preview"
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns ""
+
+    assertTrue(configurable.isModified())
+  }
+
+  @Test
+  fun `isModified detects additional parameters changes`() {
+    val settings = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    every { isProjectSettingsAvailable(projectMock) } returns true
+
+    val applicationMock = mockk<Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns applicationMock
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettings
+    every { applicationMock.getService(SnykPluginDisposable::class.java) } returns
+      mockk(relaxed = true)
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    every { snykSettingsDialogMock.getToken() } returns settings.token
+    every { snykSettingsDialogMock.getCustomEndpoint() } returns settings.customEndpointUrl
+    every { snykSettingsDialogMock.getOrganization() } returns settings.organization
+    every { snykSettingsDialogMock.isIgnoreUnknownCA() } returns settings.ignoreUnknownCA
+    every { snykSettingsDialogMock.manageBinariesAutomatically() } returns
+      settings.manageBinariesAutomatically
+    every { snykSettingsDialogMock.getCliPath() } returns settings.cliPath
+    every { snykSettingsDialogMock.getCliBaseDownloadURL() } returns settings.cliBaseDownloadURL
+    every { snykSettingsDialogMock.isScanOnSaveEnabled() } returns settings.scanOnSave
+    every { snykSettingsDialogMock.getCliReleaseChannel() } returns settings.cliReleaseChannel
+    every { snykSettingsDialogMock.getDisplayIssuesSelection() } returns settings.issuesToDisplay
+    every { snykSettingsDialogMock.getAuthenticationType() } returns settings.authenticationType
+    every { snykSettingsDialogMock.isScanTypeChanged() } returns false
+    every { snykSettingsDialogMock.isSeverityEnablementChanged() } returns false
+    every { snykSettingsDialogMock.isIssueViewOptionsChanged() } returns false
+    every { snykSettingsDialogMock.getPreferredOrg() } returns ""
+    every { snykSettingsDialogMock.isAutoSelectOrgEnabled() } returns true
+    every { snykSettingsDialogMock.getAdditionalParameters() } returns "--json"
+
+    // The stored additional params are empty, dialog returns "--json"
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns emptySet()
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
+
+    assertTrue(configurable.isModified())
+  }
+
+  @Test
+  fun `reset delegates to dialog`() {
+    val settings = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+
+    val configurable = SnykProjectSettingsConfigurable(projectMock)
+    configurable.snykSettingsDialog = snykSettingsDialogMock
+
+    configurable.reset()
+
+    io.mockk.verify { snykSettingsDialogMock.initializeFromSettings() }
   }
 
   @Test
