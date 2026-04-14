@@ -45,6 +45,7 @@ import org.eclipse.lsp4j.TextEdit
 import org.eclipse.lsp4j.WorkspaceEdit
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -52,6 +53,7 @@ import org.junit.Test
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.ConfigSetting
 import snyk.common.lsp.settings.FolderConfigSettings
+import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.common.lsp.settings.LspFolderConfig
 import snyk.pluginInfo
@@ -444,6 +446,198 @@ class SnykLanguageClientTest {
 
     assertTrue(settings.snykCodeSecurityIssuesScanEnable)
     assertTrue(settings.ossScanEnable)
+  }
+
+  @Test
+  fun `snykConfiguration with null folderConfigs does not crash and preserves global state`() {
+    settings.snykCodeSecurityIssuesScanEnable = true
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = true
+    settings.secretsEnabled = false
+    settings.criticalSeverityEnabled = true
+    settings.highSeverityEnabled = false
+
+    val param = LspConfigurationParam(folderConfigs = null)
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(200)
+
+    assertTrue(settings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(settings.ossScanEnable)
+    assertTrue(settings.iacScanEnabled)
+    assertFalse(settings.secretsEnabled)
+    assertTrue(settings.criticalSeverityEnabled)
+    assertFalse(settings.highSeverityEnabled)
+  }
+
+  @Test
+  fun `snykConfiguration with empty folderConfigs does not crash and preserves global state`() {
+    settings.snykCodeSecurityIssuesScanEnable = true
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = true
+    settings.secretsEnabled = false
+    settings.criticalSeverityEnabled = true
+    settings.highSeverityEnabled = false
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    val param = LspConfigurationParam(folderConfigs = emptyList())
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(200)
+
+    assertTrue(settings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(settings.ossScanEnable)
+    assertTrue(settings.iacScanEnabled)
+    assertFalse(settings.secretsEnabled)
+    assertTrue(settings.criticalSeverityEnabled)
+    assertFalse(settings.highSeverityEnabled)
+  }
+
+  @Test
+  fun `snykConfiguration with single folder config maps toggles to global state`() {
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = false
+    settings.secretsEnabled = false
+    settings.criticalSeverityEnabled = false
+    settings.highSeverityEnabled = false
+    settings.mediumSeverityEnabled = false
+    settings.lowSeverityEnabled = false
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.ENABLED_SEVERITIES to
+                    ConfigSetting(
+                      value =
+                        mapOf("critical" to true, "high" to true, "medium" to true, "low" to true)
+                    ),
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    assertTrue("Code should be enabled", settings.snykCodeSecurityIssuesScanEnable)
+    assertTrue("OSS should be enabled", settings.ossScanEnable)
+    assertTrue("IaC should be enabled", settings.iacScanEnabled)
+    assertTrue("Secrets should be enabled", settings.secretsEnabled)
+    assertTrue("Critical severity should be enabled", settings.criticalSeverityEnabled)
+    assertTrue("High severity should be enabled", settings.highSeverityEnabled)
+    assertTrue("Medium severity should be enabled", settings.mediumSeverityEnabled)
+    assertTrue("Low severity should be enabled", settings.lowSeverityEnabled)
+  }
+
+  @Test
+  fun `snykConfiguration with multiple folder configs maps only first folder to global state`() {
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = false
+    settings.secretsEnabled = false
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project1",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
+                ),
+            ),
+            LspFolderConfig(
+              folderPath = "/test/project2",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = false),
+                ),
+            ),
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    // First folder config values should be applied
+    assertTrue(
+      "Code should be enabled (from first folder)",
+      settings.snykCodeSecurityIssuesScanEnable,
+    )
+    assertTrue("OSS should be enabled (from first folder)", settings.ossScanEnable)
+    assertFalse("IaC should be disabled (from first folder)", settings.iacScanEnabled)
+    assertTrue("Secrets should be enabled (from first folder)", settings.secretsEnabled)
   }
 
   @Test
