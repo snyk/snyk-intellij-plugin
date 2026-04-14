@@ -1101,8 +1101,12 @@ class SnykLanguageClientTest {
     cut.logMessage(org.eclipse.lsp4j.MessageParams(MessageType.Warning, "warn msg"))
     cut.logMessage(org.eclipse.lsp4j.MessageParams(MessageType.Info, "info msg"))
     cut.logMessage(org.eclipse.lsp4j.MessageParams(MessageType.Log, "log msg"))
-    cut.logMessage(org.eclipse.lsp4j.MessageParams(null, "null type msg"))
+    // null MessageParams is handled gracefully
     cut.logMessage(null)
+    // MessageParams with null type: must set via setter to bypass constructor NPE
+    val nullTypeParams = org.eclipse.lsp4j.MessageParams(MessageType.Info, "null type msg")
+    nullTypeParams.type = null
+    cut.logMessage(nullTypeParams)
   }
 
   @Test
