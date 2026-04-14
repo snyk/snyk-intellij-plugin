@@ -642,7 +642,10 @@ class LanguageServerWrapperTest {
 
     val actual = cut.getSettings()
 
-    assertEquals("/usr/local/bin/snyk", actual.settings?.get(LsSettingsKeys.CLI_PATH)?.value)
+    assertEquals(
+      java.io.File("/usr/local/bin/snyk").absolutePath,
+      actual.settings?.get(LsSettingsKeys.CLI_PATH)?.value,
+    )
   }
 
   @Test
@@ -662,7 +665,10 @@ class LanguageServerWrapperTest {
     assertEquals(true, s[LsSettingsKeys.PROXY_INSECURE]?.value)
     assertEquals("test-org", s[LsSettingsKeys.ORGANIZATION]?.value)
     assertEquals(false, s[LsSettingsKeys.AUTOMATIC_DOWNLOAD]?.value)
-    assertEquals("/usr/local/bin/snyk", s[LsSettingsKeys.CLI_PATH]?.value)
+    assertEquals(
+      java.io.File("/usr/local/bin/snyk").absolutePath,
+      s[LsSettingsKeys.CLI_PATH]?.value,
+    )
     assertEquals("https://static.snyk.io", s[LsSettingsKeys.BINARY_BASE_URL]?.value)
     assertEquals("preview", s[LsSettingsKeys.CLI_RELEASE_CHANNEL]?.value)
   }
