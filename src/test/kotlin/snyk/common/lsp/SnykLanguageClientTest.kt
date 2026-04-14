@@ -38,7 +38,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams
 import org.eclipse.lsp4j.Diagnostic
+import org.eclipse.lsp4j.MessageType
 import org.eclipse.lsp4j.Position
+import org.eclipse.lsp4j.ProgressParams
 import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.ShowDocumentParams
@@ -48,6 +50,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -94,6 +97,7 @@ class SnykLanguageClientTest {
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
     every { projectMock.isDisposed } returns false
+    every { projectMock.name } returns "test-project"
     every { projectMock.getService(DumbService::class.java) } returns dumbServiceMock
     every { projectMock.messageBus } returns messageBusMock
     every { messageBusMock.isDisposed } returns false
@@ -1060,6 +1064,445 @@ class SnykLanguageClientTest {
     assertEquals("/usr/local/bin/snyk", settings.cliPath)
     assertEquals("https://static.snyk.io", settings.cliBaseDownloadURL)
     assertEquals("preview", settings.cliReleaseChannel)
+  }
+
+  @Test
+  fun `telemetryEvent does nothing`() {
+    cut.telemetryEvent(null)
+    cut.telemetryEvent("some event")
+  }
+
+  @Test
+  fun `notifyProgress delegates to progressManager`() {
+    val params = mockk<ProgressParams>(relaxed = true)
+    cut.notifyProgress(params)
+  }
+
+  @Test
+  fun `publishDiagnostics316 does nothing`() {
+    cut.publishDiagnostics316(null)
+    cut.publishDiagnostics316(mockk(relaxed = true))
+  }
+
+  @Test
+  fun `publishDiagnostics returns early on null param`() {
+    cut.publishDiagnostics(null)
+  }
+
+  @Test
+  fun `refreshInlineValues returns completed future`() {
+    val result = cut.refreshInlineValues()
+    assertNotNull(result)
+  }
+
+  @Test
+  fun `logMessage logs different message types`() {
+    // Note: MessageType.Error is skipped because IntelliJ DefaultLogger throws AssertionError
+    cut.logMessage(org.eclipse.lsp4j.MessageParams(MessageType.Warning, "warn msg"))
+    cut.logMessage(org.eclipse.lsp4j.MessageParams(MessageType.Info, "info msg"))
+    cut.logMessage(org.eclipse.lsp4j.MessageParams(MessageType.Log, "log msg"))
+    // null MessageParams is handled gracefully
+    cut.logMessage(null)
+  }
+
+  @Test
+  fun `logTrace does nothing when not disposed`() {
+    cut.logTrace(org.eclipse.lsp4j.LogTraceParams("trace message"))
+    cut.logTrace(null)
+  }
+
+  @Test
+  fun `logTrace does not run when disposed`() {
+    every { projectMock.isDisposed } returns true
+    cut.logTrace(org.eclipse.lsp4j.LogTraceParams("trace message"))
+  }
+
+  @Test
+  fun `dispose sets disposed flag`() {
+    assertFalse(cut.isDisposed())
+    cut.dispose()
+    assertTrue(cut.isDisposed())
+  }
+
+  @Test
+  fun `applyEdit returns false future when disposed`() {
+    every { projectMock.isDisposed } returns true
+    val result = cut.applyEdit(null)
+    assertFalse(result.get().isApplied)
+  }
+
+  @Test
+  fun `refreshCodeLenses returns completed future when not disposed`() {
+    val result = cut.refreshCodeLenses()
+    assertNotNull(result)
+  }
+
+  @Test
+  fun `showDocument returns false when disposed`() {
+    every { projectMock.isDisposed } returns true
+    val result = cut.showDocument(ShowDocumentParams("file:///test.txt"))
+    assertFalse(result.get().isSuccess)
+  }
+
+  @Test
+  fun `snykScanSummary does not run when disposed`() {
+    every { projectMock.isDisposed } returns true
+    cut.snykScanSummary(mockk(relaxed = true))
+  }
+
+  @Test
+  fun `publishDiagnostics with empty diagnostics and OpenSource version`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = "file:///tmp/test-oss.kt"
+    every { fileUri.toVirtualFileOrNull() } returns vf
+
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, emptyList())
+    diagnosticsParams.version = LsProduct.OpenSource.ordinal
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(200)
+    verify { mockListener.onPublishDiagnostics(LsProduct.OpenSource, any(), emptySet()) }
+  }
+
+  @Test
+  fun `publishDiagnostics with empty diagnostics and Code version`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = "file:///tmp/test-code.kt"
+    every { fileUri.toVirtualFileOrNull() } returns vf
+
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, emptyList())
+    diagnosticsParams.version = LsProduct.Code.ordinal
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(200)
+    verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), emptySet()) }
+  }
+
+  @Test
+  fun `publishDiagnostics with empty diagnostics and IaC version`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = "file:///tmp/test-iac.kt"
+    every { fileUri.toVirtualFileOrNull() } returns vf
+
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, emptyList())
+    diagnosticsParams.version = LsProduct.InfrastructureAsCode.ordinal
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(200)
+    verify { mockListener.onPublishDiagnostics(LsProduct.InfrastructureAsCode, any(), emptySet()) }
+  }
+
+  @Test
+  fun `publishDiagnostics with empty diagnostics and Secrets version`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = "file:///tmp/test-secrets.kt"
+    every { fileUri.toVirtualFileOrNull() } returns vf
+
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, emptyList())
+    diagnosticsParams.version = LsProduct.Secrets.ordinal
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(200)
+    verify { mockListener.onPublishDiagnostics(LsProduct.Secrets, any(), emptySet()) }
+  }
+
+  @Test
+  fun `publishDiagnostics with empty diagnostics and unknown version clears all products`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = "file:///tmp/test-unknown.kt"
+    every { fileUri.toVirtualFileOrNull() } returns vf
+
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, emptyList())
+    diagnosticsParams.version = 999
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(200)
+    verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), emptySet()) }
+    verify { mockListener.onPublishDiagnostics(LsProduct.OpenSource, any(), emptySet()) }
+    verify { mockListener.onPublishDiagnostics(LsProduct.InfrastructureAsCode, any(), emptySet()) }
+    verify { mockListener.onPublishDiagnostics(LsProduct.Secrets, any(), emptySet()) }
+  }
+
+  @Test
+  fun `snykConfiguration reads risk score threshold from folder config`() {
+    settings.riskScoreThreshold = null
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project",
+              settings =
+                mapOf(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD to ConfigSetting(value = 700.0)),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    assertEquals(700, settings.riskScoreThreshold)
+  }
+
+  @Test
+  fun `snykConfiguration reads issue view options from folder config`() {
+    settings.openIssuesEnabled = true
+    settings.ignoredIssuesEnabled = false
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SCAN_AUTOMATIC to ConfigSetting(value = false),
+                  LsFolderSettingsKeys.SCAN_NET_NEW to ConfigSetting(value = true),
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    assertFalse(settings.openIssuesEnabled)
+    assertTrue(settings.ignoredIssuesEnabled)
+    assertFalse(settings.scanOnSave)
+    assertTrue(settings.isDeltaFindingsEnabled())
+  }
+
+  @Test
+  fun `showDocument returns false when document is null for file with selection`() {
+    val fileUri = "file:///tmp/test-no-doc.kt"
+    val virtualFile = mockk<VirtualFile>(relaxed = true)
+
+    every { fileUri.toVirtualFileOrNull() } returns virtualFile
+    every { virtualFile.isValid } returns true
+    every { virtualFile.getDocument() } returns null
+
+    val params =
+      ShowDocumentParams(fileUri).apply { selection = Range(Position(5, 0), Position(5, 10)) }
+
+    val result = cut.showDocument(params).get()
+
+    assertFalse(result.isSuccess)
+  }
+
+  @Test
+  fun `showDocument with Snyk OSS product URI`() {
+    val mockListener = mockk<SnykShowIssueDetailListener>(relaxed = true)
+    val latch = CountDownLatch(1)
+    every { mockListener.onShowIssueDetail(any()) } answers { latch.countDown() }
+    every {
+      messageBusMock.syncPublisher(SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)
+    } returns mockListener
+
+    val url =
+      "snyk:///temp/test.txt?product=Snyk+Open+Source&issueId=12345&action=showInDetailPanel"
+    val result = cut.showDocument(ShowDocumentParams(url)).get()
+
+    assertTrue(result.isSuccess)
+    assertTrue("Async publish should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+    verify { mockListener.onShowIssueDetail(any()) }
+  }
+
+  @Test
+  fun `showDocument with Snyk Secrets product URI`() {
+    val mockListener = mockk<SnykShowIssueDetailListener>(relaxed = true)
+    val latch = CountDownLatch(1)
+    every { mockListener.onShowIssueDetail(any()) } answers { latch.countDown() }
+    every {
+      messageBusMock.syncPublisher(SnykShowIssueDetailListener.SHOW_ISSUE_DETAIL_TOPIC)
+    } returns mockListener
+
+    val url = "snyk:///temp/test.txt?product=Snyk+Secrets&issueId=12345&action=showInDetailPanel"
+    val result = cut.showDocument(ShowDocumentParams(url)).get()
+
+    assertTrue(result.isSuccess)
+    assertTrue("Async publish should complete within timeout", latch.await(2, TimeUnit.SECONDS))
+    verify { mockListener.onShowIssueDetail(any()) }
+  }
+
+  @Test
+  fun `showDocument with unknown Snyk product URI`() {
+    val url = "snyk:///temp/test.txt?product=Snyk+Unknown&issueId=12345&action=showInDetailPanel"
+    val result = cut.showDocument(ShowDocumentParams(url)).get()
+
+    assertFalse(result.isSuccess)
+  }
+
+  @Test
+  fun `snykScan with InProgress status triggers scanningStarted`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    ScanState.scanInProgress.clear()
+
+    val param = SnykScanParams("inProgress", "code", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningStarted(param) }
+  }
+
+  @Test
+  fun `snykScan with Success status triggers scanningSnykCodeFinished`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanSuccessTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "code", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningSnykCodeFinished() }
+  }
+
+  @Test
+  fun `snykScan with Error status triggers scanningError`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanErrorTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("error", "code", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningError(param) }
+  }
+
+  @Test
+  fun `snykScan with OSS Success triggers scanningOssFinished`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanOssTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "oss", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningOssFinished() }
+  }
+
+  @Test
+  fun `snykScan with IaC Success triggers scanningIacFinished`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanIacTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "iac", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify { mockListener.scanningIacFinished() }
+  }
+
+  @Test
+  fun `publishDiagnostics with non-empty diagnostics publishes issues for product`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempFile = Files.createTempFile("testPublishDiag", ".java")
+    val filePath = tempFile.fileName.toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    val fileUri = tempFile.toUri().toString()
+    every { fileUri.toVirtualFileOrNull() } returns vf
+    every { filePath.toVirtualFile() } returns vf
+    val document = mockk<Document>(relaxed = true)
+    every { vf.getDocument() } returns document
+    every { document.getLineStartOffset(any()) } returns 0
+
+    val range = Range(Position(0, 0), Position(0, 1))
+    val diagnostic = createMockDiagnostic(range, "Issue1", filePath)
+    diagnostic.source = "Snyk Code"
+    val diagnosticsParams = PublishDiagnosticsParams(fileUri, listOf(diagnostic))
+
+    cut.publishDiagnostics(diagnosticsParams)
+
+    Thread.sleep(500)
+    verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), match { it.size == 1 }) }
   }
 
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {

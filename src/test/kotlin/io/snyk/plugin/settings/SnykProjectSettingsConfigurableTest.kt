@@ -636,4 +636,98 @@ class SnykProjectSettingsConfigurableTest {
       folderConfigSettings.isAutoOrganizationEnabled(projectMock),
     )
   }
+
+  @Test
+  fun `applyFolderConfigChanges with auto-detect clears preferredOrg`() {
+    val path = "/test/auto-clear"
+    folderConfigSettings.addFolderConfig(
+      folderConfig(folderPath = path, baseBranch = "main", preferredOrg = "old-org")
+    )
+
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path,
+      preferredOrgText = "ignored-text",
+      autoSelectOrgEnabled = true,
+      additionalParameters = "",
+    )
+
+    val result = folderConfigSettings.getFolderConfig(path)
+    assertEquals(
+      "preferredOrg should be empty with auto-detect",
+      "",
+      result.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertFalse(
+      "orgSetByUser should be false",
+      result.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
+  }
+
+  @Test
+  fun `applyFolderConfigChanges trims preferredOrg whitespace`() {
+    val path = "/test/trim-org"
+    folderConfigSettings.addFolderConfig(folderConfig(folderPath = path, baseBranch = "main"))
+
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path,
+      preferredOrgText = "  my-org  ",
+      autoSelectOrgEnabled = false,
+      additionalParameters = "--json",
+    )
+
+    val result = folderConfigSettings.getFolderConfig(path)
+    assertEquals(
+      "preferredOrg should be trimmed",
+      "my-org",
+      result.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertTrue(
+      "orgSetByUser should be true",
+      result.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
+    assertEquals(
+      "additionalParameters should be parsed",
+      listOf("--json"),
+      result.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+  }
+
+  @Test
+  fun `applyFolderConfigChanges with empty params and auto-detect`() {
+    val path = "/test/empty-auto"
+    folderConfigSettings.addFolderConfig(
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        preferredOrg = "old",
+        orgSetByUser = true,
+      )
+    )
+
+    applyFolderConfigChanges(
+      fcs = folderConfigSettings,
+      folderPath = path,
+      preferredOrgText = "",
+      autoSelectOrgEnabled = true,
+      additionalParameters = "",
+    )
+
+    val result = folderConfigSettings.getFolderConfig(path)
+    assertEquals(
+      "preferredOrg should be empty",
+      "",
+      result.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertFalse(
+      "orgSetByUser should be false",
+      result.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean ?: false,
+    )
+    assertEquals(
+      "additionalParameters should be empty list",
+      emptyList<String>(),
+      result.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+  }
 }

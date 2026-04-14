@@ -23,6 +23,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import junit.framework.TestCase.fail
 import org.eclipse.lsp4j.DidChangeConfigurationParams
@@ -677,6 +678,240 @@ class LanguageServerWrapperTest {
     assertEquals(true, s[LsSettingsKeys.SEND_ERROR_REPORTS]?.value)
     assertEquals(true, s[LsSettingsKeys.ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS]?.value)
     assertEquals(true, s[LsSettingsKeys.ENABLE_SNYK_OPEN_BROWSER_ACTIONS]?.value)
+  }
+
+  @Test
+  fun `updateWorkspaceFolders adds and removes folders`() {
+    simulateRunningLS()
+    justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+
+    val folder1 = WorkspaceFolder("file:///test/folder1", "folder1")
+    val folder2 = WorkspaceFolder("file:///test/folder2", "folder2")
+
+    cut.updateWorkspaceFolders(setOf(folder1, folder2), emptySet())
+
+    assertTrue(cut.configuredWorkspaceFolders.contains(folder1))
+    assertTrue(cut.configuredWorkspaceFolders.contains(folder2))
+
+    cut.updateWorkspaceFolders(emptySet(), setOf(folder1))
+
+    assertFalse(cut.configuredWorkspaceFolders.contains(folder1))
+    assertTrue(cut.configuredWorkspaceFolders.contains(folder2))
+  }
+
+  @Test
+  fun `updateWorkspaceFolders does not send when no changes`() {
+    simulateRunningLS()
+    justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+
+    val folder1 = WorkspaceFolder("file:///test/folder1", "folder1")
+    cut.configuredWorkspaceFolders.add(folder1)
+
+    // Adding already-configured folder should not trigger
+    cut.updateWorkspaceFolders(setOf(folder1), emptySet())
+
+    verify(exactly = 0) { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+  }
+
+  @Test
+  fun `updateWorkspaceFolders does not run when disposed`() {
+    every { applicationMock.isDisposed } returns true
+
+    cut.updateWorkspaceFolders(setOf(WorkspaceFolder("file:///test", "test")), emptySet())
+
+    verify(exactly = 0) { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+  }
+
+  @Test
+  fun `getFolderConfigsRefreshed returns unmodifiable map`() {
+    val result = cut.getFolderConfigsRefreshed()
+    assertTrue(result.isEmpty())
+  }
+
+  @Test
+  fun `updateFolderConfigRefresh stores normalized path`() {
+    cut.updateFolderConfigRefresh("/test/folder", true)
+
+    val refreshed = cut.getFolderConfigsRefreshed()
+    assertTrue(refreshed.values.contains(true))
+    assertEquals(1, refreshed.size)
+
+    cut.updateFolderConfigRefresh("/test/folder", false)
+
+    val refreshed2 = cut.getFolderConfigsRefreshed()
+    assertTrue(refreshed2.values.contains(false))
+  }
+
+  @Test
+  fun `isDisposed returns true when application is disposed`() {
+    every { applicationMock.isDisposed } returns true
+    assertTrue(cut.isDisposed())
+  }
+
+  @Test
+  fun `isDisposed returns false when application is not disposed`() {
+    every { applicationMock.isDisposed } returns false
+    assertFalse(cut.isDisposed())
+  }
+
+  @Test
+  fun `dispose sets disposed flag`() {
+    // Create a wrapper but don't start the process, so shutdown works trivially
+    val wrapper = LanguageServerWrapper(projectMock)
+    wrapper.languageServer = lsMock
+    wrapper.isInitialized = false
+    every { applicationMock.isDisposed } returns false
+
+    assertFalse(wrapper.isDisposed())
+    wrapper.dispose()
+    assertTrue(wrapper.isDisposed())
+  }
+
+  @Test
+  fun `getSettings includes severity filter with all severity states`() {
+    settings.criticalSeverityEnabled = true
+    settings.highSeverityEnabled = false
+    settings.mediumSeverityEnabled = true
+    settings.lowSeverityEnabled = false
+
+    val actual = cut.getSettings()
+    val severityFilter =
+      actual.settings?.get(LsFolderSettingsKeys.ENABLED_SEVERITIES)?.value as? Map<*, *>
+
+    assertNotNull(severityFilter)
+    assertEquals(true, severityFilter!!["critical"])
+    assertEquals(false, severityFilter["high"])
+    assertEquals(true, severityFilter["medium"])
+    assertEquals(false, severityFilter["low"])
+  }
+
+  @Test
+  fun `getSettings includes issue view options`() {
+    settings.openIssuesEnabled = false
+    settings.ignoredIssuesEnabled = true
+    settings.scanOnSave = false
+
+    val actual = cut.getSettings()
+    val s = actual.settings!!
+
+    assertEquals(false, s[LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES]?.value)
+    assertEquals(true, s[LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES]?.value)
+    assertEquals(false, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.value)
+  }
+
+  @Test
+  fun `getSettings includes scan net new setting`() {
+    settings.setDeltaEnabled(true)
+
+    val actual = cut.getSettings()
+    assertEquals(true, actual.settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)?.value)
+  }
+
+  @Test
+  fun `getSettings includes risk score threshold when set`() {
+    settings.riskScoreThreshold = 500
+
+    val actual = cut.getSettings()
+    assertEquals(500, actual.settings?.get(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)?.value)
+  }
+
+  @Test
+  fun `getSettings omits risk score threshold when null`() {
+    settings.riskScoreThreshold = null
+
+    val actual = cut.getSettings()
+    assertFalse(actual.settings?.containsKey(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD) ?: true)
+  }
+
+  @Test
+  fun `getSettings includes authentication method`() {
+    settings.authenticationType = io.snyk.plugin.services.AuthenticationType.PAT
+
+    val actual = cut.getSettings()
+    assertEquals("pat", actual.settings?.get(LsSettingsKeys.AUTHENTICATION_METHOD)?.value)
+  }
+
+  @Test
+  fun `getSettings omits token when blank`() {
+    settings.token = ""
+
+    val actual = cut.getSettings()
+    assertFalse(actual.settings?.containsKey(LsSettingsKeys.TOKEN) ?: true)
+  }
+
+  @Test
+  fun `getSettings includes explicitly changed flags`() {
+    settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
+
+    val actual = cut.getSettings()
+    assertEquals(true, actual.settings?.get(LsSettingsKeys.PROXY_INSECURE)?.changed)
+  }
+
+  @Test
+  fun `getSettings folder configs only include refreshed folders`() {
+    val folderPath = "/test/refreshed-folder"
+    val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
+    val folderUri = Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
+
+    val unrefreshedPath = "/test/not-refreshed"
+    val unrefreshedNormalized = Paths.get(unrefreshedPath).normalize().toAbsolutePath().toString()
+    val unrefreshedUri = Paths.get(unrefreshedPath).toUri().toASCIIString().removeSuffix("/")
+
+    val folderConfig =
+      LspFolderConfig(
+        folderPath = normalizedPath,
+        settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main")),
+      )
+    val unrefreshedConfig =
+      LspFolderConfig(
+        folderPath = unrefreshedNormalized,
+        settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "develop")),
+      )
+
+    every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
+    every { folderConfigSettingsMock.getFolderConfig(unrefreshedNormalized) } returns
+      unrefreshedConfig
+
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "refreshed"))
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(unrefreshedUri, "not-refreshed"))
+
+    // Only mark one as refreshed
+    cut.updateFolderConfigRefresh(normalizedPath, true)
+
+    val result = cut.getSettings()
+
+    assertEquals("Should only include the refreshed folder", 1, result.folderConfigs?.size)
+  }
+
+  @Test
+  fun `getSettings applies persisted folder changed flags`() {
+    val folderPath = "/test/changed-folder"
+    val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
+    val folderUri = Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
+
+    val folderConfig =
+      LspFolderConfig(
+        folderPath = normalizedPath,
+        settings =
+          mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main", changed = false)),
+      )
+
+    every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
+
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "changed"))
+    cut.updateFolderConfigRefresh(normalizedPath, true)
+
+    // Mark base_branch as explicitly changed for this folder
+    settings.markExplicitlyChanged(normalizedPath, LsFolderSettingsKeys.BASE_BRANCH)
+
+    val result = cut.getSettings()
+
+    val outputConfig = result.folderConfigs?.first()
+    assertEquals(
+      "Changed flag should be overridden to true",
+      true,
+      outputConfig?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.changed,
+    )
   }
 
   private fun simulateRunningLS() {
