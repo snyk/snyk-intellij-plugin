@@ -708,6 +708,78 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(AuthenticationType.API_TOKEN, realSettings.authenticationType)
   }
 
+  fun `test applyGlobalSettings with null field clears explicit change flag`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    // Pre-mark the key as explicitly changed
+    realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD))
+    every { pluginSettings() } returns realSettings
+
+    // Send config WITHOUT manageBinariesAutomatically (null) to trigger the clear
+    val jsonConfig = """{"activateSnykOpenSource": true}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertFalse(
+      "AUTOMATIC_DOWNLOAD should be cleared when manageBinariesAutomatically is absent",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+  }
+
+  fun `test applyGlobalSettings with absent fields clears all their flags`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    // Pre-mark several keys as explicitly changed
+    val keysToPreMark =
+      listOf(
+        LsSettingsKeys.AUTOMATIC_DOWNLOAD,
+        LsSettingsKeys.CLI_PATH,
+        LsSettingsKeys.BINARY_BASE_URL,
+        LsSettingsKeys.PROXY_INSECURE,
+        LsSettingsKeys.ORGANIZATION,
+        LsSettingsKeys.API_ENDPOINT,
+        LsSettingsKeys.TOKEN,
+        LsSettingsKeys.AUTHENTICATION_METHOD,
+      )
+    for (key in keysToPreMark) {
+      realSettings.markExplicitlyChanged(key)
+    }
+    for (key in keysToPreMark) {
+      assertTrue("Pre-condition: $key should be marked", realSettings.isExplicitlyChanged(key))
+    }
+    every { pluginSettings() } returns realSettings
+
+    // Send empty config (all nullable fields absent) -- all flags should be cleared
+    val jsonConfig = """{}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    for (key in keysToPreMark) {
+      assertFalse(
+        "Key '$key' should be cleared when its config field is absent",
+        realSettings.isExplicitlyChanged(key),
+      )
+    }
+  }
+
+  fun `test applyGlobalSettings clears flag for absent field but keeps flag for present field`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.manageBinariesAutomatically = true
+    realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+    every { pluginSettings() } returns realSettings
+
+    // Send config with manageBinariesAutomatically changed but cliPath absent
+    val jsonConfig = """{"manageBinariesAutomatically": false}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertTrue(
+      "AUTOMATIC_DOWNLOAD should remain marked (field present and changed)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+    assertFalse(
+      "CLI_PATH should be cleared (field absent)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
+    )
+  }
+
   private fun invokeParseAndSaveConfig(jsonString: String) {
     val method = SaveConfigHandler::class.java.getDeclaredMethod("saveConfig", String::class.java)
     method.isAccessible = true
