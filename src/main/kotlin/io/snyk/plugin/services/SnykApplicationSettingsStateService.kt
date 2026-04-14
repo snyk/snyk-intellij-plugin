@@ -53,6 +53,22 @@ class SnykApplicationSettingsStateService :
     folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
   }
 
+  fun clearExplicitlyChanged(key: String) {
+    explicitChanges.remove(key)
+  }
+
+  fun clearExplicitlyChanged(folderPath: String, key: String) {
+    folderExplicitChanges[folderPath]?.remove(key)
+    if (folderExplicitChanges[folderPath]?.isEmpty() == true) {
+      folderExplicitChanges.remove(folderPath)
+    }
+  }
+
+  fun clearAllExplicitlyChanged() {
+    explicitChanges.clear()
+    folderExplicitChanges.clear()
+  }
+
   fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
 
   fun isExplicitlyChanged(folderPath: String, settingKey: String): Boolean =

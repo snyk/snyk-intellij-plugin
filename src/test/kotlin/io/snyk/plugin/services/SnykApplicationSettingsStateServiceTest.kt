@@ -230,6 +230,44 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun clearExplicitlyChanged_removesKeyFromSet() {
+    val target = SnykApplicationSettingsStateService()
+    target.markExplicitlyChanged("key_a")
+    target.markExplicitlyChanged("key_b")
+    assertTrue(target.isExplicitlyChanged("key_a"))
+
+    target.clearExplicitlyChanged("key_a")
+
+    assertFalse(target.isExplicitlyChanged("key_a"))
+    assertTrue(target.isExplicitlyChanged("key_b"))
+  }
+
+  @Test
+  fun clearExplicitlyChanged_noOpForAbsentKey() {
+    val target = SnykApplicationSettingsStateService()
+    // Should not throw when removing a key that was never added
+    target.clearExplicitlyChanged("nonexistent")
+    assertFalse(target.isExplicitlyChanged("nonexistent"))
+  }
+
+  @Test
+  fun clearAllExplicitlyChanged_emptiesTheSet() {
+    val target = SnykApplicationSettingsStateService()
+    target.markExplicitlyChanged("key_a")
+    target.markExplicitlyChanged("key_b")
+    target.markExplicitlyChanged("key_c")
+    assertTrue(target.isExplicitlyChanged("key_a"))
+    assertTrue(target.isExplicitlyChanged("key_b"))
+    assertTrue(target.isExplicitlyChanged("key_c"))
+
+    target.clearAllExplicitlyChanged()
+
+    assertFalse(target.isExplicitlyChanged("key_a"))
+    assertFalse(target.isExplicitlyChanged("key_b"))
+    assertFalse(target.isExplicitlyChanged("key_c"))
+  }
+
+  @Test
   fun markAndCheckExplicitlyChanged_folder() {
     val target = SnykApplicationSettingsStateService()
     assertFalse(target.isExplicitlyChanged("/folder", "key"))
@@ -238,5 +276,48 @@ class SnykApplicationSettingsStateServiceTest {
     assertTrue(target.isExplicitlyChanged("/folder", "key"))
     assertFalse(target.isExplicitlyChanged("/folder", "other"))
     assertFalse(target.isExplicitlyChanged("/other", "key"))
+  }
+
+  @Test
+  fun clearExplicitlyChanged_withFolderPath_removesKeyFromFolderSet() {
+    val target = SnykApplicationSettingsStateService()
+    target.markExplicitlyChanged("/folder", "key_a")
+    target.markExplicitlyChanged("/folder", "key_b")
+    assertTrue(target.isExplicitlyChanged("/folder", "key_a"))
+
+    target.clearExplicitlyChanged("/folder", "key_a")
+
+    assertFalse(target.isExplicitlyChanged("/folder", "key_a"))
+    assertTrue(target.isExplicitlyChanged("/folder", "key_b"))
+  }
+
+  @Test
+  fun clearExplicitlyChanged_withFolderPath_removesFolderEntryWhenLastKeyRemoved() {
+    val target = SnykApplicationSettingsStateService()
+    target.markExplicitlyChanged("/folder", "only_key")
+    assertTrue(target.isExplicitlyChanged("/folder", "only_key"))
+
+    target.clearExplicitlyChanged("/folder", "only_key")
+
+    assertFalse(target.isExplicitlyChanged("/folder", "only_key"))
+    assertTrue(target.folderExplicitChanges.isEmpty())
+  }
+
+  @Test
+  fun clearAllExplicitlyChanged_clearsBothGlobalAndFolderChanges() {
+    val target = SnykApplicationSettingsStateService()
+    target.markExplicitlyChanged("global_key")
+    target.markExplicitlyChanged("/folder_a", "folder_key")
+    target.markExplicitlyChanged("/folder_b", "another_key")
+    assertTrue(target.isExplicitlyChanged("global_key"))
+    assertTrue(target.isExplicitlyChanged("/folder_a", "folder_key"))
+    assertTrue(target.isExplicitlyChanged("/folder_b", "another_key"))
+
+    target.clearAllExplicitlyChanged()
+
+    assertFalse(target.isExplicitlyChanged("global_key"))
+    assertFalse(target.isExplicitlyChanged("/folder_a", "folder_key"))
+    assertFalse(target.isExplicitlyChanged("/folder_b", "another_key"))
+    assertTrue(target.folderExplicitChanges.isEmpty())
   }
 }
