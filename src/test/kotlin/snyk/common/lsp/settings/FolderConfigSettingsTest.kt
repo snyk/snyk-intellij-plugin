@@ -1270,4 +1270,56 @@ class FolderConfigSettingsTest {
       settingsSpy.getAll().containsKey(normalizedNestedPath2),
     )
   }
+
+  @Test
+  fun `addAll with empty list is a no-op`() {
+    assertTrue("Settings should be empty initially", settings.getAll().isEmpty())
+
+    settings.addAll(emptyList())
+
+    assertTrue(
+      "Settings should still be empty after addAll with empty list",
+      settings.getAll().isEmpty(),
+    )
+  }
+
+  @Test
+  fun `addAll stores all configs independently`() {
+    val path1 = "/test/projectA"
+    val path2 = "/test/projectB"
+    val path3 = "/test/projectC"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+    val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
+    val normalizedPath3 = Paths.get(path3).normalize().toAbsolutePath().toString()
+
+    val configs =
+      listOf(
+        folderConfig(folderPath = path1, baseBranch = "main"),
+        folderConfig(folderPath = path2, baseBranch = "develop"),
+        folderConfig(folderPath = path3, baseBranch = "release"),
+      )
+
+    settings.addAll(configs)
+
+    val allConfigs = settings.getAll()
+    assertEquals("All three configs should be stored", 3, allConfigs.size)
+    assertTrue("Config for path1 should exist", allConfigs.containsKey(normalizedPath1))
+    assertTrue("Config for path2 should exist", allConfigs.containsKey(normalizedPath2))
+    assertTrue("Config for path3 should exist", allConfigs.containsKey(normalizedPath3))
+    assertEquals(
+      "Path1 base branch should be main",
+      "main",
+      allConfigs[normalizedPath1]?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
+    assertEquals(
+      "Path2 base branch should be develop",
+      "develop",
+      allConfigs[normalizedPath2]?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
+    assertEquals(
+      "Path3 base branch should be release",
+      "release",
+      allConfigs[normalizedPath3]?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
+  }
 }
