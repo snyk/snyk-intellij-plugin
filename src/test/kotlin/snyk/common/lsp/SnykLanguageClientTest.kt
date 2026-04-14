@@ -16,6 +16,7 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.events.SnykFolderConfigListener
@@ -695,6 +696,56 @@ class SnykLanguageClientTest {
     val result = cut.showDocument(params).get()
 
     assertEquals(false, result.isSuccess)
+  }
+
+  @Test
+  fun `snykConfiguration stores autoDeterminedOrg in FolderConfigSettings`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    val lspFolderConfig =
+      LspFolderConfig(
+        folderPath = "/test/project",
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.AUTO_DETERMINED_ORG to ConfigSetting(value = "auto-org"),
+            LsFolderSettingsKeys.ORG_SET_BY_USER to ConfigSetting(value = false),
+            LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = ""),
+          ),
+      )
+    val param = LspConfigurationParam(folderConfigs = listOf(lspFolderConfig))
+
+    cut.snykConfiguration(param)
+
+    val capturedConfigs = slot<List<LspFolderConfig>>()
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(capture(capturedConfigs)) }
+
+    val storedConfig = capturedConfigs.captured.first()
+    assertEquals(
+      "autoDeterminedOrg should be passed to addAll",
+      "auto-org",
+      storedConfig.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value,
+    )
+    assertEquals(
+      "orgSetByUser should be passed to addAll",
+      false,
+      storedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
+    assertEquals(
+      "preferredOrg should be passed to addAll",
+      "",
+      storedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
   }
 
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
