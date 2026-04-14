@@ -199,7 +199,12 @@ class SaveConfigHandler(
       }
       settings.cliBaseDownloadURL = it
     } ?: settings.clearExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
-    config.cliReleaseChannel?.let { settings.cliReleaseChannel = it }
+    config.cliReleaseChannel?.let {
+      if (it != settings.cliReleaseChannel) {
+        settings.markExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
+      }
+      settings.cliReleaseChannel = it
+    } ?: settings.clearExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
     config.insecure?.let {
       if (it != settings.ignoreUnknownCA) {
         settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
