@@ -1270,4 +1270,287 @@ class FolderConfigSettingsTest {
       settingsSpy.getAll().containsKey(normalizedNestedPath2),
     )
   }
+
+  @Test
+  fun `addAll with empty list is a no-op`() {
+    assertTrue("Settings should be empty initially", settings.getAll().isEmpty())
+
+    settings.addAll(emptyList())
+
+    assertTrue(
+      "Settings should still be empty after addAll with empty list",
+      settings.getAll().isEmpty(),
+    )
+  }
+
+  @Test
+  fun `addAll stores all configs independently`() {
+    val path1 = "/test/projectA"
+    val path2 = "/test/projectB"
+    val path3 = "/test/projectC"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+    val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
+    val normalizedPath3 = Paths.get(path3).normalize().toAbsolutePath().toString()
+
+    val configs =
+      listOf(
+        folderConfig(folderPath = path1, baseBranch = "main"),
+        folderConfig(folderPath = path2, baseBranch = "develop"),
+        folderConfig(folderPath = path3, baseBranch = "release"),
+      )
+
+    settings.addAll(configs)
+
+    val allConfigs = settings.getAll()
+    assertEquals("All three configs should be stored", 3, allConfigs.size)
+    assertTrue("Config for path1 should exist", allConfigs.containsKey(normalizedPath1))
+    assertTrue("Config for path2 should exist", allConfigs.containsKey(normalizedPath2))
+    assertTrue("Config for path3 should exist", allConfigs.containsKey(normalizedPath3))
+    assertEquals(
+      "Path1 base branch should be main",
+      "main",
+      allConfigs[normalizedPath1]?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
+    assertEquals(
+      "Path2 base branch should be develop",
+      "develop",
+      allConfigs[normalizedPath2]?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
+    assertEquals(
+      "Path3 base branch should be release",
+      "release",
+      allConfigs[normalizedPath3]?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value,
+    )
+  }
+
+  @Test
+  fun `autoDeterminedOrg survives addAll and getFolderConfig round-trip`() {
+    val path = "/test/project"
+    val normalizedPath = Paths.get(path).normalize().toAbsolutePath().toString()
+
+    val config =
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        autoDeterminedOrg = "auto-org",
+        orgSetByUser = false,
+        preferredOrg = "",
+      )
+
+    settings.addAll(listOf(config))
+
+    val retrievedConfig = settings.getFolderConfig(path)
+    assertEquals(
+      "autoDeterminedOrg should survive addAll and getFolderConfig round-trip",
+      "auto-org",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value,
+    )
+    assertEquals(
+      "orgSetByUser should be false",
+      false,
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value,
+    )
+    assertEquals(
+      "preferredOrg should be empty",
+      "",
+      retrievedConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value,
+    )
+    assertEquals("folderPath should be normalized", normalizedPath, retrievedConfig.folderPath)
+  }
+
+  @Test
+  fun `getAdditionalParameters returns empty string when no workspace folders`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns emptySet()
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
+
+    val result = settings.getAdditionalParameters(projectMock)
+    assertEquals("Should return empty string when no workspace folders", "", result)
+  }
+
+  @Test
+  fun `getAdditionalParameters returns parameters from folder configs`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    val config1 =
+      folderConfig(
+        folderPath = path1,
+        baseBranch = "main",
+        additionalParameters = listOf("--json", "--all-projects"),
+      )
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    assertEquals("Should return joined parameters", "--json --all-projects", result)
+  }
+
+  @Test
+  fun `getAdditionalParameters returns empty when parameters are empty lists`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    val config1 =
+      folderConfig(folderPath = path1, baseBranch = "main", additionalParameters = emptyList())
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    assertEquals("Should return empty string for empty parameters", "", result)
+  }
+
+  @Test
+  fun `getAdditionalParameters joins parameters from multiple folders`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val path2 = "/test/project2"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+    val normalizedPath2 = Paths.get(path2).normalize().toAbsolutePath().toString()
+
+    val config1 =
+      folderConfig(folderPath = path1, baseBranch = "main", additionalParameters = listOf("--json"))
+    val config2 =
+      folderConfig(
+        folderPath = path2,
+        baseBranch = "main",
+        additionalParameters = listOf("--all-projects"),
+      )
+    settings.addFolderConfig(config1)
+    settings.addFolderConfig(config2)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+    val workspaceFolder2 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath2.fromPathToUriString()
+        name = "project2"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1, workspaceFolder2)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns
+      mutableSetOf(workspaceFolder1, workspaceFolder2)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    assertTrue(
+      "Should contain parameters from both folders",
+      result.contains("--json") && result.contains("--all-projects"),
+    )
+  }
+
+  @Test
+  fun `hasConflictingConfigs returns false for single config`() {
+    val config1 = folderConfig(folderPath = "/path1", baseBranch = "main")
+    assertFalse(
+      "Single config list should not have conflicts",
+      settings.hasConflictingConfigs(listOf(config1)),
+    )
+  }
+
+  @Test
+  fun `migrateNestedFolderConfigs keeps sub-config when user chooses keep`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val workspacePath = "/test/project"
+    val nestedPath = "/test/project/submodule"
+    val normalizedWorkspacePath = Paths.get(workspacePath).normalize().toAbsolutePath().toString()
+
+    settings.addFolderConfig(folderConfig(folderPath = workspacePath, baseBranch = "main"))
+    settings.addFolderConfig(folderConfig(folderPath = nestedPath, baseBranch = "develop"))
+
+    val workspaceFolder =
+      WorkspaceFolder().apply {
+        uri = normalizedWorkspacePath.fromPathToUriString()
+        name = "project"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder)
+
+    val settingsSpy = spyk(settings)
+    every { settingsSpy.promptForSingleSubConfigMigration(any(), any(), any()) } returns
+      FolderConfigSettings.MigrationChoice.KEEP_AS_IS
+
+    val removedCount = settingsSpy.migrateNestedFolderConfigs(projectMock)
+
+    assertEquals("Should not have removed any configs", 0, removedCount)
+    assertEquals("Should still have 2 configs", 2, settingsSpy.getAll().size)
+  }
+
+  @Test
+  fun `autoDeterminedOrg is preserved in settings map after store and retrieve`() {
+    val path = "/test/project"
+
+    val config =
+      folderConfig(
+        folderPath = path,
+        baseBranch = "main",
+        autoDeterminedOrg = "auto-org-from-ls",
+        orgSetByUser = false,
+      )
+    settings.addFolderConfig(config)
+
+    // Retrieve and verify the autoDeterminedOrg is present in the settings map
+    val retrievedConfig = settings.getFolderConfig(path)
+    val settingsMap = retrievedConfig.settings
+    assertNotNull("Settings map should not be null", settingsMap)
+    assertTrue(
+      "Settings map should contain AUTO_DETERMINED_ORG key",
+      settingsMap!!.containsKey(LsFolderSettingsKeys.AUTO_DETERMINED_ORG),
+    )
+    assertEquals(
+      "autoDeterminedOrg value should match what was stored",
+      "auto-org-from-ls",
+      settingsMap[LsFolderSettingsKeys.AUTO_DETERMINED_ORG]?.value,
+    )
+  }
 }
