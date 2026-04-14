@@ -48,5 +48,10 @@ Thumbs.db
 docs/performance-analysis.md
 IDE-*
 
-# Claude Code local settings (machine-specific, not shared)
-.claude/settings.local.json
+# Claude Code (machine-specific, not shared)
+CLAUDE.md
+.claude/
+
+# Local test output artifacts
+tests.json
+test-output.txt

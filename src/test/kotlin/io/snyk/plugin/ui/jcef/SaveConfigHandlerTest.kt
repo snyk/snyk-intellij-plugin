@@ -12,6 +12,8 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.settings.LsFolderSettingsKeys
+import snyk.common.lsp.settings.LsSettingsKeys
 
 class SaveConfigHandlerTest : BasePlatformTestCase() {
   private lateinit var settings: SnykApplicationSettingsStateService
@@ -430,6 +432,352 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       invokeParseAndSaveConfig(json)
       verify(atLeast = 1) { lsWrapperMock.updateConfiguration() }
     }
+  }
+
+  fun `test applyGlobalSettings does not mark folder-scoped keys as explicitly changed`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "activateSnykOpenSource": true,
+            "activateSnykCode": true,
+            "activateSnykIac": true,
+            "activateSnykSecrets": true,
+            "scanningMode": "auto",
+            "filterSeverity": {
+                "critical": true,
+                "high": true,
+                "medium": false,
+                "low": false
+            },
+            "issueViewOptions": {
+                "openIssues": true,
+                "ignoredIssues": false
+            },
+            "enableDeltaFindings": true,
+            "riskScoreThreshold": 500
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val folderScopedKeys =
+      listOf(
+        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+        LsFolderSettingsKeys.SCAN_AUTOMATIC,
+        LsFolderSettingsKeys.ENABLED_SEVERITIES,
+        LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+        LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+        LsFolderSettingsKeys.SCAN_NET_NEW,
+        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+      )
+
+    for (key in folderScopedKeys) {
+      assertFalse(
+        "Folder-scoped key '$key' should not be in explicitChanges",
+        realSettings.isExplicitlyChanged(key),
+      )
+    }
+  }
+
+  fun `test applyGlobalSettings marks machine-scoped keys as explicitly changed`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    // Set defaults that differ from the values we will send, so diff-based tracking triggers
+    realSettings.manageBinariesAutomatically = true
+    realSettings.ignoreUnknownCA = false
+    realSettings.authenticationType = AuthenticationType.API_TOKEN
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "manageBinariesAutomatically": false,
+            "cliPath": "/test",
+            "insecure": true,
+            "organization": "test-org",
+            "endpoint": "https://test.snyk.io",
+            "token": "test-token",
+            "authenticationMethod": "oauth"
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val machineScopedKeys =
+      listOf(
+        LsSettingsKeys.AUTOMATIC_DOWNLOAD,
+        LsSettingsKeys.CLI_PATH,
+        LsSettingsKeys.PROXY_INSECURE,
+        LsSettingsKeys.ORGANIZATION,
+        LsSettingsKeys.API_ENDPOINT,
+        LsSettingsKeys.TOKEN,
+        LsSettingsKeys.AUTHENTICATION_METHOD,
+      )
+
+    for (key in machineScopedKeys) {
+      assertTrue(
+        "Machine-scoped key '$key' should be in explicitChanges",
+        realSettings.isExplicitlyChanged(key),
+      )
+    }
+  }
+
+  fun `test applyGlobalSettings with identical values does not mark any key as changed`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    // Pre-set values that match what the config will send
+    realSettings.manageBinariesAutomatically = false
+    realSettings.cliPath = "/usr/local/bin/snyk"
+    realSettings.cliBaseDownloadURL = "https://downloads.snyk.io/fips"
+    realSettings.ignoreUnknownCA = true
+    realSettings.organization = "my-org"
+    realSettings.customEndpointUrl = "https://api.snyk.io"
+    realSettings.token = "my-token"
+    realSettings.authenticationType = AuthenticationType.API_TOKEN
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "manageBinariesAutomatically": false,
+            "cliPath": "/usr/local/bin/snyk",
+            "cliBaseDownloadURL": "https://downloads.snyk.io/fips",
+            "insecure": true,
+            "organization": "my-org",
+            "endpoint": "https://api.snyk.io",
+            "token": "my-token",
+            "authenticationMethod": "token"
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val allMachineKeys =
+      listOf(
+        LsSettingsKeys.AUTOMATIC_DOWNLOAD,
+        LsSettingsKeys.CLI_PATH,
+        LsSettingsKeys.BINARY_BASE_URL,
+        LsSettingsKeys.PROXY_INSECURE,
+        LsSettingsKeys.ORGANIZATION,
+        LsSettingsKeys.API_ENDPOINT,
+        LsSettingsKeys.TOKEN,
+        LsSettingsKeys.AUTHENTICATION_METHOD,
+      )
+
+    for (key in allMachineKeys) {
+      assertFalse(
+        "Key '$key' should NOT be marked as changed when value is identical",
+        realSettings.isExplicitlyChanged(key),
+      )
+    }
+  }
+
+  fun `test applyGlobalSettings with changed manageBinariesAutomatically marks only AUTOMATIC_DOWNLOAD`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.manageBinariesAutomatically = true
+    realSettings.ignoreUnknownCA = false
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "manageBinariesAutomatically": false,
+            "insecure": false
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertTrue(
+      "AUTOMATIC_DOWNLOAD should be marked as changed",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+    assertFalse(
+      "PROXY_INSECURE should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE),
+    )
+    assertFalse(realSettings.manageBinariesAutomatically)
+  }
+
+  fun `test applyGlobalSettings with changed token marks only TOKEN`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.token = "old-token"
+    realSettings.organization = "my-org"
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "token": "new-token",
+            "organization": "my-org"
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertTrue(
+      "TOKEN should be marked as changed",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.TOKEN),
+    )
+    assertFalse(
+      "ORGANIZATION should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION),
+    )
+    assertEquals("new-token", realSettings.token)
+    assertEquals("my-org", realSettings.organization)
+  }
+
+  fun `test applyGlobalSettings with mix of changed and unchanged marks only changed keys`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.manageBinariesAutomatically = true
+    realSettings.cliPath = "/original/path"
+    realSettings.cliBaseDownloadURL = "https://downloads.snyk.io"
+    realSettings.ignoreUnknownCA = false
+    realSettings.organization = "keep-org"
+    realSettings.customEndpointUrl = "https://api.snyk.io"
+    realSettings.token = "keep-token"
+    realSettings.authenticationType = AuthenticationType.OAUTH2
+    every { pluginSettings() } returns realSettings
+
+    // Change manageBinariesAutomatically, endpoint, and authenticationMethod; keep the rest
+    val jsonConfig =
+      """
+        {
+            "manageBinariesAutomatically": false,
+            "cliPath": "/original/path",
+            "cliBaseDownloadURL": "https://downloads.snyk.io",
+            "insecure": false,
+            "organization": "keep-org",
+            "endpoint": "https://new-api.snyk.io",
+            "token": "keep-token",
+            "authenticationMethod": "token"
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    // Changed keys
+    assertTrue(
+      "AUTOMATIC_DOWNLOAD should be marked (value changed)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+    assertTrue(
+      "API_ENDPOINT should be marked (value changed)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.API_ENDPOINT),
+    )
+    assertTrue(
+      "AUTHENTICATION_METHOD should be marked (value changed)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD),
+    )
+
+    // Unchanged keys
+    assertFalse(
+      "CLI_PATH should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
+    )
+    assertFalse(
+      "BINARY_BASE_URL should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL),
+    )
+    assertFalse(
+      "PROXY_INSECURE should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE),
+    )
+    assertFalse(
+      "ORGANIZATION should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION),
+    )
+    assertFalse(
+      "TOKEN should NOT be marked (value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.TOKEN),
+    )
+
+    // Verify values are still assigned correctly
+    assertFalse(realSettings.manageBinariesAutomatically)
+    assertEquals("https://new-api.snyk.io", realSettings.customEndpointUrl)
+    assertEquals(AuthenticationType.API_TOKEN, realSettings.authenticationType)
+  }
+
+  fun `test applyGlobalSettings with null field clears explicit change flag`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    // Pre-mark the key as explicitly changed
+    realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD))
+    every { pluginSettings() } returns realSettings
+
+    // Send config WITHOUT manageBinariesAutomatically (null) to trigger the clear
+    val jsonConfig = """{"activateSnykOpenSource": true}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertFalse(
+      "AUTOMATIC_DOWNLOAD should be cleared when manageBinariesAutomatically is absent",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+  }
+
+  fun `test applyGlobalSettings with absent fields clears all their flags`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    // Pre-mark several keys as explicitly changed
+    val keysToPreMark =
+      listOf(
+        LsSettingsKeys.AUTOMATIC_DOWNLOAD,
+        LsSettingsKeys.CLI_PATH,
+        LsSettingsKeys.BINARY_BASE_URL,
+        LsSettingsKeys.PROXY_INSECURE,
+        LsSettingsKeys.ORGANIZATION,
+        LsSettingsKeys.API_ENDPOINT,
+        LsSettingsKeys.TOKEN,
+        LsSettingsKeys.AUTHENTICATION_METHOD,
+      )
+    for (key in keysToPreMark) {
+      realSettings.markExplicitlyChanged(key)
+    }
+    for (key in keysToPreMark) {
+      assertTrue("Pre-condition: $key should be marked", realSettings.isExplicitlyChanged(key))
+    }
+    every { pluginSettings() } returns realSettings
+
+    // Send empty config (all nullable fields absent) -- all flags should be cleared
+    val jsonConfig = """{}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    for (key in keysToPreMark) {
+      assertFalse(
+        "Key '$key' should be cleared when its config field is absent",
+        realSettings.isExplicitlyChanged(key),
+      )
+    }
+  }
+
+  fun `test applyGlobalSettings clears flag for absent field but keeps flag for present field`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.manageBinariesAutomatically = true
+    realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+    every { pluginSettings() } returns realSettings
+
+    // Send config with manageBinariesAutomatically changed but cliPath absent
+    val jsonConfig = """{"manageBinariesAutomatically": false}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertTrue(
+      "AUTOMATIC_DOWNLOAD should remain marked (field present and changed)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+    assertFalse(
+      "CLI_PATH should be cleared (field absent)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
+    )
   }
 
   private fun invokeParseAndSaveConfig(jsonString: String) {
