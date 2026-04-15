@@ -55,3 +55,13 @@ CLAUDE.md
 # Local test output artifacts
 tests.json
 test-output.txt
+
+.vault
+.kotlin
+.vscode
+.windsurf
+.cursor
+
+ARCHITECTURE.md
+BUSINESS.md
+DESIGN.md
