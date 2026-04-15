@@ -304,6 +304,28 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun addPendingReset_addsKeyToPendingSet() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("some_key")
+
+    val resets = target.consumePendingResets()
+    assertTrue(resets.contains("some_key"))
+  }
+
+  @Test
+  fun consumePendingResets_returnsAndClearsPendingSet() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("key_a")
+    target.addPendingReset("key_b")
+
+    val first = target.consumePendingResets()
+    assertEquals(setOf("key_a", "key_b"), first)
+
+    val second = target.consumePendingResets()
+    assertTrue(second.isEmpty())
+  }
+
+  @Test
   fun clearAllExplicitlyChanged_clearsBothGlobalAndFolderChanges() {
     val target = SnykApplicationSettingsStateService()
     target.markExplicitlyChanged("global_key")

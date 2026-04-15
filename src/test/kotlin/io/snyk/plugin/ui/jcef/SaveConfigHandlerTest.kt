@@ -812,6 +812,77 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     )
   }
 
+  fun `test applyGlobalSettings with null field adds pending reset`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    // Send config WITHOUT manageBinariesAutomatically (null) to trigger pending reset
+    val jsonConfig = """{"activateSnykOpenSource": true}"""
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val resets = realSettings.consumePendingResets()
+    assertTrue(
+      "AUTOMATIC_DOWNLOAD should be in pending resets when field is absent",
+      resets.contains(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+    assertTrue(
+      "CLI_PATH should be in pending resets when field is absent",
+      resets.contains(LsSettingsKeys.CLI_PATH),
+    )
+    assertTrue(
+      "BINARY_BASE_URL should be in pending resets when field is absent",
+      resets.contains(LsSettingsKeys.BINARY_BASE_URL),
+    )
+    assertTrue(
+      "CLI_RELEASE_CHANNEL should be in pending resets when field is absent",
+      resets.contains(LsSettingsKeys.CLI_RELEASE_CHANNEL),
+    )
+    assertTrue(
+      "PROXY_INSECURE should be in pending resets when field is absent",
+      resets.contains(LsSettingsKeys.PROXY_INSECURE),
+    )
+  }
+
+  fun `test applyGlobalSettings with present field does not add pending reset`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "manageBinariesAutomatically": true,
+            "cliPath": "/usr/local/bin/snyk",
+            "cliBaseDownloadURL": "https://downloads.snyk.io",
+            "cliReleaseChannel": "stable",
+            "insecure": false
+        }
+        """
+        .trimIndent()
+    invokeParseAndSaveConfig(jsonConfig)
+
+    val resets = realSettings.consumePendingResets()
+    assertFalse(
+      "AUTOMATIC_DOWNLOAD should not be in pending resets when field is present",
+      resets.contains(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+    )
+    assertFalse(
+      "CLI_PATH should not be in pending resets when field is present",
+      resets.contains(LsSettingsKeys.CLI_PATH),
+    )
+    assertFalse(
+      "BINARY_BASE_URL should not be in pending resets when field is present",
+      resets.contains(LsSettingsKeys.BINARY_BASE_URL),
+    )
+    assertFalse(
+      "CLI_RELEASE_CHANNEL should not be in pending resets when field is present",
+      resets.contains(LsSettingsKeys.CLI_RELEASE_CHANNEL),
+    )
+    assertFalse(
+      "PROXY_INSECURE should not be in pending resets when field is present",
+      resets.contains(LsSettingsKeys.PROXY_INSECURE),
+    )
+  }
+
   private fun invokeParseAndSaveConfig(jsonString: String) {
     val method = SaveConfigHandler::class.java.getDeclaredMethod("saveConfig", String::class.java)
     method.isAccessible = true

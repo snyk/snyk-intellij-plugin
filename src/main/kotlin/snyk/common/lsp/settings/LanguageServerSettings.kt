@@ -15,7 +15,7 @@ data class IssueViewOptions(
 )
 
 data class ConfigSetting(
-  @SerializedName("value") val value: Any,
+  @SerializedName("value") val value: Any? = null,
   @SerializedName("changed") val changed: Boolean? = null,
   @SerializedName("source") val source: String? = null,
   @SerializedName("originScope") val originScope: String? = null,
@@ -29,7 +29,7 @@ data class LspFolderConfig(
 
 fun LspFolderConfig.withSetting(
   key: String,
-  value: Any,
+  value: Any?,
   changed: Boolean? = null,
 ): LspFolderConfig {
   val newSettings = (settings ?: emptyMap()).toMutableMap()
