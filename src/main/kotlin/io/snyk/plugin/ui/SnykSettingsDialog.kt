@@ -965,7 +965,10 @@ class SnykSettingsDialog(
 
   fun isScanTypeChanged(): Boolean = scanTypesPanel.isModified()
 
-  fun saveScanTypeChanges() = scanTypesPanel.apply()
+  fun saveScanTypeChanges() {
+    scanTypesPanel.apply()
+    pluginSettings().markAllProductEnablementKeysExplicit()
+  }
 
   fun isSeverityEnablementChanged(): Boolean = severityEnablementPanel.isModified()
 

@@ -546,7 +546,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     settingsMap[LsSettingsKeys.PROXY_INSECURE] =
       ConfigSetting(
         value = ps.ignoreUnknownCA,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE),
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.PROXY_INSECURE),
       )
 
     val endpoint = getEndpointUrl()
@@ -554,7 +554,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[LsSettingsKeys.API_ENDPOINT] =
         ConfigSetting(
           value = endpoint,
-          changed = ps.isExplicitlyChanged(LsSettingsKeys.API_ENDPOINT),
+          changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.API_ENDPOINT),
         )
     }
 
@@ -562,14 +562,14 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[LsSettingsKeys.ORGANIZATION] =
         ConfigSetting(
           value = ps.organization!!,
-          changed = ps.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION),
+          changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.ORGANIZATION),
         )
     }
 
     settingsMap[LsSettingsKeys.AUTOMATIC_DOWNLOAD] =
       ConfigSetting(
         value = ps.manageBinariesAutomatically,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
       )
 
     val currentCliPath = getCliFile().absolutePath
@@ -577,7 +577,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[LsSettingsKeys.CLI_PATH] =
         ConfigSetting(
           value = currentCliPath,
-          changed = ps.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
+          changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.CLI_PATH),
         )
     }
 
@@ -585,20 +585,20 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[LsSettingsKeys.BINARY_BASE_URL] =
         ConfigSetting(
           value = ps.cliBaseDownloadURL,
-          changed = ps.isExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL),
+          changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.BINARY_BASE_URL),
         )
     }
 
     settingsMap[LsSettingsKeys.CLI_RELEASE_CHANNEL] =
       ConfigSetting(
         value = ps.cliReleaseChannel,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL),
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.CLI_RELEASE_CHANNEL),
       )
 
     settingsMap[LsSettingsKeys.AUTHENTICATION_METHOD] =
       ConfigSetting(
         value = ps.authenticationType.languageServerSettingsName,
-        changed = ps.isExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD),
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.AUTHENTICATION_METHOD),
       )
 
     settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = true)
@@ -620,8 +620,13 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       ConfigSetting(value = SystemUtils.JAVA_VERSION, changed = true)
 
     val trustService = service<WorkspaceTrustService>()
+    val trustedPaths = trustService.settings.getTrustedPaths()
     settingsMap[LsSettingsKeys.TRUSTED_FOLDERS] =
-      ConfigSetting(value = trustService.settings.getTrustedPaths(), changed = true)
+      ConfigSetting(
+        value = trustedPaths,
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.TRUSTED_FOLDERS, trustedPaths),
+      )
 
     // Write-only settings (IDE → LS only, never sent back by LS)
     if (!ps.token.isNullOrBlank()) {
@@ -637,22 +642,26 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     settingsMap[LsFolderSettingsKeys.SNYK_CODE_ENABLED] =
       ConfigSetting(
         value = ps.snykCodeSecurityIssuesScanEnable,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_CODE_ENABLED),
       )
     settingsMap[LsFolderSettingsKeys.SNYK_OSS_ENABLED] =
       ConfigSetting(
         value = ps.ossScanEnable,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_OSS_ENABLED),
       )
     settingsMap[LsFolderSettingsKeys.SNYK_IAC_ENABLED] =
       ConfigSetting(
         value = ps.iacScanEnabled,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_IAC_ENABLED),
       )
     settingsMap[LsFolderSettingsKeys.SNYK_SECRETS_ENABLED] =
       ConfigSetting(
         value = ps.secretsEnabled,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED),
       )
 
     val severityFilter =
@@ -665,36 +674,42 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     settingsMap[LsFolderSettingsKeys.ENABLED_SEVERITIES] =
       ConfigSetting(
         value = severityFilter,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.ENABLED_SEVERITIES),
       )
 
     if (ps.riskScoreThreshold != null) {
       settingsMap[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD] =
         ConfigSetting(
           value = ps.riskScoreThreshold!!,
-          changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD),
+          changed =
+            ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD),
         )
     }
 
     settingsMap[LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES] =
       ConfigSetting(
         value = ps.openIssuesEnabled,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES),
       )
     settingsMap[LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES] =
       ConfigSetting(
         value = ps.ignoredIssuesEnabled,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES),
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(
+            LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES
+          ),
       )
     settingsMap[LsFolderSettingsKeys.SCAN_AUTOMATIC] =
       ConfigSetting(
         value = ps.scanOnSave,
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC),
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SCAN_AUTOMATIC),
       )
     settingsMap[LsFolderSettingsKeys.SCAN_NET_NEW] =
       ConfigSetting(
         value = ps.isDeltaFindingsEnabled(),
-        changed = ps.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW),
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SCAN_NET_NEW),
       )
 
     // Emit one-shot reset signals for keys the user cleared

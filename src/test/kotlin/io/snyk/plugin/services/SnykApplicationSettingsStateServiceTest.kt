@@ -8,6 +8,7 @@ import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import org.junit.Test
+import snyk.common.lsp.settings.LsFolderSettingsKeys
 
 class SnykApplicationSettingsStateServiceTest {
 
@@ -323,6 +324,32 @@ class SnykApplicationSettingsStateServiceTest {
 
     val second = target.consumePendingResets()
     assertTrue(second.isEmpty())
+  }
+
+  @Test
+  fun lsUserAssertedChangeForLsConfigurationKey_trueWhenProductDiffersFromDefaults() {
+    val target = SnykApplicationSettingsStateService()
+    target.iacScanEnabled = false
+
+    assertTrue(
+      target.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    )
+    assertFalse(
+      target.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    )
+  }
+
+  @Test
+  fun initializeComponent_marksAllProductKeysExplicitWhenAnyProductDeviates() {
+    val target = SnykApplicationSettingsStateService()
+    target.iacScanEnabled = false
+
+    target.initializeComponent()
+
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
   }
 
   @Test

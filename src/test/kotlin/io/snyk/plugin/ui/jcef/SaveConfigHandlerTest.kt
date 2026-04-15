@@ -1,5 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
+import com.google.gson.Gson
+import com.intellij.openapi.components.service
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
 import io.mockk.mockk
@@ -7,15 +9,22 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import java.nio.file.Files
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.ScanCommandConfig
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
+import snyk.trust.WorkspaceTrustSettings
 
 class SaveConfigHandlerTest : BasePlatformTestCase() {
+  private val gson = Gson()
+
   private lateinit var settings: SnykApplicationSettingsStateService
   private lateinit var cut: SaveConfigHandler
   private lateinit var lsWrapperMock: LanguageServerWrapper
@@ -24,6 +33,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     super.setUp()
     unmockkAll()
     resetSettings(project)
+    service<WorkspaceTrustSettings>().state.trustedPaths.clear()
 
     mockkStatic("io.snyk.plugin.UtilsKt")
     settings = mockk(relaxed = true)
@@ -432,7 +442,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     }
   }
 
-  fun `test applyGlobalSettings does not mark folder-scoped keys as explicitly changed`() {
+  fun `test applyGlobalSettings marks explicit only for fields whose values differ from previous state`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
@@ -460,26 +470,21 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(jsonConfig)
 
-    val folderScopedKeys =
-      listOf(
-        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
-        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
-        LsFolderSettingsKeys.SNYK_IAC_ENABLED,
-        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
-        LsFolderSettingsKeys.SCAN_AUTOMATIC,
-        LsFolderSettingsKeys.ENABLED_SEVERITIES,
-        LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
-        LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
-        LsFolderSettingsKeys.SCAN_NET_NEW,
-        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
-      )
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
 
-    for (key in folderScopedKeys) {
-      assertFalse(
-        "Folder-scoped key '$key' should not be in explicitChanges",
-        realSettings.isExplicitlyChanged(key),
-      )
-    }
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
+
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES))
+
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES))
+
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW))
+
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD))
   }
 
   fun `test applyGlobalSettings marks machine-scoped keys as explicitly changed`() {
@@ -877,6 +882,188 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       "PROXY_INSECURE should not be in pending resets when field is present",
       resets.contains(LsSettingsKeys.PROXY_INSECURE),
     )
+  }
+
+  fun `test saveConfig applies comprehensive folderConfigs and stores scan command`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-fc").toAbsolutePath().normalize().toString()
+    val payload =
+      mapOf(
+        "activateSnykOpenSource" to true,
+        "folderConfigs" to
+          listOf(
+            mapOf(
+              "folderPath" to folderPath,
+              "additional_parameters" to listOf("--all-projects"),
+              "additional_environment" to "FOO=bar",
+              "preferred_org" to "pref-org",
+              "autoDeterminedOrg" to "auto-org",
+              "org_set_by_user" to true,
+              "scan_command_config" to
+                mapOf(
+                  "oss" to
+                    mapOf(
+                      "preScanCommand" to "echo pre",
+                      "preScanOnlyReferenceFolder" to true,
+                      "postScanCommand" to "echo post",
+                      "postScanOnlyReferenceFolder" to false,
+                    )
+                ),
+              "scan_automatic" to true,
+              "scan_net_new" to false,
+              "enabled_severities" to
+                mapOf("critical" to true, "high" to false, "medium" to true, "low" to false),
+              "snyk_oss_enabled" to true,
+              "snyk_code_enabled" to false,
+              "snyk_iac_enabled" to true,
+              "snyk_secrets_enabled" to false,
+              "issue_view_open_issues" to false,
+              "issue_view_ignored_issues" to true,
+              "risk_score_threshold" to 42,
+            )
+          ),
+      )
+
+    invokeParseAndSaveConfig(gson.toJson(payload))
+
+    val fcs = service<FolderConfigSettings>()
+    val stored = fcs.getFolderConfig(folderPath)
+    val s = stored.settings ?: error("expected folder settings")
+    assertEquals(listOf("--all-projects"), s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value)
+    assertEquals("FOO=bar", s[LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT]?.value)
+    assertEquals("pref-org", s[LsFolderSettingsKeys.PREFERRED_ORG]?.value)
+    assertEquals("auto-org", s[LsFolderSettingsKeys.AUTO_DETERMINED_ORG]?.value)
+    assertEquals(true, s[LsFolderSettingsKeys.ORG_SET_BY_USER]?.value)
+    @Suppress("UNCHECKED_CAST")
+    val scanMap =
+      s[LsFolderSettingsKeys.SCAN_COMMAND_CONFIG]?.value as Map<String, ScanCommandConfig>
+    val oss = scanMap["oss"]!!
+    assertEquals("echo pre", oss.preScanCommand)
+    assertEquals(true, oss.preScanOnlyReferenceFolder)
+    assertEquals("echo post", oss.postScanCommand)
+    assertEquals(false, oss.postScanOnlyReferenceFolder)
+    assertEquals(true, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.value)
+    assertEquals(false, s[LsFolderSettingsKeys.SCAN_NET_NEW]?.value)
+    assertEquals(true, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.value)
+    assertEquals(false, s[LsFolderSettingsKeys.SNYK_CODE_ENABLED]?.value)
+    assertEquals(42, s[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
+  }
+
+  fun `test saveConfig second identical folderConfigs sets changed false for unchanged fields`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-fc2").toAbsolutePath().normalize().toString()
+    val payload =
+      mapOf(
+        "folderConfigs" to
+          listOf(
+            mapOf("folderPath" to folderPath, "scan_automatic" to true, "snyk_oss_enabled" to true)
+          )
+      )
+    val json = gson.toJson(payload)
+    invokeParseAndSaveConfig(json)
+    invokeParseAndSaveConfig(json)
+
+    val s = service<FolderConfigSettings>().getFolderConfig(folderPath).settings ?: error("s")
+    assertEquals(false, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.changed)
+    assertEquals(false, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.changed)
+  }
+
+  fun `test parseAndSaveConfig empty cliPath resolves to default CLI path`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.cliPath = "/nonexistent/custom/cli"
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"cliPath": ""}""")
+
+    assertEquals(getDefaultCliPath(), realSettings.cliPath)
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH))
+  }
+
+  fun `test parseAndSaveConfig authenticationMethod pat`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"authenticationMethod": "pat"}""")
+
+    assertEquals(AuthenticationType.PAT, realSettings.authenticationType)
+  }
+
+  fun `test parseAndSaveConfig scanningMode manual sets scanOnSave false and marks SCAN_AUTOMATIC`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.scanOnSave = true
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"scanningMode": "manual"}""")
+
+    assertFalse(realSettings.scanOnSave)
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
+  }
+
+  fun `test parseAndSaveConfig filterSeverity matching previous does not mark ENABLED_SEVERITIES`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.criticalSeverityEnabled = true
+    realSettings.highSeverityEnabled = true
+    realSettings.mediumSeverityEnabled = false
+    realSettings.lowSeverityEnabled = false
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "filterSeverity": {
+                "critical": true,
+                "high": true,
+                "medium": false,
+                "low": false
+            }
+        }
+        """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES))
+  }
+
+  fun `test parseAndSaveConfig issue view change marks ISSUE_VIEW_OPEN_ISSUES`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.openIssuesEnabled = false
+    realSettings.ignoredIssuesEnabled = false
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig(
+      """{"issue_view_open_issues": true, "issue_view_ignored_issues": true}"""
+    )
+
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES))
+  }
+
+  fun `test parseAndSaveConfig fallback form skips folderConfigs`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+    val folderPath =
+      Files.createTempDirectory("snyk-fallback-skip").toAbsolutePath().normalize().toString()
+    val before = service<FolderConfigSettings>().getFolderConfig(folderPath)
+
+    invokeParseAndSaveConfig(
+      gson.toJson(
+        mapOf(
+          "isFallbackForm" to true,
+          "cliPath" to "/usr/bin/snyk",
+          "folderConfigs" to listOf(mapOf("folderPath" to folderPath, "snyk_oss_enabled" to false)),
+        )
+      )
+    )
+
+    assertEquals("/usr/bin/snyk", realSettings.cliPath)
+    val after = service<FolderConfigSettings>().getFolderConfig(folderPath)
+    assertEquals(before.settings, after.settings)
   }
 
   private fun invokeParseAndSaveConfig(jsonString: String) {

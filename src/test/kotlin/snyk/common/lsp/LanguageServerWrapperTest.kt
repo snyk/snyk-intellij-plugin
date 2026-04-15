@@ -492,6 +492,24 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `getSettings sets changed true for product when value deviates from plugin default`() {
+    settings.iacScanEnabled = false
+
+    val actual = cut.getSettings()
+
+    assertEquals(true, actual.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)?.changed)
+  }
+
+  @Test
+  fun `getSettings sets changed true for automatic_download when value deviates from plugin default`() {
+    settings.manageBinariesAutomatically = false
+
+    val actual = cut.getSettings()
+
+    assertEquals(true, actual.settings?.get(LsSettingsKeys.AUTOMATIC_DOWNLOAD)?.changed)
+  }
+
+  @Test
   fun `getWorkspaceFoldersFromRoots should return URIs without trailing slashes`() {
     // Create a real temporary directory to test with
     val tempDir = java.nio.file.Files.createTempDirectory("snyk-test-workspace")
