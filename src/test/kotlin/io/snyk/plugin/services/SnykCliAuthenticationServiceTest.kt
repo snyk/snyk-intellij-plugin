@@ -45,6 +45,17 @@ class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
   }
 
   override fun tearDown() {
+    val application = ApplicationManager.getApplication()
+    application.replaceService(
+      WorkspaceTrustService::class.java,
+      WorkspaceTrustService(),
+      application,
+    )
+    project.replaceService(
+      LanguageServerWrapper::class.java,
+      LanguageServerWrapper(project),
+      project,
+    )
     unmockkAll()
     super.tearDown()
   }

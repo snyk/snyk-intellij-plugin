@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.Gson
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.mockk.every
@@ -8,6 +9,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.pluginSettings
@@ -15,11 +17,14 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanCommandConfig
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
+import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
 
 class SaveConfigHandlerTest : BasePlatformTestCase() {
@@ -32,6 +37,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
   override fun setUp() {
     super.setUp()
     unmockkAll()
+    try {
+      unmockkStatic(ApplicationManager::class)
+    } catch (_: Throwable) {
+      // not statically mocked
+    }
     resetSettings(project)
     service<WorkspaceTrustSettings>().state.trustedPaths.clear()
 
@@ -1044,6 +1054,45 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES))
   }
 
+  fun `test parseAndSaveConfig trustedFolders adds path to workspace trust`() {
+    unmockkAll()
+    try {
+      unmockkStatic(ApplicationManager::class)
+    } catch (_: Throwable) {
+      // not statically mocked
+    }
+    reinitializeSaveConfigHandlerFixtureAfterClearingGlobalMocks()
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+    val p = Files.createTempDirectory("snyk-trust-new").toAbsolutePath().normalize()
+
+    invokeParseAndSaveConfig(gson.toJson(mapOf("trusted_folders" to listOf(p.toString()))))
+
+    assertTrustedPathsInclude(p)
+  }
+
+  fun `test parseAndSaveConfig trustedFolders removes paths not present in config`() {
+    unmockkAll()
+    try {
+      unmockkStatic(ApplicationManager::class)
+    } catch (_: Throwable) {
+      // not statically mocked
+    }
+    reinitializeSaveConfigHandlerFixtureAfterClearingGlobalMocks()
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+    val p1 = Files.createTempDirectory("snyk-trust-a").toAbsolutePath().normalize()
+    val p2 = Files.createTempDirectory("snyk-trust-b").toAbsolutePath().normalize()
+    val trust = workspaceTrustServiceForAssertions()
+    trust.addTrustedPath(p1)
+    trust.addTrustedPath(p2)
+
+    invokeParseAndSaveConfig(gson.toJson(mapOf("trusted_folders" to listOf(p1.toString()))))
+
+    assertTrustedPathsInclude(p1)
+    assertTrustedPathsExclude(p2)
+  }
+
   fun `test parseAndSaveConfig fallback form skips folderConfigs`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
@@ -1070,5 +1119,62 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val method = SaveConfigHandler::class.java.getDeclaredMethod("saveConfig", String::class.java)
     method.isAccessible = true
     method.invoke(cut, jsonString)
+  }
+
+  /**
+   * Other suites (e.g. LanguageServerWrapperTest) mock [ApplicationManager]; that makes
+   * `service<WorkspaceTrustService>()` return a mock so trusted paths are never persisted. Call
+   * [unmockkAll] then this helper at the start of tests that need the real app services.
+   *
+   * Avoid [resetSettings] here: it shuts down [LanguageServerWrapper] and can interact with other
+   * mocked statics; these tests supply a fresh [SnykApplicationSettingsStateService] via
+   * [pluginSettings] anyway.
+   */
+  private fun reinitializeSaveConfigHandlerFixtureAfterClearingGlobalMocks() {
+    service<WorkspaceTrustSettings>().state.trustedPaths.clear()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    settings = mockk(relaxed = true)
+    every { pluginSettings() } returns settings
+    lsWrapperMock = mockk(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(project) } returns lsWrapperMock
+    cut = SaveConfigHandler(project, onModified = {})
+  }
+
+  private fun workspaceTrustServiceForAssertions(): WorkspaceTrustService =
+    ApplicationManager.getApplication().getService(WorkspaceTrustService::class.java)
+
+  /**
+   * Compare by normalized absolute path — stored strings may differ from Path.toString() (e.g.
+   * symlinks).
+   */
+  private fun normalizedPathKey(path: Path): Path = path.toAbsolutePath().normalize()
+
+  private fun assertTrustedPathsInclude(expected: Path) {
+    val want = normalizedPathKey(expected)
+    val paths = workspaceTrustServiceForAssertions().settings.getTrustedPaths()
+    assertTrue(
+      paths.any { s ->
+        try {
+          normalizedPathKey(Paths.get(s)) == want
+        } catch (_: Exception) {
+          false
+        }
+      }
+    )
+  }
+
+  private fun assertTrustedPathsExclude(notExpected: Path) {
+    val avoid = normalizedPathKey(notExpected)
+    val paths = workspaceTrustServiceForAssertions().settings.getTrustedPaths()
+    assertFalse(
+      paths.any { s ->
+        try {
+          normalizedPathKey(Paths.get(s)) == avoid
+        } catch (_: Exception) {
+          false
+        }
+      }
+    )
   }
 }

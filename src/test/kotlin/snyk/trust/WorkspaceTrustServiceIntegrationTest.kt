@@ -34,6 +34,19 @@ class WorkspaceTrustServiceIntegrationTest : BasePlatformTestCase() {
     cut = WorkspaceTrustService()
   }
 
+  override fun tearDown() {
+    try {
+      val application = ApplicationManager.getApplication()
+      application.replaceService(
+        WorkspaceTrustSettings::class.java,
+        WorkspaceTrustSettings(),
+        application,
+      )
+    } finally {
+      super.tearDown()
+    }
+  }
+
   fun `test isPathTrusted should return false if no trusted path in settings available`() {
     every { workspaceTrustSettingsMock.getTrustedPaths() } returns listOf()
 

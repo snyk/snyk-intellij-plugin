@@ -44,7 +44,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
     val application = ApplicationManager.getApplication()
     application.replaceService(
       WorkspaceTrustService::class.java,
-      workspaceTrustServiceMock,
+      WorkspaceTrustService(),
       application,
     )
     project.replaceService(
