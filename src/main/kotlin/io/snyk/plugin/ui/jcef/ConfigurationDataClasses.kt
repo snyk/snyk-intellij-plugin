@@ -52,36 +52,51 @@ class StringOrListTypeAdapter : TypeAdapter<List<String>?>() {
 }
 
 data class SaveConfigRequest(
-  // Scan Settings
-  @SerializedName("activateSnykOpenSource") val activateSnykOpenSource: Boolean? = null,
-  @SerializedName("activateSnykCode") val activateSnykCode: Boolean? = null,
-  @SerializedName("activateSnykIac") val activateSnykIac: Boolean? = null,
-  @SerializedName("activateSnykSecrets") val activateSnykSecrets: Boolean? = null,
-  @SerializedName("scanningMode") val scanningMode: String? = null,
+  // Scan Settings — primary keys match LS configuration HTML/JS; alternates keep tests & fallback
+  // HTML working
+  @SerializedName(value = "snyk_oss_enabled", alternate = ["activateSnykOpenSource"])
+  val activateSnykOpenSource: Boolean? = null,
+  @SerializedName(value = "snyk_code_enabled", alternate = ["activateSnykCode"])
+  val activateSnykCode: Boolean? = null,
+  @SerializedName(value = "snyk_iac_enabled", alternate = ["activateSnykIac"])
+  val activateSnykIac: Boolean? = null,
+  @SerializedName(value = "snyk_secrets_enabled", alternate = ["activateSnykSecrets"])
+  val activateSnykSecrets: Boolean? = null,
+  @SerializedName(value = "scan_automatic", alternate = ["scanningMode"])
+  val scanningMode: String? = null,
 
   // Connection Settings
   @SerializedName("organization") val organization: String? = null,
-  @SerializedName("endpoint") val endpoint: String? = null,
+  @SerializedName(value = "api_endpoint", alternate = ["endpoint"]) val endpoint: String? = null,
   @SerializedName("token") val token: String? = null,
-  @SerializedName("insecure") val insecure: Boolean? = null,
+  @SerializedName(value = "proxy_insecure", alternate = ["insecure"]) val insecure: Boolean? = null,
 
   // Authentication
-  @SerializedName("authenticationMethod") val authenticationMethod: String? = null,
+  @SerializedName(value = "authentication_method", alternate = ["authenticationMethod"])
+  val authenticationMethod: String? = null,
 
   // Filters
-  @SerializedName("filterSeverity") val filterSeverity: SeverityFilterConfig? = null,
-  @SerializedName("issueViewOptions") val issueViewOptions: IssueViewOptionsConfig? = null,
-  @SerializedName("enableDeltaFindings") val enableDeltaFindings: Boolean? = null,
-  @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
+  @SerializedName(value = "enabled_severities", alternate = ["filterSeverity"])
+  val filterSeverity: SeverityFilterConfig? = null,
+  @SerializedName("issue_view_open_issues") val issueViewOpenIssues: Boolean? = null,
+  @SerializedName("issue_view_ignored_issues") val issueViewIgnoredIssues: Boolean? = null,
+  @SerializedName(value = "scan_net_new", alternate = ["enableDeltaFindings"])
+  val enableDeltaFindings: Boolean? = null,
+  @SerializedName(value = "risk_score_threshold", alternate = ["riskScoreThreshold"])
+  val riskScoreThreshold: Int? = null,
 
   // CLI Settings
-  @SerializedName("cliPath") val cliPath: String? = null,
-  @SerializedName("manageBinariesAutomatically") val manageBinariesAutomatically: Boolean? = null,
-  @SerializedName("cliBaseDownloadURL") val cliBaseDownloadURL: String? = null,
-  @SerializedName("cliReleaseChannel") val cliReleaseChannel: String? = null,
+  @SerializedName(value = "cli_path", alternate = ["cliPath"]) val cliPath: String? = null,
+  @SerializedName(value = "automatic_download", alternate = ["manageBinariesAutomatically"])
+  val manageBinariesAutomatically: Boolean? = null,
+  @SerializedName(value = "binary_base_url", alternate = ["cliBaseDownloadURL"])
+  val cliBaseDownloadURL: String? = null,
+  @SerializedName(value = "cli_release_channel", alternate = ["cliReleaseChannel"])
+  val cliReleaseChannel: String? = null,
 
   // Trusted Folders
-  @SerializedName("trustedFolders") val trustedFolders: List<String>? = null,
+  @SerializedName(value = "trusted_folders", alternate = ["trustedFolders"])
+  val trustedFolders: List<String>? = null,
 
   // Folder Configs
   @SerializedName("folderConfigs") val folderConfigs: List<FolderConfigData>? = null,
@@ -97,32 +112,41 @@ data class SeverityFilterConfig(
   @SerializedName("low") val low: Boolean? = null,
 )
 
-data class IssueViewOptionsConfig(
-  @SerializedName("openIssues") val openIssues: Boolean? = null,
-  @SerializedName("ignoredIssues") val ignoredIssues: Boolean? = null,
-)
-
 data class FolderConfigData(
   @SerializedName("folderPath") val folderPath: String,
-  @SerializedName("additionalParameters")
+  @SerializedName(value = "additional_parameters", alternate = ["additionalParameters"])
   @com.google.gson.annotations.JsonAdapter(StringOrListTypeAdapter::class)
   val additionalParameters: List<String>? = null,
-  @SerializedName("additionalEnv") val additionalEnv: String? = null,
-  @SerializedName("preferredOrg") val preferredOrg: String? = null,
+  @SerializedName(value = "additional_environment", alternate = ["additionalEnv"])
+  val additionalEnv: String? = null,
+  @SerializedName(value = "preferred_org", alternate = ["preferredOrg"])
+  val preferredOrg: String? = null,
   @SerializedName("autoDeterminedOrg") val autoDeterminedOrg: String? = null,
-  @SerializedName("orgSetByUser") val orgSetByUser: Boolean? = null,
-  @SerializedName("scanCommandConfig")
+  @SerializedName(value = "org_set_by_user", alternate = ["orgSetByUser"])
+  val orgSetByUser: Boolean? = null,
+  @SerializedName(value = "scan_command_config", alternate = ["scanCommandConfig"])
   val scanCommandConfig: Map<String, ScanCommandConfigData>? = null,
-  // Org-scope override fields
-  @SerializedName("scanAutomatic") val scanAutomatic: Boolean? = null,
-  @SerializedName("scanNetNew") val scanNetNew: Boolean? = null,
-  @SerializedName("enabledSeverities") val enabledSeverities: SeverityFilterConfig? = null,
-  @SerializedName("snykOssEnabled") val snykOssEnabled: Boolean? = null,
-  @SerializedName("snykCodeEnabled") val snykCodeEnabled: Boolean? = null,
-  @SerializedName("snykIacEnabled") val snykIacEnabled: Boolean? = null,
-  @SerializedName("issueViewOpenIssues") val issueViewOpenIssues: Boolean? = null,
-  @SerializedName("issueViewIgnoredIssues") val issueViewIgnoredIssues: Boolean? = null,
-  @SerializedName("riskScoreThreshold") val riskScoreThreshold: Int? = null,
+  // Org-scope override fields (LS sends snake_case; alternates accept camelCase)
+  @SerializedName(value = "scan_automatic", alternate = ["scanAutomatic"])
+  val scanAutomatic: Boolean? = null,
+  @SerializedName(value = "scan_net_new", alternate = ["scanNetNew"])
+  val scanNetNew: Boolean? = null,
+  @SerializedName(value = "enabled_severities", alternate = ["enabledSeverities"])
+  val enabledSeverities: SeverityFilterConfig? = null,
+  @SerializedName(value = "snyk_oss_enabled", alternate = ["snykOssEnabled"])
+  val snykOssEnabled: Boolean? = null,
+  @SerializedName(value = "snyk_code_enabled", alternate = ["snykCodeEnabled"])
+  val snykCodeEnabled: Boolean? = null,
+  @SerializedName(value = "snyk_iac_enabled", alternate = ["snykIacEnabled"])
+  val snykIacEnabled: Boolean? = null,
+  @SerializedName(value = "snyk_secrets_enabled", alternate = ["snykSecretsEnabled"])
+  val snykSecretsEnabled: Boolean? = null,
+  @SerializedName(value = "issue_view_open_issues", alternate = ["issueViewOpenIssues"])
+  val issueViewOpenIssues: Boolean? = null,
+  @SerializedName(value = "issue_view_ignored_issues", alternate = ["issueViewIgnoredIssues"])
+  val issueViewIgnoredIssues: Boolean? = null,
+  @SerializedName(value = "risk_score_threshold", alternate = ["riskScoreThreshold"])
+  val riskScoreThreshold: Int? = null,
 )
 
 data class ScanCommandConfigData(

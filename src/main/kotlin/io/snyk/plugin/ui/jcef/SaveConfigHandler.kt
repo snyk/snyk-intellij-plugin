@@ -300,11 +300,9 @@ class SaveConfigHandler(
         severity.low?.let { settings.lowSeverityEnabled = it }
       }
 
-      // Issue view options
-      config.issueViewOptions?.let { options ->
-        options.openIssues?.let { settings.openIssuesEnabled = it }
-        options.ignoredIssues?.let { settings.ignoredIssuesEnabled = it }
-      }
+      // Issue view options (flat booleans from LS HTML; nested issueViewOptions removed)
+      config.issueViewOpenIssues?.let { settings.openIssuesEnabled = it }
+      config.issueViewIgnoredIssues?.let { settings.ignoredIssuesEnabled = it }
 
       // Delta findings
       config.enableDeltaFindings?.let { settings.setDeltaEnabled(it) }
@@ -420,6 +418,10 @@ class SaveConfigHandler(
       }
       folderConfig.snykIacEnabled?.let { newVal ->
         updated = updated.withSetting(LsFolderSettingsKeys.SNYK_IAC_ENABLED, newVal, changed = true)
+      }
+      folderConfig.snykSecretsEnabled?.let { newVal ->
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, newVal, changed = true)
       }
       folderConfig.issueViewOpenIssues?.let { newVal ->
         updated =

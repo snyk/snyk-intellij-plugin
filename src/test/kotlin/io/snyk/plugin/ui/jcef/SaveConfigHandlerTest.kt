@@ -146,10 +146,8 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val jsonConfig =
       """
         {
-            "issueViewOptions": {
-                "openIssues": true,
-                "ignoredIssues": false
-            }
+            "issue_view_open_issues": true,
+            "issue_view_ignored_issues": false
         }
         """
         .trimIndent()
@@ -452,12 +450,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
                 "medium": false,
                 "low": false
             },
-            "issueViewOptions": {
-                "openIssues": true,
-                "ignoredIssues": false
-            },
-            "enableDeltaFindings": true,
-            "riskScoreThreshold": 500
+            "issue_view_open_issues": true,
+            "issue_view_ignored_issues": false,
+            "scan_net_new": true,
+            "risk_score_threshold": 500
         }
         """
         .trimIndent()
