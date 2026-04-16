@@ -521,16 +521,17 @@ class FolderConfigSettings {
   }
 
   private fun findContainingFolderConfig(filePath: String, project: Project): LspFolderConfig? {
+    val normalizedFilePath = normalizePath(filePath)
     val lsWrapper = LanguageServerWrapper.getInstance(project)
     val workspaceFolders = lsWrapper.configuredWorkspaceFolders
     val matchingFolder =
       workspaceFolders
         .mapNotNull { wf ->
-          val folderPath = wf.uri.fromUriToPath().toString()
-          if (filePath.startsWith(folderPath)) folderPath else null
+          val folderPath = normalizePath(wf.uri.fromUriToPath().toString())
+          if (normalizedFilePath.startsWith(folderPath)) folderPath else null
         }
         .maxByOrNull { it.length }
-    return matchingFolder?.let { configs[normalizePath(it)] }
+    return matchingFolder?.let { configs[it] }
   }
 
   companion object {

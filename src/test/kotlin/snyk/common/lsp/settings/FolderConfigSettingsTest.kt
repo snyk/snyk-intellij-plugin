@@ -1585,6 +1585,37 @@ class FolderConfigSettingsTest {
   }
 
   @Test
+  fun `getSeverityFilterForFile resolves when file path needs normalization to match workspace folder`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    val normalizedWs = Paths.get("/tmp/snyk_pf", "ws").normalize().toAbsolutePath().toString()
+    val cfg =
+      folderConfig(folderPath = normalizedWs, baseBranch = "main")
+        .withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, false)
+    settings.addFolderConfig(cfg)
+
+    val wf =
+      WorkspaceFolder().apply {
+        uri = normalizedWs.fromPathToUriString()
+        name = "ws"
+      }
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf)
+
+    val rawFilePath = "/tmp/snyk_pf/../snyk_pf/ws/src/Foo.java"
+    assertFalse(
+      "precondition: raw paths must not naive-prefix-match so normalization is required",
+      rawFilePath.startsWith(normalizedWs),
+    )
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns rawFilePath
+
+    assertEquals(false, settings.getSeverityFilterForFile(Severity.HIGH, virtualFile, projectMock))
+  }
+
+  @Test
   fun `getSeverityFilterForFile returns null when file is not under any configured workspace folder`() {
     val projectMock = mockk<Project>(relaxed = true)
     val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)

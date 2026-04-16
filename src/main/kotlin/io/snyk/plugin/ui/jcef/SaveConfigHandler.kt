@@ -578,20 +578,28 @@ class SaveConfigHandler(
       }
       folderConfig.riskScoreThreshold?.let { newVal ->
         val oldRaw = existing.settings?.get(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)?.value
-        val oldVal =
-          when (oldRaw) {
-            is Int -> oldRaw
-            is Number -> oldRaw.toInt()
-            else -> null
-          }
-        val changed = oldVal != newVal
+        val oldVal = coerceFolderSettingInt(oldRaw)
+        val newInt = coerceFolderSettingInt(newVal) ?: return@let
+        val changed = oldVal != newInt
         updated =
-          updated.withSetting(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, newVal, changed = changed)
+          updated.withSetting(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, newInt, changed = changed)
       }
 
       fcs.addFolderConfig(updated)
     }
   }
+
+  /**
+   * Folder setting maps may hold [java.lang.Number] subtypes (e.g. Gson doubles). Normalize to
+   * [Int] so comparisons and persisted values stay consistent for language-server settings
+   * payloads.
+   */
+  private fun coerceFolderSettingInt(raw: Any?): Int? =
+    when (raw) {
+      null -> null
+      is java.lang.Number -> raw.intValue()
+      else -> null
+    }
 
   private fun parseScanCommandConfig(
     scanConfig: Map<String, ScanCommandConfigData>

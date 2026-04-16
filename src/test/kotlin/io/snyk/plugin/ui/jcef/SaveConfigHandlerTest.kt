@@ -24,6 +24,7 @@ import snyk.common.lsp.ScanCommandConfig
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
+import snyk.common.lsp.settings.withSetting
 import snyk.trust.WorkspaceTrustService
 import snyk.trust.WorkspaceTrustSettings
 
@@ -956,6 +957,44 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(true, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.value)
     assertEquals(false, s[LsFolderSettingsKeys.SNYK_CODE_ENABLED]?.value)
     assertEquals(42, s[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
+  }
+
+  fun `test saveConfig folder risk_score_threshold treats existing Double as equal to same Int`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-risk").toAbsolutePath().normalize().toString()
+    val payload =
+      mapOf(
+        "activateSnykOpenSource" to true,
+        "folderConfigs" to
+          listOf(
+            mapOf(
+              "folderPath" to folderPath,
+              "risk_score_threshold" to 700,
+              "snyk_oss_enabled" to true,
+            )
+          ),
+      )
+    invokeParseAndSaveConfig(gson.toJson(payload))
+
+    val fcs = service<FolderConfigSettings>()
+    val withDouble =
+      fcs
+        .getFolderConfig(folderPath)
+        .withSetting(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, 700.0, changed = false)
+    fcs.addFolderConfig(withDouble)
+
+    invokeParseAndSaveConfig(gson.toJson(payload))
+
+    val stored = fcs.getFolderConfig(folderPath).settings ?: error("expected folder settings")
+    assertEquals(700, stored[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
+    assertEquals(
+      "unchanged numeric value should not mark the setting as changed",
+      false,
+      stored[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.changed,
+    )
   }
 
   fun `test saveConfig second identical folderConfigs sets changed false for unchanged fields`() {
