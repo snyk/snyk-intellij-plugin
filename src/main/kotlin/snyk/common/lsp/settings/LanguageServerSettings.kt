@@ -2,13 +2,6 @@ package snyk.common.lsp.settings
 
 import com.google.gson.annotations.SerializedName
 
-data class SeverityFilter(
-  @SerializedName("critical") val critical: Boolean?,
-  @SerializedName("high") val high: Boolean?,
-  @SerializedName("medium") val medium: Boolean?,
-  @SerializedName("low") val low: Boolean?,
-)
-
 data class IssueViewOptions(
   @SerializedName("openIssues") val openIssues: Boolean?,
   @SerializedName("ignoredIssues") val ignoredIssues: Boolean?,

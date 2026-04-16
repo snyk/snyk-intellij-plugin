@@ -1,11 +1,13 @@
 package snyk.common.lsp.settings
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
+import io.snyk.plugin.Severity
 import io.snyk.plugin.fromPathToUriString
 import java.nio.file.Paths
 import org.eclipse.lsp4j.WorkspaceFolder
@@ -13,6 +15,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -1551,6 +1554,102 @@ class FolderConfigSettingsTest {
       "autoDeterminedOrg value should match what was stored",
       "auto-org-from-ls",
       settingsMap[LsFolderSettingsKeys.AUTO_DETERMINED_ORG]?.value,
+    )
+  }
+
+  @Test
+  fun `getSeverityFilterForFile returns stored value when file path is under workspace folder`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    val pathWs = "/tmp/snyk_sev_ws"
+    val normalizedWs = Paths.get(pathWs).normalize().toAbsolutePath().toString()
+    val cfg =
+      folderConfig(folderPath = normalizedWs, baseBranch = "main")
+        .withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, false)
+    settings.addFolderConfig(cfg)
+
+    val wf =
+      WorkspaceFolder().apply {
+        uri = normalizedWs.fromPathToUriString()
+        name = "ws"
+      }
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf)
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "$normalizedWs/src/Foo.java"
+
+    assertEquals(false, settings.getSeverityFilterForFile(Severity.HIGH, virtualFile, projectMock))
+    assertNull(settings.getSeverityFilterForFile(Severity.CRITICAL, virtualFile, projectMock))
+  }
+
+  @Test
+  fun `getSeverityFilterForFile returns null when file is not under any configured workspace folder`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    val wf =
+      WorkspaceFolder().apply {
+        uri = Paths.get("/tmp/other").normalize().toAbsolutePath().toString().fromPathToUriString()
+        name = "other"
+      }
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf)
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/unrelated/path/Foo.java"
+
+    assertNull(settings.getSeverityFilterForFile(Severity.HIGH, virtualFile, projectMock))
+  }
+
+  @Test
+  fun `isSeverityEnabledForProjectToolWindow is true when any folder enables severity`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    val path1 = "/tmp/snyk_sev_p1"
+    val path2 = "/tmp/snyk_sev_p2"
+    val n1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+    val n2 = Paths.get(path2).normalize().toAbsolutePath().toString()
+
+    val cfg1 =
+      folderConfig(folderPath = n1, baseBranch = "main")
+        .withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL, true)
+    val cfg2 = folderConfig(folderPath = n2, baseBranch = "main")
+    settings.addFolderConfig(cfg1)
+    settings.addFolderConfig(cfg2)
+
+    val wf1 =
+      WorkspaceFolder().apply {
+        uri = n1.fromPathToUriString()
+        name = "p1"
+      }
+    val wf2 =
+      WorkspaceFolder().apply {
+        uri = n2.fromPathToUriString()
+        name = "p2"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(wf1, wf2)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf1, wf2)
+
+    assertTrue(
+      settings.isSeverityEnabledForProjectToolWindow(
+        Severity.CRITICAL,
+        projectMock,
+        globalSeverityEnabled = false,
+      )
+    )
+    assertFalse(
+      settings.isSeverityEnabledForProjectToolWindow(
+        Severity.HIGH,
+        projectMock,
+        globalSeverityEnabled = false,
+      )
     )
   }
 }

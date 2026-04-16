@@ -75,9 +75,15 @@ data class SaveConfigRequest(
   @SerializedName(value = "authentication_method", alternate = ["authenticationMethod"])
   val authenticationMethod: String? = null,
 
-  // Filters
-  @SerializedName(value = "enabled_severities", alternate = ["filterSeverity"])
-  val filterSeverity: SeverityFilterConfig? = null,
+  // Severity Filters
+  @SerializedName(value = "severity_filter_critical", alternate = ["filterSeverityCritical"])
+  val severityFilterCritical: Boolean? = null,
+  @SerializedName(value = "severity_filter_high", alternate = ["filterSeverityHigh"])
+  val severityFilterHigh: Boolean? = null,
+  @SerializedName(value = "severity_filter_medium", alternate = ["filterSeverityMedium"])
+  val severityFilterMedium: Boolean? = null,
+  @SerializedName(value = "severity_filter_low", alternate = ["filterSeverityLow"])
+  val severityFilterLow: Boolean? = null,
   @SerializedName("issue_view_open_issues") val issueViewOpenIssues: Boolean? = null,
   @SerializedName("issue_view_ignored_issues") val issueViewIgnoredIssues: Boolean? = null,
   @SerializedName(value = "scan_net_new", alternate = ["enableDeltaFindings"])
@@ -105,13 +111,6 @@ data class SaveConfigRequest(
   @SerializedName("isFallbackForm") val isFallbackForm: Boolean? = null,
 )
 
-data class SeverityFilterConfig(
-  @SerializedName("critical") val critical: Boolean? = null,
-  @SerializedName("high") val high: Boolean? = null,
-  @SerializedName("medium") val medium: Boolean? = null,
-  @SerializedName("low") val low: Boolean? = null,
-)
-
 data class FolderConfigData(
   @SerializedName("folderPath") val folderPath: String,
   @SerializedName(value = "additional_parameters", alternate = ["additionalParameters"])
@@ -131,8 +130,14 @@ data class FolderConfigData(
   val scanAutomatic: Boolean? = null,
   @SerializedName(value = "scan_net_new", alternate = ["scanNetNew"])
   val scanNetNew: Boolean? = null,
-  @SerializedName(value = "enabled_severities", alternate = ["enabledSeverities"])
-  val enabledSeverities: SeverityFilterConfig? = null,
+  @SerializedName(value = "severity_filter_critical", alternate = ["severityFilterCritical"])
+  val severityFilterCritical: Boolean? = null,
+  @SerializedName(value = "severity_filter_high", alternate = ["severityFilterHigh"])
+  val severityFilterHigh: Boolean? = null,
+  @SerializedName(value = "severity_filter_medium", alternate = ["severityFilterMedium"])
+  val severityFilterMedium: Boolean? = null,
+  @SerializedName(value = "severity_filter_low", alternate = ["severityFilterLow"])
+  val severityFilterLow: Boolean? = null,
   @SerializedName(value = "snyk_oss_enabled", alternate = ["snykOssEnabled"])
   val snykOssEnabled: Boolean? = null,
   @SerializedName(value = "snyk_code_enabled", alternate = ["snykCodeEnabled"])

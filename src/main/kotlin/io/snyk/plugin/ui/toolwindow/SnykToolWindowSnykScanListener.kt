@@ -298,7 +298,11 @@ class SnykToolWindowSnykScanListener(
             .map { entry ->
               entry.key to
                 entry.value.filter {
-                  settings.hasSeverityEnabledAndFiltered(it.getSeverityAsEnum())
+                  settings.hasSeverityEnabledAndFilteredForFile(
+                    it.getSeverityAsEnum(),
+                    entry.key.virtualFile,
+                    project,
+                  )
                 }
             }
             .toMap()

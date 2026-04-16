@@ -21,12 +21,14 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.getDocument
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.refreshAnnotationsForFile
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toVirtualFile
 import io.snyk.plugin.toVirtualFileOrNull
@@ -216,6 +218,24 @@ class SnykLanguageClientTest {
   }
 
   @Test
+  fun `hasAuthenticated returns without persisting when token and api are unchanged`() {
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+
+    settings.token = "unchanged-token"
+    settings.customEndpointUrl = "https://unchanged.example"
+
+    cut.hasAuthenticated(HasAuthenticatedParam("unchanged-token", "https://unchanged.example"))
+
+    verify(exactly = 1) { lsWrapperMock.cancelPreviousLogin() }
+    verify(exactly = 0) { StoreUtil.saveSettings(any(), any()) }
+  }
+
+  @Test
   fun `addTrustedPaths should not run when disposed`() {
     every { applicationMock.isDisposed } returns true
     every { projectMock.isDisposed } returns true
@@ -402,6 +422,180 @@ class SnykLanguageClientTest {
   }
 
   @Test
+  fun `snykConfiguration with null configuration param returns immediately`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    cut.snykConfiguration(null)
+
+    verify(exactly = 0) { folderConfigSettingsMock.addAll(any()) }
+  }
+
+  @Test
+  fun `snykConfiguration does not process folder configs when language client is disposed`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    cut.dispose()
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/after/dispose",
+              settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main")),
+            )
+          )
+      )
+    cut.snykConfiguration(param)
+
+    verify(exactly = 0) { folderConfigSettingsMock.addAll(any()) }
+  }
+
+  @Test
+  fun `snykConfiguration still persists folder configs when folder topic syncPublisher throws`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    every { messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC) } throws
+      RuntimeException("syncPublisher failure")
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/broken-publisher",
+              settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main")),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(any()) }
+    verify(timeout = 5000) { folderConfigSettingsMock.migrateNestedFolderConfigs(projectMock) }
+  }
+
+  @Test
+  fun `snykConfiguration with single folder and null settings does not apply folder scope to globals`() {
+    settings.snykCodeSecurityIssuesScanEnable = false
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs = listOf(LspFolderConfig(folderPath = "/only/path", settings = null))
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(200)
+
+    assertFalse(settings.snykCodeSecurityIssuesScanEnable)
+    verify(timeout = 2000) {
+      folderConfigSettingsMock.addAll(match { it.single().settings == null })
+    }
+  }
+
+  @Test
+  fun `refreshCodeLenses and refreshInlineValues invoke refreshAnnotationsForOpenFiles`() {
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { projectMock.isDisposed } returns false
+    justRun { refreshAnnotationsForOpenFiles(projectMock) }
+
+    cut.refreshCodeLenses().get()
+    cut.refreshInlineValues().get()
+
+    verify(exactly = 2) { refreshAnnotationsForOpenFiles(projectMock) }
+  }
+
+  @Test
+  fun `refreshCodeLenses does not call refreshAnnotationsForOpenFiles when project is disposed`() {
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { projectMock.isDisposed } returns true
+    justRun { refreshAnnotationsForOpenFiles(any()) }
+
+    cut.refreshCodeLenses().get()
+
+    verify(exactly = 0) { refreshAnnotationsForOpenFiles(any()) }
+  }
+
+  @Test
+  fun `applyEdit with null params completes without applying edits`() {
+    every { projectMock.isDisposed } returns false
+    val result = cut.applyEdit(null).get()
+    assertTrue(result.isApplied)
+    verify(exactly = 0) { snyk.common.editor.DocumentChanger.applyChange(any()) }
+  }
+
+  @Test
+  fun `snykScan second InProgress for same key does not call scanningStarted twice`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanDupTest")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    ScanState.scanInProgress.clear()
+
+    val param = SnykScanParams("inProgress", "code", folderPath)
+    cut.snykScan(param)
+    Thread.sleep(500)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify(exactly = 1) { mockListener.scanningStarted(param) }
+  }
+
+  @Test
+  fun `snykScan does nothing when scan topic syncPublisher is null`() {
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns null
+    cut.snykScan(SnykScanParams("success", "code", "/tmp/x"))
+    Thread.sleep(200)
+  }
+
+  @Test
+  fun `snykScan Success with secrets does not invoke product finished callbacks`() {
+    val mockListener = mockk<SnykScanListener>(relaxed = true)
+    every { messageBusMock.syncPublisher(SnykScanListener.SNYK_SCAN_TOPIC) } returns mockListener
+
+    val tempDir = Files.createTempDirectory("snykScanSecretsSuccess")
+    val folderPath = tempDir.toAbsolutePath().toString()
+    val vf = mockk<VirtualFile>(relaxed = true)
+    every { folderPath.toVirtualFile() } returns vf
+
+    val param = SnykScanParams("success", "secrets", folderPath)
+    cut.snykScan(param)
+
+    Thread.sleep(500)
+    verify(exactly = 0) { mockListener.scanningSnykCodeFinished() }
+    verify(exactly = 0) { mockListener.scanningOssFinished() }
+    verify(exactly = 0) { mockListener.scanningIacFinished() }
+  }
+
+  @Test
   fun `snykConfiguration should not run when disposed`() {
     every { projectMock.isDisposed } returns true
 
@@ -555,11 +749,10 @@ class SnykLanguageClientTest {
                   LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
                   LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = true),
                   LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
-                  LsFolderSettingsKeys.ENABLED_SEVERITIES to
-                    ConfigSetting(
-                      value =
-                        mapOf("critical" to true, "high" to true, "medium" to true, "low" to true)
-                    ),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_HIGH to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_LOW to ConfigSetting(value = true),
                 ),
             )
           )
@@ -580,11 +773,15 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `snykConfiguration with multiple folder configs maps only first folder to global state`() {
+  fun `snykConfiguration with multiple folder configs does not toggle global plugin state`() {
     settings.snykCodeSecurityIssuesScanEnable = false
     settings.ossScanEnable = false
     settings.iacScanEnabled = false
     settings.secretsEnabled = false
+    settings.criticalSeverityEnabled = false
+    settings.highSeverityEnabled = false
+    settings.mediumSeverityEnabled = false
+    settings.lowSeverityEnabled = false
 
     val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
@@ -617,6 +814,10 @@ class SnykLanguageClientTest {
                   LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
                   LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = false),
                   LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_HIGH to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SEVERITY_FILTER_LOW to ConfigSetting(value = true),
                 ),
             ),
             LspFolderConfig(
@@ -636,14 +837,19 @@ class SnykLanguageClientTest {
 
     Thread.sleep(500)
 
-    // First folder config values should be applied
-    assertTrue(
-      "Code should be enabled (from first folder)",
+    assertFalse(
+      "Global code toggle must not change with multiple folder configs",
       settings.snykCodeSecurityIssuesScanEnable,
     )
-    assertTrue("OSS should be enabled (from first folder)", settings.ossScanEnable)
-    assertFalse("IaC should be disabled (from first folder)", settings.iacScanEnabled)
-    assertTrue("Secrets should be enabled (from first folder)", settings.secretsEnabled)
+    assertFalse("Global OSS toggle must not change", settings.ossScanEnable)
+    assertFalse("Global IaC toggle must not change", settings.iacScanEnabled)
+    assertFalse("Global secrets toggle must not change", settings.secretsEnabled)
+    assertFalse(settings.criticalSeverityEnabled)
+    assertFalse(settings.highSeverityEnabled)
+    assertFalse(settings.mediumSeverityEnabled)
+    assertFalse(settings.lowSeverityEnabled)
+
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(any()) }
   }
 
   @Test
@@ -1148,6 +1354,24 @@ class SnykLanguageClientTest {
   fun `snykScanSummary does not run when disposed`() {
     every { projectMock.isDisposed } returns true
     cut.snykScanSummary(mockk(relaxed = true))
+  }
+
+  @Test
+  fun `snykScanSummary publishes when client is not disposed`() {
+    every { projectMock.isDisposed } returns false
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    justRun { publishAsync<SnykScanSummaryListener>(any(), any(), any()) }
+
+    val params = mockk<SnykScanSummaryParams>(relaxed = true)
+    cut.snykScanSummary(params)
+
+    verify {
+      publishAsync<SnykScanSummaryListener>(
+        projectMock,
+        SnykScanSummaryListener.SNYK_SCAN_SUMMARY_TOPIC,
+        any(),
+      )
+    }
   }
 
   @Test

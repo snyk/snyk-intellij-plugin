@@ -5,6 +5,9 @@ import com.intellij.openapi.components.RoamingType
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.xmlb.XmlSerializerUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDefaultCliPath
@@ -14,6 +17,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
+import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 
@@ -143,11 +147,10 @@ class SnykApplicationSettingsStateService :
       LsFolderSettingsKeys.SNYK_IAC_ENABLED -> iacScanEnabled != PLUGIN_DEFAULT_IAC_SCAN_ENABLE
       LsFolderSettingsKeys.SNYK_SECRETS_ENABLED ->
         secretsEnabled != PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE
-      LsFolderSettingsKeys.ENABLED_SEVERITIES ->
-        !criticalSeverityEnabled ||
-          !highSeverityEnabled ||
-          !mediumSeverityEnabled ||
-          !lowSeverityEnabled
+      LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL -> !criticalSeverityEnabled
+      LsFolderSettingsKeys.SEVERITY_FILTER_HIGH -> !highSeverityEnabled
+      LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM -> !mediumSeverityEnabled
+      LsFolderSettingsKeys.SEVERITY_FILTER_LOW -> !lowSeverityEnabled
       LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES ->
         openIssuesEnabled != PLUGIN_DEFAULT_OPEN_ISSUES_ENABLED
       LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES ->
@@ -298,6 +301,18 @@ class SnykApplicationSettingsStateService :
   fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean =
     hasSeverityEnabled(severity) && hasSeverityTreeFiltered(severity)
 
+  fun hasSeverityEnabledForFile(severity: Severity, file: VirtualFile, project: Project): Boolean {
+    val fcs = project.service<FolderConfigSettings>()
+    return fcs.getSeverityFilterForFile(severity, file, project) ?: hasSeverityEnabled(severity)
+  }
+
+  fun hasSeverityEnabledAndFilteredForFile(
+    severity: Severity,
+    file: VirtualFile,
+    project: Project,
+  ): Boolean =
+    hasSeverityEnabledForFile(severity, file, project) && hasSeverityTreeFiltered(severity)
+
   fun hasOnlyOneSeverityEnabled(): Boolean =
     arrayOf(
         hasSeverityEnabledAndFiltered(Severity.CRITICAL),
@@ -306,6 +321,19 @@ class SnykApplicationSettingsStateService :
         hasSeverityEnabledAndFiltered(Severity.LOW),
       )
       .count { it } == 1
+
+  /**
+   * Like [hasOnlyOneSeverityEnabled] but uses
+   * [FolderConfigSettings.isSeverityEnabledForProjectToolWindow] so the toolbar guard matches
+   * multi-root folder severity when [getFolderConfigs] is non-empty.
+   */
+  fun hasOnlyOneSeverityTreeFilterActive(project: Project): Boolean {
+    val fcs = project.service<FolderConfigSettings>()
+    return listOf(Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW).count { sev ->
+      hasSeverityTreeFiltered(sev) &&
+        fcs.isSeverityEnabledForProjectToolWindow(sev, project, hasSeverityEnabled(sev))
+    } == 1
+  }
 
   fun matchFilteringWithEnablement() {
     treeFiltering.criticalSeverity = criticalSeverityEnabled

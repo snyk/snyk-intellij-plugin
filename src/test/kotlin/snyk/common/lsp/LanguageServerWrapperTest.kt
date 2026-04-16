@@ -799,14 +799,11 @@ class LanguageServerWrapperTest {
     settings.lowSeverityEnabled = false
 
     val actual = cut.getSettings()
-    val severityFilter =
-      actual.settings?.get(LsFolderSettingsKeys.ENABLED_SEVERITIES)?.value as? Map<*, *>
 
-    assertNotNull(severityFilter)
-    assertEquals(true, severityFilter!!["critical"])
-    assertEquals(false, severityFilter["high"])
-    assertEquals(true, severityFilter["medium"])
-    assertEquals(false, severityFilter["low"])
+    assertEquals(true, actual.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)?.value)
+    assertEquals(false, actual.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH)?.value)
+    assertEquals(true, actual.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)?.value)
+    assertEquals(false, actual.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)?.value)
   }
 
   @Test

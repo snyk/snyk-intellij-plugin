@@ -5,6 +5,8 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.vfs.VirtualFile
+import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
@@ -472,6 +474,63 @@ class FolderConfigSettings {
     KEEP_AS_IS,
     REMOVE_PARENT,
     KEEP_ALL
+  }
+
+  /**
+   * Resolves the severity filter for a file by finding its containing workspace folder and checking
+   * the folder config. Returns null if no folder-level override exists.
+   */
+  fun getSeverityFilterForFile(severity: Severity, file: VirtualFile, project: Project): Boolean? {
+    val filePath = file.path
+    val folderConfig = findContainingFolderConfig(filePath, project) ?: return null
+    val key =
+      when (severity) {
+        Severity.CRITICAL -> LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL
+        Severity.HIGH -> LsFolderSettingsKeys.SEVERITY_FILTER_HIGH
+        Severity.MEDIUM -> LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM
+        Severity.LOW -> LsFolderSettingsKeys.SEVERITY_FILTER_LOW
+        else -> return null
+      }
+    return folderConfig.settings?.get(key)?.value as? Boolean
+  }
+
+  /**
+   * Whether this severity is effectively enabled for the **Snyk tool window of this project**:
+   * aggregates [getFolderConfigs] (workspace folders for [project] only). If at least one folder
+   * enables the level, the toolbar shows it as enabled. Per-folder values fall back to
+   * [globalSeverityEnabled] when that workspace folder has no explicit `severity_filter_*` key.
+   */
+  fun isSeverityEnabledForProjectToolWindow(
+    severity: Severity,
+    project: Project,
+    globalSeverityEnabled: Boolean,
+  ): Boolean {
+    val key =
+      when (severity) {
+        Severity.CRITICAL -> LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL
+        Severity.HIGH -> LsFolderSettingsKeys.SEVERITY_FILTER_HIGH
+        Severity.MEDIUM -> LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM
+        Severity.LOW -> LsFolderSettingsKeys.SEVERITY_FILTER_LOW
+        else -> return false
+      }
+    val folderConfigs = getFolderConfigs(project)
+    if (folderConfigs.isEmpty()) return globalSeverityEnabled
+    return folderConfigs.any { fc ->
+      (fc.settings?.get(key)?.value as? Boolean) ?: globalSeverityEnabled
+    }
+  }
+
+  private fun findContainingFolderConfig(filePath: String, project: Project): LspFolderConfig? {
+    val lsWrapper = LanguageServerWrapper.getInstance(project)
+    val workspaceFolders = lsWrapper.configuredWorkspaceFolders
+    val matchingFolder =
+      workspaceFolders
+        .mapNotNull { wf ->
+          val folderPath = wf.uri.fromUriToPath().toString()
+          if (filePath.startsWith(folderPath)) folderPath else null
+        }
+        .maxByOrNull { it.length }
+    return matchingFolder?.let { configs[normalizePath(it)] }
   }
 
   companion object {

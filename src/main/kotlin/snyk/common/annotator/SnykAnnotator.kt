@@ -85,7 +85,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     val annotatorCommon = project.service<AnnotatorCommon>()
     val map =
       getIssuesForFile(file)
-        .filter { annotatorCommon.isSeverityToShow(it.getSeverityAsEnum()) }
+        .filter { annotatorCommon.isSeverityToShow(it.getSeverityAsEnum(), file) }
         .sortedByDescending { it.getSeverityAsEnum() }
         .groupBy { it.range }
         .toMap()

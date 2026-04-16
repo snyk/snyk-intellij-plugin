@@ -141,12 +141,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val jsonConfig =
       """
         {
-            "filterSeverity": {
-                "critical": true,
-                "high": true,
-                "medium": false,
-                "low": false
-            }
+            "severity_filter_critical": true,
+            "severity_filter_high": true,
+            "severity_filter_medium": false,
+            "severity_filter_low": false
         }
         """
         .trimIndent()
@@ -270,20 +268,17 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(realSettings.isDeltaFindingsEnabled())
   }
 
-  fun `test parseAndSaveConfig handles string booleans in severity filters`() {
+  fun `test parseAndSaveConfig handles flat severity filter booleans`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
-    // Some JS implementations might send "true"/"false" as strings
     val jsonConfig =
       """
         {
-            "filterSeverity": {
-                "critical": "true",
-                "high": "TRUE",
-                "medium": "false",
-                "low": "FALSE"
-            }
+            "severity_filter_critical": true,
+            "severity_filter_high": false,
+            "severity_filter_medium": true,
+            "severity_filter_low": false
         }
         """
         .trimIndent()
@@ -291,8 +286,8 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     invokeParseAndSaveConfig(jsonConfig)
 
     assertTrue(realSettings.criticalSeverityEnabled)
-    assertTrue(realSettings.highSeverityEnabled)
-    assertFalse(realSettings.mediumSeverityEnabled)
+    assertFalse(realSettings.highSeverityEnabled)
+    assertTrue(realSettings.mediumSeverityEnabled)
     assertFalse(realSettings.lowSeverityEnabled)
   }
 
@@ -383,10 +378,8 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
             "activateSnykCode": false,
             "organization": "should-not-save",
             "token": "should-not-save",
-            "filterSeverity": {
-                "critical": false,
-                "high": false
-            }
+            "severity_filter_critical": false,
+            "severity_filter_high": false
         }
         """
         .trimIndent()
@@ -464,12 +457,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
             "activateSnykIac": true,
             "activateSnykSecrets": true,
             "scanningMode": "auto",
-            "filterSeverity": {
-                "critical": true,
-                "high": true,
-                "medium": false,
-                "low": false
-            },
+            "severity_filter_critical": true,
+            "severity_filter_high": true,
+            "severity_filter_medium": false,
+            "severity_filter_low": false,
             "issue_view_open_issues": true,
             "issue_view_ignored_issues": false,
             "scan_net_new": true,
@@ -487,7 +478,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
 
-    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
 
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES))
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES))
@@ -924,8 +918,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
                 ),
               "scan_automatic" to true,
               "scan_net_new" to false,
-              "enabled_severities" to
-                mapOf("critical" to true, "high" to false, "medium" to true, "low" to false),
+              "severity_filter_critical" to true,
+              "severity_filter_high" to false,
+              "severity_filter_medium" to true,
+              "severity_filter_low" to false,
               "snyk_oss_enabled" to true,
               "snyk_code_enabled" to false,
               "snyk_iac_enabled" to true,
@@ -1014,7 +1010,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
   }
 
-  fun `test parseAndSaveConfig filterSeverity matching previous does not mark ENABLED_SEVERITIES`() {
+  fun `test parseAndSaveConfig severity filters matching previous does not mark changed`() {
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.criticalSeverityEnabled = true
     realSettings.highSeverityEnabled = true
@@ -1025,19 +1021,20 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val jsonConfig =
       """
         {
-            "filterSeverity": {
-                "critical": true,
-                "high": true,
-                "medium": false,
-                "low": false
-            }
+            "severity_filter_critical": true,
+            "severity_filter_high": true,
+            "severity_filter_medium": false,
+            "severity_filter_low": false
         }
         """
         .trimIndent()
 
     invokeParseAndSaveConfig(jsonConfig)
 
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
   }
 
   fun `test parseAndSaveConfig issue view change marks ISSUE_VIEW_OPEN_ISSUES`() {

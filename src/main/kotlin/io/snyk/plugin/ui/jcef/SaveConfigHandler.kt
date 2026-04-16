@@ -20,7 +20,6 @@ import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
-import snyk.common.lsp.settings.SeverityFilter
 import snyk.common.lsp.settings.withSetting
 import snyk.trust.WorkspaceTrustService
 
@@ -316,27 +315,29 @@ class SaveConfigHandler(
         }
 
       // Severity filters
-      config.filterSeverity?.let { severity ->
-        var severitiesDiffer = false
-        severity.critical?.let {
-          if (it != settings.criticalSeverityEnabled) severitiesDiffer = true
-          settings.criticalSeverityEnabled = it
+      config.severityFilterCritical?.let {
+        if (it != settings.criticalSeverityEnabled) {
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
         }
-        severity.high?.let {
-          if (it != settings.highSeverityEnabled) severitiesDiffer = true
-          settings.highSeverityEnabled = it
+        settings.criticalSeverityEnabled = it
+      }
+      config.severityFilterHigh?.let {
+        if (it != settings.highSeverityEnabled) {
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH)
         }
-        severity.medium?.let {
-          if (it != settings.mediumSeverityEnabled) severitiesDiffer = true
-          settings.mediumSeverityEnabled = it
+        settings.highSeverityEnabled = it
+      }
+      config.severityFilterMedium?.let {
+        if (it != settings.mediumSeverityEnabled) {
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)
         }
-        severity.low?.let {
-          if (it != settings.lowSeverityEnabled) severitiesDiffer = true
-          settings.lowSeverityEnabled = it
+        settings.mediumSeverityEnabled = it
+      }
+      config.severityFilterLow?.let {
+        if (it != settings.lowSeverityEnabled) {
+          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)
         }
-        if (severitiesDiffer) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.ENABLED_SEVERITIES)
-        }
+        settings.lowSeverityEnabled = it
       }
 
       // Issue view options (flat booleans from LS HTML; nested issueViewOptions removed)
@@ -489,19 +490,41 @@ class SaveConfigHandler(
         val changed = oldVal != newVal
         updated = updated.withSetting(LsFolderSettingsKeys.SCAN_NET_NEW, newVal, changed = changed)
       }
-      folderConfig.enabledSeverities?.let { newVal ->
-        val sev =
-          SeverityFilter(
-            critical = newVal.critical,
-            high = newVal.high,
-            medium = newVal.medium,
-            low = newVal.low,
-          )
-        val oldVal = existing.settings?.get(LsFolderSettingsKeys.ENABLED_SEVERITIES)?.value
-        val oldFilter = severityFilterFromFolderSetting(oldVal)
-        val changed = oldFilter != sev
+      folderConfig.severityFilterCritical?.let { newVal ->
+        val oldVal =
+          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)?.value as? Boolean
+        val changed = oldVal != newVal
         updated =
-          updated.withSetting(LsFolderSettingsKeys.ENABLED_SEVERITIES, sev, changed = changed)
+          updated.withSetting(
+            LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+            newVal,
+            changed = changed,
+          )
+      }
+      folderConfig.severityFilterHigh?.let { newVal ->
+        val oldVal =
+          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH)?.value as? Boolean
+        val changed = oldVal != newVal
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, newVal, changed = changed)
+      }
+      folderConfig.severityFilterMedium?.let { newVal ->
+        val oldVal =
+          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)?.value as? Boolean
+        val changed = oldVal != newVal
+        updated =
+          updated.withSetting(
+            LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+            newVal,
+            changed = changed,
+          )
+      }
+      folderConfig.severityFilterLow?.let { newVal ->
+        val oldVal =
+          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)?.value as? Boolean
+        val changed = oldVal != newVal
+        updated =
+          updated.withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_LOW, newVal, changed = changed)
       }
       folderConfig.snykOssEnabled?.let { newVal ->
         val oldVal =
@@ -569,19 +592,6 @@ class SaveConfigHandler(
       fcs.addFolderConfig(updated)
     }
   }
-
-  private fun severityFilterFromFolderSetting(value: Any?): SeverityFilter? =
-    when (value) {
-      is SeverityFilter -> value
-      is Map<*, *> ->
-        SeverityFilter(
-          critical = value["critical"] as? Boolean,
-          high = value["high"] as? Boolean,
-          medium = value["medium"] as? Boolean,
-          low = value["low"] as? Boolean,
-        )
-      else -> null
-    }
 
   private fun parseScanCommandConfig(
     scanConfig: Map<String, ScanCommandConfigData>

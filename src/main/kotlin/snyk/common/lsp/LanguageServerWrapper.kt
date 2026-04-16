@@ -664,18 +664,31 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
           ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED),
       )
 
-    val severityFilter =
-      mapOf<String, Boolean>(
-        "critical" to ps.criticalSeverityEnabled,
-        "high" to ps.highSeverityEnabled,
-        "medium" to ps.mediumSeverityEnabled,
-        "low" to ps.lowSeverityEnabled,
-      )
-    settingsMap[LsFolderSettingsKeys.ENABLED_SEVERITIES] =
+    settingsMap[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL] =
       ConfigSetting(
-        value = severityFilter,
+        value = ps.criticalSeverityEnabled,
         changed =
-          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.ENABLED_SEVERITIES),
+          ps.lsUserAssertedChangeForLsConfigurationKey(
+            LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL
+          ),
+      )
+    settingsMap[LsFolderSettingsKeys.SEVERITY_FILTER_HIGH] =
+      ConfigSetting(
+        value = ps.highSeverityEnabled,
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH),
+      )
+    settingsMap[LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM] =
+      ConfigSetting(
+        value = ps.mediumSeverityEnabled,
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM),
+      )
+    settingsMap[LsFolderSettingsKeys.SEVERITY_FILTER_LOW] =
+      ConfigSetting(
+        value = ps.lowSeverityEnabled,
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SEVERITY_FILTER_LOW),
       )
 
     if (ps.riskScoreThreshold != null) {

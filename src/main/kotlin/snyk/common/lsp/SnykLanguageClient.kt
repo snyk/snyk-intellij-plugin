@@ -286,12 +286,15 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           }
         }
 
-        // Process folder-scope settings from folderConfigs
-        // Use the first folder config to update global plugin state
-        // (the IDE UI does not yet support per-folder product toggles)
-        configurationParam.folderConfigs?.firstOrNull()?.settings?.let { folderSettings ->
-          settingsChanged =
-            applyFolderScopeSettingsToPluginState(folderSettings, ps) || settingsChanged
+        // Process folder-scope settings from folderConfigs: only when exactly one folder is
+        // present do we mirror its settings to global plugin state. With multiple folders, nothing
+        // is toggled globally (per-folder state lives in FolderConfigSettings).
+        val folderConfigsList = configurationParam.folderConfigs
+        if (folderConfigsList?.size == 1) {
+          folderConfigsList.first().settings?.let { folderSettings ->
+            settingsChanged =
+              applyFolderScopeSettingsToPluginState(folderSettings, ps) || settingsChanged
+          }
         }
 
         if (settingsChanged) {
@@ -301,7 +304,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
         }
 
-        configurationParam.folderConfigs?.let { folderConfigs ->
+        folderConfigsList?.let { folderConfigs ->
           val service = service<FolderConfigSettings>()
           val languageServerWrapper = LanguageServerWrapper.getInstance(project)
 
@@ -330,7 +333,8 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
 
   /**
    * Applies folder-scope settings from an LS folder config to the global plugin state. Returns true
-   * if any setting was changed.
+   * if any setting was changed. Only called when `$/snyk.configuration` includes exactly one
+   * `folderConfig`; with multiple folders, this is not invoked.
    */
   private fun applyFolderScopeSettingsToPluginState(
     folderSettings: Map<String, snyk.common.lsp.settings.ConfigSetting>,
@@ -370,34 +374,39 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         }
       }
     }
-    folderSettings[LsFolderSettingsKeys.ENABLED_SEVERITIES]?.value?.let {
-      if (it is Map<*, *>) {
-        (it["critical"] as? Boolean)?.let { critical ->
-          if (ps.criticalSeverityEnabled != critical) {
-            ps.criticalSeverityEnabled = critical
-            changed = true
-          }
-        }
-        (it["high"] as? Boolean)?.let { high ->
-          if (ps.highSeverityEnabled != high) {
-            ps.highSeverityEnabled = high
-            changed = true
-          }
-        }
-        (it["medium"] as? Boolean)?.let { medium ->
-          if (ps.mediumSeverityEnabled != medium) {
-            ps.mediumSeverityEnabled = medium
-            changed = true
-          }
-        }
-        (it["low"] as? Boolean)?.let { low ->
-          if (ps.lowSeverityEnabled != low) {
-            ps.lowSeverityEnabled = low
-            changed = true
-          }
+    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.value?.let {
+      (it as? Boolean)?.let { boolVal ->
+        if (ps.criticalSeverityEnabled != boolVal) {
+          ps.criticalSeverityEnabled = boolVal
+          changed = true
         }
       }
     }
+    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_HIGH]?.value?.let {
+      (it as? Boolean)?.let { boolVal ->
+        if (ps.highSeverityEnabled != boolVal) {
+          ps.highSeverityEnabled = boolVal
+          changed = true
+        }
+      }
+    }
+    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM]?.value?.let {
+      (it as? Boolean)?.let { boolVal ->
+        if (ps.mediumSeverityEnabled != boolVal) {
+          ps.mediumSeverityEnabled = boolVal
+          changed = true
+        }
+      }
+    }
+    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_LOW]?.value?.let {
+      (it as? Boolean)?.let { boolVal ->
+        if (ps.lowSeverityEnabled != boolVal) {
+          ps.lowSeverityEnabled = boolVal
+          changed = true
+        }
+      }
+    }
+
     folderSettings[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value?.let {
       if (it is Number && ps.riskScoreThreshold != it.toInt()) {
         ps.riskScoreThreshold = it.toInt()

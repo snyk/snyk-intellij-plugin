@@ -38,7 +38,10 @@ object LsFolderSettingsKeys {
   const val SNYK_SECRETS_ENABLED = "snyk_secrets_enabled"
 
   // Filters (folder-scope)
-  const val ENABLED_SEVERITIES = "enabled_severities"
+  const val SEVERITY_FILTER_CRITICAL = "severity_filter_critical"
+  const val SEVERITY_FILTER_HIGH = "severity_filter_high"
+  const val SEVERITY_FILTER_MEDIUM = "severity_filter_medium"
+  const val SEVERITY_FILTER_LOW = "severity_filter_low"
   const val RISK_SCORE_THRESHOLD = "risk_score_threshold"
   const val CWE_IDS = "cwe_ids"
   const val CVE_IDS = "cve_ids"
