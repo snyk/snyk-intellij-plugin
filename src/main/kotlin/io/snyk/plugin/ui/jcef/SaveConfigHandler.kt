@@ -17,6 +17,7 @@ import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.ScanCommandConfig
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
@@ -177,196 +178,284 @@ class SaveConfigHandler(
   ) {
     val isFallback = config.isFallbackForm == true
 
-    config.manageBinariesAutomatically?.let {
-      if (it != settings.manageBinariesAutomatically) {
-        settings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
-      }
+    applyGlobalSetting(
+      settings = settings,
+      key = LsSettingsKeys.AUTOMATIC_DOWNLOAD,
+      isPresent = (config.manageBinariesAutomatically != null),
+      newValue = config.manageBinariesAutomatically,
+      currentValue = { settings.manageBinariesAutomatically },
+      addPendingResetWhenAbsent = true,
+    ) {
       settings.manageBinariesAutomatically = it
     }
-      ?: run {
-        settings.clearExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
-        settings.addPendingReset(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
-      }
 
-    // Use the provided cliPath from the config if present, or the default CLI path if not.
-    config.cliPath?.let { path ->
-      val resolved = path.ifEmpty { getDefaultCliPath() }
-      if (resolved != settings.cliPath) {
-        settings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
-      }
-      settings.cliPath = resolved
+    val cliPathProvided = config.cliPath != null
+    val resolvedCliPath = config.cliPath?.ifEmpty { getDefaultCliPath() }
+    applyGlobalSetting(
+      settings = settings,
+      key = LsSettingsKeys.CLI_PATH,
+      isPresent = cliPathProvided,
+      newValue = resolvedCliPath,
+      currentValue = { settings.cliPath },
+      addPendingResetWhenAbsent = true,
+    ) {
+      settings.cliPath = it
     }
-      ?: run {
-        settings.clearExplicitlyChanged(LsSettingsKeys.CLI_PATH)
-        settings.addPendingReset(LsSettingsKeys.CLI_PATH)
-      }
 
-    config.cliBaseDownloadURL?.let {
-      if (it != settings.cliBaseDownloadURL) {
-        settings.markExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
-      }
+    applyGlobalSetting(
+      settings = settings,
+      key = LsSettingsKeys.BINARY_BASE_URL,
+      isPresent = (config.cliBaseDownloadURL != null),
+      newValue = config.cliBaseDownloadURL,
+      currentValue = { settings.cliBaseDownloadURL },
+      addPendingResetWhenAbsent = true,
+    ) {
       settings.cliBaseDownloadURL = it
     }
-      ?: run {
-        settings.clearExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
-        settings.addPendingReset(LsSettingsKeys.BINARY_BASE_URL)
-      }
-    config.cliReleaseChannel?.let {
-      if (it != settings.cliReleaseChannel) {
-        settings.markExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
-      }
+
+    applyGlobalSetting(
+      settings = settings,
+      key = LsSettingsKeys.CLI_RELEASE_CHANNEL,
+      isPresent = (config.cliReleaseChannel != null),
+      newValue = config.cliReleaseChannel,
+      currentValue = { settings.cliReleaseChannel },
+      addPendingResetWhenAbsent = true,
+    ) {
       settings.cliReleaseChannel = it
     }
-      ?: run {
-        settings.clearExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
-        settings.addPendingReset(LsSettingsKeys.CLI_RELEASE_CHANNEL)
-      }
-    config.insecure?.let {
-      if (it != settings.ignoreUnknownCA) {
-        settings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
-      }
+
+    applyGlobalSetting(
+      settings = settings,
+      key = LsSettingsKeys.PROXY_INSECURE,
+      isPresent = (config.insecure != null),
+      newValue = config.insecure,
+      currentValue = { settings.ignoreUnknownCA },
+      addPendingResetWhenAbsent = true,
+    ) {
       settings.ignoreUnknownCA = it
     }
-      ?: run {
-        settings.clearExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
-        settings.addPendingReset(LsSettingsKeys.PROXY_INSECURE)
-      }
 
     if (!isFallback) {
-      val newOss = config.activateSnykOpenSource ?: false
-      if (newOss != settings.ossScanEnable) {
-        settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED)
+      val hasAnyProductToggle =
+        listOf(
+            config.activateSnykOpenSource,
+            config.activateSnykCode,
+            config.activateSnykIac,
+            config.activateSnykSecrets,
+          )
+          .any { it != null }
+
+      val ossEnabled =
+        if (hasAnyProductToggle) {
+          config.activateSnykOpenSource ?: false
+        } else {
+          config.activateSnykOpenSource
+        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+        isPresent = hasAnyProductToggle || (config.activateSnykOpenSource != null),
+        newValue = ossEnabled,
+        currentValue = { settings.ossScanEnable },
+      ) {
+        settings.ossScanEnable = it
       }
-      settings.ossScanEnable = newOss
-      val newCode = config.activateSnykCode ?: false
-      if (newCode != settings.snykCodeSecurityIssuesScanEnable) {
-        settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+
+      val codeEnabled =
+        if (hasAnyProductToggle) {
+          config.activateSnykCode ?: false
+        } else {
+          config.activateSnykCode
+        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        isPresent = hasAnyProductToggle || (config.activateSnykCode != null),
+        newValue = codeEnabled,
+        currentValue = { settings.snykCodeSecurityIssuesScanEnable },
+      ) {
+        settings.snykCodeSecurityIssuesScanEnable = it
       }
-      settings.snykCodeSecurityIssuesScanEnable = newCode
-      val newIac = config.activateSnykIac ?: false
-      if (newIac != settings.iacScanEnabled) {
-        settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+      val iacEnabled =
+        if (hasAnyProductToggle) {
+          config.activateSnykIac ?: false
+        } else {
+          config.activateSnykIac
+        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+        isPresent = hasAnyProductToggle || (config.activateSnykIac != null),
+        newValue = iacEnabled,
+        currentValue = { settings.iacScanEnabled },
+      ) {
+        settings.iacScanEnabled = it
       }
-      settings.iacScanEnabled = newIac
-      val newSecrets = config.activateSnykSecrets ?: false
-      if (newSecrets != settings.secretsEnabled) {
-        settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)
+
+      val secretsEnabled =
+        if (hasAnyProductToggle) {
+          config.activateSnykSecrets ?: false
+        } else {
+          config.activateSnykSecrets
+        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+        isPresent = hasAnyProductToggle || (config.activateSnykSecrets != null),
+        newValue = secretsEnabled,
+        currentValue = { settings.secretsEnabled },
+      ) {
+        settings.secretsEnabled = it
       }
-      settings.secretsEnabled = newSecrets
 
       // Scanning mode
-      config.scanningMode?.let { mode ->
-        val newScanOnSave = (mode == "auto")
-        if (newScanOnSave != settings.scanOnSave) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC)
-        }
-        settings.scanOnSave = newScanOnSave
+      val hasScanningMode = (config.scanningMode != null)
+      val scanOnSaveValue = config.scanningMode?.let { mode -> mode == "auto" }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SCAN_AUTOMATIC,
+        isPresent = hasScanningMode,
+        newValue = scanOnSaveValue,
+        currentValue = { settings.scanOnSave },
+      ) {
+        settings.scanOnSave = it
       }
 
       // Connection settings
-      config.organization?.let {
-        if (it != settings.organization) {
-          settings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
-        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsSettingsKeys.ORGANIZATION,
+        isPresent = (config.organization != null),
+        newValue = config.organization,
+        currentValue = { settings.organization },
+      ) {
         settings.organization = it
       }
-        ?: run {
-          settings.clearExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
-          settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
-        }
-      config.endpoint?.let {
-        if (it != settings.customEndpointUrl) {
-          settings.markExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
-        }
+
+      applyGlobalSetting(
+        settings = settings,
+        key = LsSettingsKeys.API_ENDPOINT,
+        isPresent = (config.endpoint != null),
+        newValue = config.endpoint,
+        currentValue = { settings.customEndpointUrl },
+      ) {
         settings.customEndpointUrl = it
       }
-        ?: run {
-          settings.clearExplicitlyChanged(LsSettingsKeys.API_ENDPOINT)
-          settings.addPendingReset(LsSettingsKeys.API_ENDPOINT)
-        }
-      config.token?.let {
-        if (it != settings.token) {
-          settings.markExplicitlyChanged(LsSettingsKeys.TOKEN)
-        }
+
+      applyGlobalSetting(
+        settings = settings,
+        key = LsSettingsKeys.TOKEN,
+        isPresent = (config.token != null),
+        newValue = config.token,
+        currentValue = { settings.token },
+      ) {
         settings.token = it
       }
-        ?: run {
-          settings.clearExplicitlyChanged(LsSettingsKeys.TOKEN)
-          settings.addPendingReset(LsSettingsKeys.TOKEN)
-        }
 
       // Authentication method
-      config.authenticationMethod?.let { method ->
-        val resolved =
+      val authMethodProvided = (config.authenticationMethod != null)
+      val resolvedAuthMethod =
+        config.authenticationMethod?.let { method ->
           when (method) {
             "oauth" -> AuthenticationType.OAUTH2
             "token" -> AuthenticationType.API_TOKEN
             "pat" -> AuthenticationType.PAT
             else -> AuthenticationType.OAUTH2
           }
-        if (resolved != settings.authenticationType) {
-          settings.markExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
         }
-        settings.authenticationType = resolved
+      applyGlobalSetting(
+        settings = settings,
+        key = LsSettingsKeys.AUTHENTICATION_METHOD,
+        isPresent = authMethodProvided,
+        newValue = resolvedAuthMethod,
+        currentValue = { settings.authenticationType },
+      ) {
+        settings.authenticationType = it
       }
-        ?: run {
-          settings.clearExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD)
-          settings.addPendingReset(LsSettingsKeys.AUTHENTICATION_METHOD)
-        }
 
       // Severity filters
-      config.severityFilterCritical?.let {
-        if (it != settings.criticalSeverityEnabled) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
-        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+        isPresent = (config.severityFilterCritical != null),
+        newValue = config.severityFilterCritical,
+        currentValue = { settings.criticalSeverityEnabled },
+      ) {
         settings.criticalSeverityEnabled = it
       }
-      config.severityFilterHigh?.let {
-        if (it != settings.highSeverityEnabled) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH)
-        }
+
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+        isPresent = (config.severityFilterHigh != null),
+        newValue = config.severityFilterHigh,
+        currentValue = { settings.highSeverityEnabled },
+      ) {
         settings.highSeverityEnabled = it
       }
-      config.severityFilterMedium?.let {
-        if (it != settings.mediumSeverityEnabled) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)
-        }
+
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+        isPresent = (config.severityFilterMedium != null),
+        newValue = config.severityFilterMedium,
+        currentValue = { settings.mediumSeverityEnabled },
+      ) {
         settings.mediumSeverityEnabled = it
       }
-      config.severityFilterLow?.let {
-        if (it != settings.lowSeverityEnabled) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)
-        }
+
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+        isPresent = (config.severityFilterLow != null),
+        newValue = config.severityFilterLow,
+        currentValue = { settings.lowSeverityEnabled },
+      ) {
         settings.lowSeverityEnabled = it
       }
 
       // Issue view options (flat booleans from LS HTML; nested issueViewOptions removed)
-      config.issueViewOpenIssues?.let {
-        if (it != settings.openIssuesEnabled) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES)
-        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+        isPresent = (config.issueViewOpenIssues != null),
+        newValue = config.issueViewOpenIssues,
+        currentValue = { settings.openIssuesEnabled },
+      ) {
         settings.openIssuesEnabled = it
       }
-      config.issueViewIgnoredIssues?.let {
-        if (it != settings.ignoredIssuesEnabled) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES)
-        }
+
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+        isPresent = (config.issueViewIgnoredIssues != null),
+        newValue = config.issueViewIgnoredIssues,
+        currentValue = { settings.ignoredIssuesEnabled },
+      ) {
         settings.ignoredIssuesEnabled = it
       }
 
       // Delta findings
-      config.enableDeltaFindings?.let {
-        if (it != settings.isDeltaFindingsEnabled()) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
-        }
+      val hasDeltaFindings = (config.enableDeltaFindings != null)
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.SCAN_NET_NEW,
+        isPresent = hasDeltaFindings,
+        newValue = config.enableDeltaFindings,
+        currentValue = { settings.isDeltaFindingsEnabled() },
+      ) {
         settings.setDeltaEnabled(it)
       }
 
       // Risk score threshold
-      config.riskScoreThreshold?.let {
-        if (it != settings.riskScoreThreshold) {
-          settings.markExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
-        }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+        isPresent = (config.riskScoreThreshold != null),
+        newValue = config.riskScoreThreshold,
+        currentValue = { settings.riskScoreThreshold },
+      ) {
         settings.riskScoreThreshold = it
       }
 
@@ -427,6 +516,54 @@ class SaveConfigHandler(
     }
   }
 
+  private fun <T> applyGlobalSetting(
+    settings: SnykApplicationSettingsStateService,
+    key: String,
+    isPresent: Boolean,
+    newValue: T?,
+    currentValue: () -> Any?,
+    addPendingResetWhenAbsent: Boolean = false,
+    assign: (T) -> Unit,
+  ) {
+    if (!isPresent || newValue == null) {
+      settings.clearExplicitlyChanged(key)
+      if (addPendingResetWhenAbsent) {
+        settings.addPendingReset(key)
+      }
+      return
+    }
+
+    if (valuesEquivalent(currentValue(), newValue)) {
+      settings.clearExplicitlyChanged(key)
+    } else {
+      settings.markExplicitlyChanged(key)
+    }
+
+    assign(newValue)
+  }
+
+  private fun valuesEquivalent(current: Any?, next: Any?): Boolean {
+    if (current == null || next == null) {
+      return current == next
+    }
+
+    if (current is Number && next is Number) {
+      return current.toDouble() == next.toDouble()
+    }
+
+    return current == next
+  }
+
+  private fun applyFolderSetting(
+    existing: snyk.common.lsp.settings.LspFolderConfig,
+    key: String,
+    value: Any,
+  ): snyk.common.lsp.settings.LspFolderConfig {
+    val currentValue = existing.settings?.get(key)?.value
+    val changed = !valuesEquivalent(currentValue, value)
+    return existing.withSetting(key, value, changed = changed)
+  }
+
   private fun applyFolderConfigs(folderConfigs: List<FolderConfigData>) {
     val fcs = service<FolderConfigSettings>()
 
@@ -434,188 +571,82 @@ class SaveConfigHandler(
       val existing = fcs.getFolderConfig(folderConfig.folderPath)
       var updated = existing
 
-      folderConfig.additionalParameters?.let { newVal ->
-        val oldVal =
-          (existing.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value as? List<*>)
-            ?.filterIsInstance<String>() ?: emptyList()
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, newVal, changed = changed)
-      }
-      folderConfig.additionalEnv?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value as? String
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(
-            LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
-            newVal,
-            changed = changed,
-          )
-      }
-      folderConfig.preferredOrg?.let { newVal ->
-        val oldVal = existing.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)?.value as? String
-        val changed = oldVal != newVal
-        updated = updated.withSetting(LsFolderSettingsKeys.PREFERRED_ORG, newVal, changed = changed)
-      }
-      folderConfig.autoDeterminedOrg?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.AUTO_DETERMINED_ORG)?.value as? String
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.AUTO_DETERMINED_ORG, newVal, changed = changed)
-      }
-      folderConfig.orgSetByUser?.let { newVal ->
-        val oldVal = existing.settings?.get(LsFolderSettingsKeys.ORG_SET_BY_USER)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.ORG_SET_BY_USER, newVal, changed = changed)
-      }
-      folderConfig.scanCommandConfig?.let { newVal ->
-        val parsed = parseScanCommandConfig(newVal)
-        val oldVal = existing.settings?.get(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)?.value
-        val changed = oldVal != parsed
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG, parsed, changed = changed)
+      folderConfig.additionalParameters?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, it)
       }
 
-      folderConfig.scanAutomatic?.let { newVal ->
-        val oldVal = existing.settings?.get(LsFolderSettingsKeys.SCAN_AUTOMATIC)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SCAN_AUTOMATIC, newVal, changed = changed)
+      folderConfig.additionalEnv?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT, it)
       }
-      folderConfig.scanNetNew?.let { newVal ->
-        val oldVal = existing.settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated = updated.withSetting(LsFolderSettingsKeys.SCAN_NET_NEW, newVal, changed = changed)
+
+      folderConfig.scanCommandConfig?.let { scanCommands ->
+        val mapped =
+          scanCommands.mapValues { (_, v) ->
+            ScanCommandConfig(
+              preScanCommand = v.preScanCommand ?: "",
+              preScanOnlyReferenceFolder = v.preScanOnlyReferenceFolder ?: true,
+              postScanCommand = v.postScanCommand ?: "",
+              postScanOnlyReferenceFolder = v.postScanOnlyReferenceFolder ?: true,
+            )
+          }
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG, mapped)
       }
-      folderConfig.severityFilterCritical?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(
-            LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
-            newVal,
-            changed = changed,
-          )
+
+      folderConfig.preferredOrg?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.PREFERRED_ORG, it)
       }
-      folderConfig.severityFilterHigh?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, newVal, changed = changed)
+
+      folderConfig.autoDeterminedOrg?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.AUTO_DETERMINED_ORG, it)
       }
-      folderConfig.severityFilterMedium?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(
-            LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
-            newVal,
-            changed = changed,
-          )
+      folderConfig.orgSetByUser?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ORG_SET_BY_USER, it)
       }
-      folderConfig.severityFilterLow?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SEVERITY_FILTER_LOW, newVal, changed = changed)
+
+      folderConfig.scanAutomatic?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_AUTOMATIC, it)
       }
-      folderConfig.snykOssEnabled?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SNYK_OSS_ENABLED)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SNYK_OSS_ENABLED, newVal, changed = changed)
+      folderConfig.scanNetNew?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_NET_NEW, it)
       }
-      folderConfig.snykCodeEnabled?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SNYK_CODE_ENABLED, newVal, changed = changed)
+      folderConfig.severityFilterCritical?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL, it)
       }
-      folderConfig.snykIacEnabled?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SNYK_IAC_ENABLED, newVal, changed = changed)
+      folderConfig.severityFilterHigh?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, it)
       }
-      folderConfig.snykSecretsEnabled?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, newVal, changed = changed)
+
+      folderConfig.severityFilterMedium?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM, it)
       }
-      folderConfig.issueViewOpenIssues?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(
-            LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
-            newVal,
-            changed = changed,
-          )
+
+      folderConfig.severityFilterLow?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_LOW, it)
       }
-      folderConfig.issueViewIgnoredIssues?.let { newVal ->
-        val oldVal =
-          existing.settings?.get(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES)?.value as? Boolean
-        val changed = oldVal != newVal
-        updated =
-          updated.withSetting(
-            LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
-            newVal,
-            changed = changed,
-          )
+
+      folderConfig.snykOssEnabled?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_OSS_ENABLED, it)
       }
-      folderConfig.riskScoreThreshold?.let { newVal ->
-        val oldRaw = existing.settings?.get(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)?.value
-        val oldVal = coerceFolderSettingInt(oldRaw)
-        val newInt = coerceFolderSettingInt(newVal) ?: return@let
-        val changed = oldVal != newInt
-        updated =
-          updated.withSetting(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, newInt, changed = changed)
+      folderConfig.snykCodeEnabled?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_CODE_ENABLED, it)
+      }
+      folderConfig.snykIacEnabled?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_IAC_ENABLED, it)
+      }
+      folderConfig.snykSecretsEnabled?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, it)
+      }
+      folderConfig.issueViewOpenIssues?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it)
+      }
+      folderConfig.issueViewIgnoredIssues?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it)
+      }
+      folderConfig.riskScoreThreshold?.let {
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, it)
       }
 
       fcs.addFolderConfig(updated)
     }
-  }
-
-  /**
-   * Folder setting maps may hold [java.lang.Number] subtypes (e.g. Gson doubles). Normalize to
-   * [Int] so comparisons and persisted values stay consistent for language-server settings
-   * payloads.
-   */
-  private fun coerceFolderSettingInt(raw: Any?): Int? =
-    when (raw) {
-      null -> null
-      is java.lang.Number -> raw.intValue()
-      else -> null
-    }
-
-  private fun parseScanCommandConfig(
-    scanConfig: Map<String, ScanCommandConfigData>
-  ): Map<String, snyk.common.lsp.ScanCommandConfig> {
-    val result = mutableMapOf<String, snyk.common.lsp.ScanCommandConfig>()
-
-    for ((product, config) in scanConfig) {
-      result[product] =
-        snyk.common.lsp.ScanCommandConfig(
-          preScanCommand = config.preScanCommand ?: "",
-          preScanOnlyReferenceFolder = config.preScanOnlyReferenceFolder ?: false,
-          postScanCommand = config.postScanCommand ?: "",
-          postScanOnlyReferenceFolder = config.postScanOnlyReferenceFolder ?: false,
-        )
-    }
-
-    return result
   }
 }
