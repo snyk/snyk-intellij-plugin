@@ -218,20 +218,119 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     invokeParseAndSaveConfig("{}")
   }
 
-  fun `test parseAndSaveConfig treats missing scan types as false when other scan types present`() {
+  fun `test parseAndSaveConfig leaves absent scan types untouched when other scan type changed`() {
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.ossScanEnable = true
     realSettings.snykCodeSecurityIssuesScanEnable = true
     realSettings.iacScanEnabled = true
+    realSettings.secretsEnabled = true
     every { pluginSettings() } returns realSettings
 
-    // Only activateSnykOpenSource is sent (checked), others missing (unchecked)
-    val jsonConfig = """{"activateSnykOpenSource": true}"""
+    // LS diff-based payload: only the toggled field is sent (snake_case wire name).
+    val jsonConfig = """{"snyk_iac_enabled": false}"""
     invokeParseAndSaveConfig(jsonConfig)
 
+    assertFalse(realSettings.iacScanEnabled)
     assertTrue(realSettings.ossScanEnable)
-    assertFalse(realSettings.snykCodeSecurityIssuesScanEnable) // Missing = unchecked = false
-    assertFalse(realSettings.iacScanEnabled) // Missing = unchecked = false
+    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
+    assertTrue(realSettings.secretsEnabled)
+  }
+
+  fun `test parseAndSaveConfig partial payload disabling only OSS leaves Code IaC Secrets enabled`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.ossScanEnable = true
+    realSettings.snykCodeSecurityIssuesScanEnable = true
+    realSettings.iacScanEnabled = true
+    realSettings.secretsEnabled = true
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"activateSnykOpenSource": false}""")
+
+    assertFalse(realSettings.ossScanEnable)
+    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
+    assertTrue(realSettings.iacScanEnabled)
+    assertTrue(realSettings.secretsEnabled)
+  }
+
+  fun `test parseAndSaveConfig empty product payload leaves product flags untouched`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.ossScanEnable = false
+    realSettings.snykCodeSecurityIssuesScanEnable = true
+    realSettings.iacScanEnabled = false
+    realSettings.secretsEnabled = true
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("{}")
+
+    assertFalse(realSettings.ossScanEnable)
+    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(realSettings.iacScanEnabled)
+    assertTrue(realSettings.secretsEnabled)
+  }
+
+  fun `test parseAndSaveConfig explicit false for all four products disables all`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.ossScanEnable = true
+    realSettings.snykCodeSecurityIssuesScanEnable = true
+    realSettings.iacScanEnabled = true
+    realSettings.secretsEnabled = true
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "activateSnykOpenSource": false,
+            "activateSnykCode": false,
+            "activateSnykIac": false,
+            "activateSnykSecrets": false
+        }
+        """
+        .trimIndent()
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertFalse(realSettings.ossScanEnable)
+    assertFalse(realSettings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(realSettings.iacScanEnabled)
+    assertFalse(realSettings.secretsEnabled)
+  }
+
+  fun `test parseAndSaveConfig partial product payload does not mark absent products explicitly changed`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.ossScanEnable = true
+    realSettings.snykCodeSecurityIssuesScanEnable = true
+    realSettings.iacScanEnabled = true
+    realSettings.secretsEnabled = true
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"snyk_iac_enabled": false}""")
+
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
+  }
+
+  fun `test parseAndSaveConfig fallback form ignores activateSnyk fields in payload`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.iacScanEnabled = true
+    realSettings.ossScanEnable = true
+    every { pluginSettings() } returns realSettings
+
+    val jsonConfig =
+      """
+        {
+            "isFallbackForm": true,
+            "cliPath": "/x/snyk",
+            "activateSnykIac": false,
+            "activateSnykOpenSource": false
+        }
+        """
+        .trimIndent()
+    invokeParseAndSaveConfig(jsonConfig)
+
+    assertEquals("/x/snyk", realSettings.cliPath)
+    assertTrue(realSettings.iacScanEnabled)
+    assertTrue(realSettings.ossScanEnable)
   }
 
   fun `test parseAndSaveConfig throws on invalid JSON`() {

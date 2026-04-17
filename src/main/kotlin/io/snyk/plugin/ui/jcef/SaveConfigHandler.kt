@@ -236,74 +236,43 @@ class SaveConfigHandler(
     }
 
     if (!isFallback) {
-      val hasAnyProductToggle =
-        listOf(
-            config.activateSnykOpenSource,
-            config.activateSnykCode,
-            config.activateSnykIac,
-            config.activateSnykSecrets,
-          )
-          .any { it != null }
-
-      val ossEnabled =
-        if (hasAnyProductToggle) {
-          config.activateSnykOpenSource ?: false
-        } else {
-          config.activateSnykOpenSource
-        }
+      // LS collectChangedData sends only diffed fields; each product toggle must be applied only
+      // when present (same pattern as severity filters), not coerced from absent → false.
       applyGlobalSetting(
         settings = settings,
         key = LsFolderSettingsKeys.SNYK_OSS_ENABLED,
-        isPresent = hasAnyProductToggle || (config.activateSnykOpenSource != null),
-        newValue = ossEnabled,
+        isPresent = (config.activateSnykOpenSource != null),
+        newValue = config.activateSnykOpenSource,
         currentValue = { settings.ossScanEnable },
       ) {
         settings.ossScanEnable = it
       }
 
-      val codeEnabled =
-        if (hasAnyProductToggle) {
-          config.activateSnykCode ?: false
-        } else {
-          config.activateSnykCode
-        }
       applyGlobalSetting(
         settings = settings,
         key = LsFolderSettingsKeys.SNYK_CODE_ENABLED,
-        isPresent = hasAnyProductToggle || (config.activateSnykCode != null),
-        newValue = codeEnabled,
+        isPresent = (config.activateSnykCode != null),
+        newValue = config.activateSnykCode,
         currentValue = { settings.snykCodeSecurityIssuesScanEnable },
       ) {
         settings.snykCodeSecurityIssuesScanEnable = it
       }
 
-      val iacEnabled =
-        if (hasAnyProductToggle) {
-          config.activateSnykIac ?: false
-        } else {
-          config.activateSnykIac
-        }
       applyGlobalSetting(
         settings = settings,
         key = LsFolderSettingsKeys.SNYK_IAC_ENABLED,
-        isPresent = hasAnyProductToggle || (config.activateSnykIac != null),
-        newValue = iacEnabled,
+        isPresent = (config.activateSnykIac != null),
+        newValue = config.activateSnykIac,
         currentValue = { settings.iacScanEnabled },
       ) {
         settings.iacScanEnabled = it
       }
 
-      val secretsEnabled =
-        if (hasAnyProductToggle) {
-          config.activateSnykSecrets ?: false
-        } else {
-          config.activateSnykSecrets
-        }
       applyGlobalSetting(
         settings = settings,
         key = LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
-        isPresent = hasAnyProductToggle || (config.activateSnykSecrets != null),
-        newValue = secretsEnabled,
+        isPresent = (config.activateSnykSecrets != null),
+        newValue = config.activateSnykSecrets,
         currentValue = { settings.secretsEnabled },
       ) {
         settings.secretsEnabled = it
