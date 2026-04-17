@@ -1058,7 +1058,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(42, s[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
   }
 
-  fun `test saveConfig folder risk_score_threshold treats existing Double as equal to same Int`() {
+  fun `test saveConfig folder risk_score_threshold marks changed true when present in payload`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
@@ -1090,13 +1090,16 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val stored = fcs.getFolderConfig(folderPath).settings ?: error("expected folder settings")
     assertEquals(700, stored[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
     assertEquals(
-      "unchanged numeric value should not mark the setting as changed",
-      false,
+      "field present in payload must be marked changed=true regardless of prior value",
+      true,
       stored[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.changed,
+    )
+    assertTrue(
+      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
     )
   }
 
-  fun `test saveConfig second identical folderConfigs sets changed false for unchanged fields`() {
+  fun `test saveConfig second identical folderConfigs keeps changed true for fields present in payload`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
     val folderPath =
@@ -1113,8 +1116,67 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     invokeParseAndSaveConfig(json)
 
     val s = service<FolderConfigSettings>().getFolderConfig(folderPath).settings ?: error("s")
-    assertEquals(false, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.changed)
-    assertEquals(false, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.changed)
+    assertEquals(true, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.changed)
+    assertEquals(true, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.changed)
+    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC))
+    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+  }
+
+  fun `test saveConfig folder field absent from payload leaves stored value and explicit flag untouched`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-absent").toAbsolutePath().normalize().toString()
+
+    // Seed the folder with additional_parameters and no explicit-change flag.
+    val fcs = service<FolderConfigSettings>()
+    val seeded =
+      fcs
+        .getFolderConfig(folderPath)
+        .withSetting(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, listOf("--debug"), changed = false)
+    fcs.addFolderConfig(seeded)
+
+    // Payload touches a different field; additional_parameters is absent.
+    val payload =
+      mapOf("folderConfigs" to listOf(mapOf("folderPath" to folderPath, "scan_automatic" to true)))
+    invokeParseAndSaveConfig(gson.toJson(payload))
+
+    val s = fcs.getFolderConfig(folderPath).settings ?: error("s")
+    assertEquals(listOf("--debug"), s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value)
+    assertEquals(false, s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.changed)
+    assertFalse(
+      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+    )
+    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC))
+  }
+
+  fun `test saveConfig folder additional_parameters present marks changed and explicit flag`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-addparams").toAbsolutePath().normalize().toString()
+
+    val payload =
+      mapOf(
+        "folderConfigs" to
+          listOf(
+            mapOf(
+              "folderPath" to folderPath,
+              "additional_parameters" to listOf("--debug", "--severity-threshold=high"),
+            )
+          )
+      )
+    invokeParseAndSaveConfig(gson.toJson(payload))
+
+    val s = service<FolderConfigSettings>().getFolderConfig(folderPath).settings ?: error("s")
+    assertEquals(
+      listOf("--debug", "--severity-threshold=high"),
+      s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value,
+    )
+    assertEquals(true, s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.changed)
+    assertTrue(
+      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+    )
   }
 
   fun `test parseAndSaveConfig empty cliPath resolves to default CLI path`() {

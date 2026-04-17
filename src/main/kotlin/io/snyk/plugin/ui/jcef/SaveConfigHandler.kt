@@ -525,27 +525,48 @@ class SaveConfigHandler(
 
   private fun applyFolderSetting(
     existing: snyk.common.lsp.settings.LspFolderConfig,
+    settings: SnykApplicationSettingsStateService,
+    folderPath: String,
     key: String,
     value: Any,
   ): snyk.common.lsp.settings.LspFolderConfig {
-    val currentValue = existing.settings?.get(key)?.value
-    val changed = !valuesEquivalent(currentValue, value)
-    return existing.withSetting(key, value, changed = changed)
+    // Semantics: presence of a field in the JSON payload means the user (or JS form) is
+    // asserting a value for it. We propagate it to LS as changed=true regardless of whether
+    // the value differs from the previously stored one. Absence of a field is handled by the
+    // caller (we simply don't invoke this function).
+    settings.markExplicitlyChanged(folderPath, key)
+    return existing.withSetting(key, value, changed = true)
   }
 
   private fun applyFolderConfigs(folderConfigs: List<FolderConfigData>) {
     val fcs = service<FolderConfigSettings>()
+    val settings = pluginSettings()
 
     for (folderConfig in folderConfigs) {
-      val existing = fcs.getFolderConfig(folderConfig.folderPath)
+      val folderPath = folderConfig.folderPath
+      val existing = fcs.getFolderConfig(folderPath)
       var updated = existing
 
       folderConfig.additionalParameters?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+            it,
+          )
       }
 
       folderConfig.additionalEnv?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+            it,
+          )
       }
 
       folderConfig.scanCommandConfig?.let { scanCommands ->
@@ -558,61 +579,162 @@ class SaveConfigHandler(
               postScanOnlyReferenceFolder = v.postScanOnlyReferenceFolder ?: true,
             )
           }
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG, mapped)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+            mapped,
+          )
       }
 
       folderConfig.preferredOrg?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.PREFERRED_ORG, it)
+        updated =
+          applyFolderSetting(updated, settings, folderPath, LsFolderSettingsKeys.PREFERRED_ORG, it)
       }
 
       folderConfig.autoDeterminedOrg?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.AUTO_DETERMINED_ORG, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.AUTO_DETERMINED_ORG,
+            it,
+          )
       }
       folderConfig.orgSetByUser?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ORG_SET_BY_USER, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.ORG_SET_BY_USER,
+            it,
+          )
       }
 
       folderConfig.scanAutomatic?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_AUTOMATIC, it)
+        updated =
+          applyFolderSetting(updated, settings, folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC, it)
       }
       folderConfig.scanNetNew?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_NET_NEW, it)
+        updated =
+          applyFolderSetting(updated, settings, folderPath, LsFolderSettingsKeys.SCAN_NET_NEW, it)
       }
       folderConfig.severityFilterCritical?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+            it,
+          )
       }
       folderConfig.severityFilterHigh?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+            it,
+          )
       }
 
       folderConfig.severityFilterMedium?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+            it,
+          )
       }
 
       folderConfig.severityFilterLow?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_LOW, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+            it,
+          )
       }
 
       folderConfig.snykOssEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_OSS_ENABLED, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+            it,
+          )
       }
       folderConfig.snykCodeEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_CODE_ENABLED, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+            it,
+          )
       }
       folderConfig.snykIacEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_IAC_ENABLED, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+            it,
+          )
       }
       folderConfig.snykSecretsEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+            it,
+          )
       }
       folderConfig.issueViewOpenIssues?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+            it,
+          )
       }
       folderConfig.issueViewIgnoredIssues?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+            it,
+          )
       }
       folderConfig.riskScoreThreshold?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, it)
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+            it,
+          )
       }
 
       fcs.addFolderConfig(updated)
