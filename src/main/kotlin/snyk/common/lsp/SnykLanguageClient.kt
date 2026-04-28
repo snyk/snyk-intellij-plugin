@@ -331,8 +331,12 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         // refresh. On LS startup the initial config carries folder-level severities that may
         // differ from the global fallback the toolbar was displaying.
         publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
-        publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
-        publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) { enablementChanged() }
+        publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) {
+          filtersChanged()
+        }
+        publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
+          enablementChanged()
+        }
       } catch (e: Exception) {
         logger.error("Error processing snyk configuration", e)
       }

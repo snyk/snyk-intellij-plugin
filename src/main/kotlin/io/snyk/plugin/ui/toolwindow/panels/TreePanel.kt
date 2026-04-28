@@ -47,9 +47,7 @@ class TreePanel(tree: Tree, project: Project, parentDisposable: Disposable) :
       SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC,
       object : SnykFolderConfigListener {
         override fun folderConfigsChanged(hasConfigs: Boolean) {
-          ApplicationManager.getApplication().invokeLater {
-            severityToolbar.updateActionsAsync()
-          }
+          ApplicationManager.getApplication().invokeLater { severityToolbar.updateActionsAsync() }
         }
       },
     )
@@ -58,9 +56,7 @@ class TreePanel(tree: Tree, project: Project, parentDisposable: Disposable) :
       SnykResultsFilteringListener.SNYK_FILTERING_TOPIC,
       object : SnykResultsFilteringListener {
         override fun filtersChanged() {
-          ApplicationManager.getApplication().invokeLater {
-            severityToolbar.updateActionsAsync()
-          }
+          ApplicationManager.getApplication().invokeLater { severityToolbar.updateActionsAsync() }
         }
       },
     )

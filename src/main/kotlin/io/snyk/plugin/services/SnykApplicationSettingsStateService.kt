@@ -298,8 +298,7 @@ class SnykApplicationSettingsStateService :
     }
   }
 
-  fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean =
-    hasSeverityEnabled(severity)
+  fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean = hasSeverityEnabled(severity)
 
   fun hasSeverityEnabledForFile(severity: Severity, file: VirtualFile, project: Project): Boolean {
     val fcs = service<FolderConfigSettings>()
@@ -310,8 +309,7 @@ class SnykApplicationSettingsStateService :
     severity: Severity,
     file: VirtualFile,
     project: Project,
-  ): Boolean =
-    hasSeverityEnabledForFile(severity, file, project)
+  ): Boolean = hasSeverityEnabledForFile(severity, file, project)
 
   fun hasOnlyOneSeverityEnabled(): Boolean =
     arrayOf(
