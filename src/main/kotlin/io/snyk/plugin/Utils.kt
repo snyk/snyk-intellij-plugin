@@ -40,7 +40,6 @@ import io.snyk.plugin.analytics.AnalyticsScanListener
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykCliAuthenticationService
-import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
@@ -100,9 +99,6 @@ fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationSer
 
 fun getSnykCliDownloaderService(): SnykCliDownloaderService =
   ApplicationManager.getApplication().service()
-
-fun getSnykProjectSettingsService(project: Project): SnykProjectSettingsStateService? =
-  project.serviceIfNotDisposed()
 
 fun getCliFile() = File(pluginSettings().cliPath)
 

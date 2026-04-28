@@ -10,7 +10,6 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
-import io.snyk.plugin.services.SnykProjectSettingsStateService
 import io.snyk.plugin.services.download.HttpRequestHelper
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.ui.toolwindow.panels.SuggestionDescriptionPanel
@@ -39,11 +38,6 @@ fun resetSettings(project: Project?) {
     SnykApplicationSettingsStateService::class.java,
     SnykApplicationSettingsStateService(),
     application,
-  )
-  project?.replaceService(
-    SnykProjectSettingsStateService::class.java,
-    SnykProjectSettingsStateService(),
-    project,
   )
   try {
     LanguageServerWrapper.getInstance(project!!).shutdown()
