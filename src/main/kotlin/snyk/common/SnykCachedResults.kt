@@ -13,6 +13,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import com.intellij.util.Alarm
+import com.intellij.util.SlowOperations
 import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
@@ -182,10 +183,12 @@ class SnykCachedResults(val project: Project) : Disposable {
         analyzer.restart()
       } else {
         // Refresh each file individually within same EDT task
-        filesToRefresh.forEach { file ->
-          if (file.isValid) {
-            PsiManager.getInstance(project).findFile(file)?.let { psiFile ->
-              analyzer.restart(psiFile)
+        SlowOperations.startSection(SlowOperations.KNOWN_ISSUE).use {
+          filesToRefresh.forEach { file ->
+            if (file.isValid) {
+              PsiManager.getInstance(project).findFile(file)?.let { psiFile ->
+                analyzer.restart(psiFile)
+              }
             }
           }
         }
