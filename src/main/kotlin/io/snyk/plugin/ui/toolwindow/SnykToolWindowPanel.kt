@@ -654,7 +654,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
       Disposer.register(this, htmlTreePanel!!)
       treeSplitter.secondComponent = htmlTreePanel
     } else {
-      treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree)
+      treeSplitter.secondComponent = TreePanel(vulnerabilitiesTree, project, this)
     }
 
     vulnerabilitiesSplitter.firstComponent = treeSplitter

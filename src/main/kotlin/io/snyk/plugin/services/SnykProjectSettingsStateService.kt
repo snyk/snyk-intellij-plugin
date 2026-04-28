@@ -7,7 +7,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.XmlSerializerUtil
 
-@Service
+@Service(Service.Level.APP)
 @State(
   name = "SnykProjectSettingsState",
   storages = [Storage("snyk.project.settings.xml", roamingType = RoamingType.DISABLED)],

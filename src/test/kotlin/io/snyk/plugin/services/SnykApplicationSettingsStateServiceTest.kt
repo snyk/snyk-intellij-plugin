@@ -130,7 +130,7 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun hasSeverityEnabledAndFiltered_requiresBoth() {
+  fun hasSeverityEnabledAndFiltered_delegatesToHasSeverityEnabled() {
     val target = SnykApplicationSettingsStateService()
 
     assertTrue(target.hasSeverityEnabledAndFiltered(Severity.CRITICAL))
@@ -138,19 +138,20 @@ class SnykApplicationSettingsStateServiceTest {
     target.criticalSeverityEnabled = false
     assertFalse(target.hasSeverityEnabledAndFiltered(Severity.CRITICAL))
 
+    // treeFiltering is no longer consulted for severity — folder configs are the source of truth
     target.criticalSeverityEnabled = true
     target.setSeverityTreeFiltered(Severity.CRITICAL, false)
-    assertFalse(target.hasSeverityEnabledAndFiltered(Severity.CRITICAL))
+    assertTrue(target.hasSeverityEnabledAndFiltered(Severity.CRITICAL))
   }
 
   @Test
   fun hasOnlyOneSeverityEnabled_trueWhenExactlyOne() {
     val target = SnykApplicationSettingsStateService()
 
-    target.setSeverityTreeFiltered(Severity.CRITICAL, false)
-    target.setSeverityTreeFiltered(Severity.HIGH, false)
-    target.setSeverityTreeFiltered(Severity.MEDIUM, false)
-    target.setSeverityTreeFiltered(Severity.LOW, true)
+    target.criticalSeverityEnabled = false
+    target.highSeverityEnabled = false
+    target.mediumSeverityEnabled = false
+    target.lowSeverityEnabled = true
 
     assertTrue(target.hasOnlyOneSeverityEnabled())
   }

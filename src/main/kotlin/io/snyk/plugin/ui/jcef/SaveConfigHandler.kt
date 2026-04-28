@@ -169,7 +169,13 @@ class SaveConfigHandler(
       config.folderConfigs?.let { applyFolderConfigs(it) }
     }
 
-    LanguageServerWrapper.getInstance(project).updateConfiguration()
+    // Notify all open projects' language servers so global settings propagate everywhere.
+    // Without this, only the current project's LS/HTML page would reflect global changes.
+    for (openProject in com.intellij.ide.impl.ProjectUtil.getOpenProjects()) {
+      if (!openProject.isDisposed) {
+        LanguageServerWrapper.getInstance(openProject).updateConfiguration()
+      }
+    }
   }
 
   private fun applyGlobalSettings(

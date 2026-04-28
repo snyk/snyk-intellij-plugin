@@ -17,6 +17,8 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykFolderConfigListener
+import io.snyk.plugin.events.SnykProductsOrSeverityListener
+import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -290,6 +292,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         // present do we mirror its settings to global plugin state. With multiple folders, nothing
         // is toggled globally (per-folder state lives in FolderConfigSettings).
         val folderConfigsList = configurationParam.folderConfigs
+
         if (folderConfigsList?.size == 1) {
           folderConfigsList.first().settings?.let { folderSettings ->
             settingsChanged =
@@ -300,8 +303,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         if (settingsChanged) {
           StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
           logger.debug("force-saved settings from Language Server configuration")
-
-          publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
         }
 
         folderConfigsList?.let { folderConfigs ->
@@ -325,6 +326,13 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             logger.error("Error processing snyk folder configs", e)
           }
         }
+
+        // Always notify listeners so the tool window tree, annotations, and severity toolbar
+        // refresh. On LS startup the initial config carries folder-level severities that may
+        // differ from the global fallback the toolbar was displaying.
+        publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
+        publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
+        publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) { enablementChanged() }
       } catch (e: Exception) {
         logger.error("Error processing snyk configuration", e)
       }
@@ -374,38 +382,9 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         }
       }
     }
-    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.criticalSeverityEnabled != boolVal) {
-          ps.criticalSeverityEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_HIGH]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.highSeverityEnabled != boolVal) {
-          ps.highSeverityEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.mediumSeverityEnabled != boolVal) {
-          ps.mediumSeverityEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SEVERITY_FILTER_LOW]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.lowSeverityEnabled != boolVal) {
-          ps.lowSeverityEnabled = boolVal
-          changed = true
-        }
-      }
-    }
+    // Severity filters are NOT mirrored to global state — they live exclusively in
+    // folder configs and are read via isSeverityEnabledForProjectToolWindow(). Writing
+    // them to global state would corrupt other projects sharing the same singleton.
 
     folderSettings[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value?.let {
       if (it is Number && ps.riskScoreThreshold != it.toInt()) {

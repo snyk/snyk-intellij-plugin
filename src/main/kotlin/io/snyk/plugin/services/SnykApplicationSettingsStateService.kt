@@ -21,7 +21,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 
-@Service
+@Service(Service.Level.APP)
 @State(
   name = "SnykApplicationSettingsState",
   storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
@@ -299,10 +299,10 @@ class SnykApplicationSettingsStateService :
   }
 
   fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean =
-    hasSeverityEnabled(severity) && hasSeverityTreeFiltered(severity)
+    hasSeverityEnabled(severity)
 
   fun hasSeverityEnabledForFile(severity: Severity, file: VirtualFile, project: Project): Boolean {
-    val fcs = project.service<FolderConfigSettings>()
+    val fcs = service<FolderConfigSettings>()
     return fcs.getSeverityFilterForFile(severity, file, project) ?: hasSeverityEnabled(severity)
   }
 
@@ -311,7 +311,7 @@ class SnykApplicationSettingsStateService :
     file: VirtualFile,
     project: Project,
   ): Boolean =
-    hasSeverityEnabledForFile(severity, file, project) && hasSeverityTreeFiltered(severity)
+    hasSeverityEnabledForFile(severity, file, project)
 
   fun hasOnlyOneSeverityEnabled(): Boolean =
     arrayOf(
@@ -328,10 +328,9 @@ class SnykApplicationSettingsStateService :
    * multi-root folder severity when [getFolderConfigs] is non-empty.
    */
   fun hasOnlyOneSeverityTreeFilterActive(project: Project): Boolean {
-    val fcs = project.service<FolderConfigSettings>()
+    val fcs = service<FolderConfigSettings>()
     return listOf(Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW).count { sev ->
-      hasSeverityTreeFiltered(sev) &&
-        fcs.isSeverityEnabledForProjectToolWindow(sev, project, hasSeverityEnabled(sev))
+      fcs.isSeverityEnabledForProjectToolWindow(sev, project, hasSeverityEnabled(sev))
     } == 1
   }
 

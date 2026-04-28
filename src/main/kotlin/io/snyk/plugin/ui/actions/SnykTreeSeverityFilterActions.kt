@@ -26,8 +26,7 @@ abstract class SnykTreeSeverityFilterActionBase(private val severity: Severity) 
     val globalEnabled = pluginSettings().hasSeverityEnabled(severity)
     val effectivelyEnabled =
       if (project != null && !project.isDisposed) {
-        project
-          .service<FolderConfigSettings>()
+        service<FolderConfigSettings>()
           .isSeverityEnabledForProjectToolWindow(severity, project, globalEnabled)
       } else {
         globalEnabled
@@ -41,15 +40,19 @@ abstract class SnykTreeSeverityFilterActionBase(private val severity: Severity) 
     }
   }
 
-  override fun isSelected(e: AnActionEvent): Boolean =
-    pluginSettings().hasSeverityTreeFiltered(severity)
+  override fun isSelected(e: AnActionEvent): Boolean {
+    val project = e.project ?: return pluginSettings().hasSeverityEnabled(severity)
+    if (project.isDisposed) return pluginSettings().hasSeverityEnabled(severity)
+    val globalEnabled = pluginSettings().hasSeverityEnabled(severity)
+    return service<FolderConfigSettings>()
+      .isSeverityEnabledForProjectToolWindow(severity, project, globalEnabled)
+  }
 
   override fun setSelected(e: AnActionEvent, state: Boolean) {
     val project = e.project!!
     val globalEnabled = pluginSettings().hasSeverityEnabled(severity)
     val effectivelyEnabled =
-      project
-        .service<FolderConfigSettings>()
+      service<FolderConfigSettings>()
         .isSeverityEnabledForProjectToolWindow(severity, project, globalEnabled)
     if (!effectivelyEnabled) {
       showSettings(

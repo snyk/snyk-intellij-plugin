@@ -15,7 +15,7 @@ import snyk.SnykBundle
 import snyk.common.lsp.LanguageServerWrapper
 
 @Suppress("UselessCallOnCollection")
-@Service
+@Service(Service.Level.APP)
 class FolderConfigSettings {
   private val logger = Logger.getInstance(FolderConfigSettings::class.java)
   private val configs: MutableMap<String, LspFolderConfig> =
