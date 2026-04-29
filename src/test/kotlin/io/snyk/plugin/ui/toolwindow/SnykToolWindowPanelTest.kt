@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.toolwindow
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
@@ -38,10 +39,17 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
   private val lsClientMock = mockk<SnykLanguageClient>()
   private val lsProcessMock = mockk<Process>()
   private val workspaceServiceMock = mockk<WorkspaceService>()
+  private var originalHtmlTreeViewEnabled = false
 
   override fun setUp() {
     super.setUp()
     unmockkAll()
+
+    // These tests assert the Swing tree panel layout. Force the registry off so they remain
+    // valid regardless of the global default for snyk.useHtmlTreeView.
+    val htmlTreeViewKey = Registry.get("snyk.useHtmlTreeView")
+    originalHtmlTreeViewEnabled = htmlTreeViewKey.asBoolean()
+    htmlTreeViewKey.setValue(false)
 
     val application = ApplicationManager.getApplication()
     application.replaceService(
@@ -78,6 +86,8 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
 
   override fun tearDown() {
     unmockkAll()
+
+    Registry.get("snyk.useHtmlTreeView").setValue(originalHtmlTreeViewEnabled)
 
     val application = ApplicationManager.getApplication()
     application.replaceService(
