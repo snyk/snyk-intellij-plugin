@@ -26,12 +26,14 @@ import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import junit.framework.TestCase.fail
+import org.apache.commons.lang3.SystemUtils
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.ExecuteCommandParams
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.eclipse.lsp4j.services.LanguageServer
 import org.junit.After
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.analytics.ScanDoneEvent
@@ -981,6 +983,94 @@ class LanguageServerWrapperTest {
       outputConfig?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.changed,
     )
   }
+
+  @Test
+  fun `verifyCliProtocolVersion returns true when CLI prints required version`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val scenarios =
+      listOf(
+        VerifyProtocolScenario(
+          name = "exact match",
+          script = "echo ${settings.requiredLsProtocolVersion}",
+          expected = true,
+        ),
+        VerifyProtocolScenario(
+          name = "exact match with trailing newline whitespace",
+          script = "printf '${settings.requiredLsProtocolVersion}\\n'",
+          expected = true,
+        ),
+        VerifyProtocolScenario(
+          name = "exact match with surrounding whitespace",
+          script = "printf '  ${settings.requiredLsProtocolVersion}  \\n'",
+          expected = true,
+        ),
+        VerifyProtocolScenario(name = "version mismatch", script = "echo 1", expected = false),
+        VerifyProtocolScenario(
+          name = "non-integer output",
+          script = "echo not-a-number",
+          expected = false,
+        ),
+        VerifyProtocolScenario(name = "empty output", script = "true", expected = false),
+        VerifyProtocolScenario(
+          name = "non-zero exit code",
+          script = "echo ${settings.requiredLsProtocolVersion}\nexit 2",
+          expected = false,
+        ),
+      )
+    for (scenario in scenarios) {
+      val scriptFile =
+        java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+          writeText("#!/bin/sh\n${scenario.script}\n")
+          setExecutable(true)
+          deleteOnExit()
+        }
+      try {
+        every { getCliFile() } returns scriptFile
+
+        val result = cut.verifyCliProtocolVersion()
+
+        assertEquals("scenario '${scenario.name}'", scenario.expected, result)
+      } finally {
+        scriptFile.delete()
+      }
+    }
+  }
+
+  @Test
+  fun `verifyCliProtocolVersion returns false when CLI binary cannot be executed`() {
+    val nonExistent = java.io.File("/nonexistent/snyk-cli-${UUID.randomUUID()}")
+    every { getCliFile() } returns nonExistent
+
+    val result = cut.verifyCliProtocolVersion()
+
+    assertFalse(result)
+  }
+
+  @Test
+  fun `verifyCliProtocolVersion updates currentLSProtocolVersion when CLI returns integer`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        writeText("#!/bin/sh\necho 7\n")
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      cut.verifyCliProtocolVersion()
+
+      assertEquals(7, settings.currentLSProtocolVersion)
+    } finally {
+      scriptFile.delete()
+    }
+  }
+
+  private data class VerifyProtocolScenario(
+    val name: String,
+    val script: String,
+    val expected: Boolean,
+  )
 
   private fun simulateRunningLS() {
     cut.languageClient = mockk(relaxed = true)

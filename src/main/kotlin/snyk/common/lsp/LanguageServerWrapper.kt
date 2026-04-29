@@ -1,11 +1,13 @@
 package snyk.common.lsp
 
 import com.google.gson.Gson
+import com.intellij.notification.NotificationAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
@@ -24,6 +26,7 @@ import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -95,6 +98,7 @@ import snyk.trust.WorkspaceTrustService
 import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 private const val INITIALIZATION_TIMEOUT = 20L
+private const val PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS = 10L
 
 @Service(Service.Level.PROJECT)
 class LanguageServerWrapper(private val project: Project) : Disposable {
@@ -108,6 +112,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private var authenticatedUser: Map<String, String>? = null
   private var initializeResult: InitializeResult? = null
   private var cliNotFoundWarningDisplayed: Boolean = false
+  private var protocolVersionWarningDisplayed: Boolean = false
   private val gson = Gson()
   private var loginFuture: CompletableFuture<Any>? = null
 
@@ -165,6 +170,28 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         logger.warn("Failed to set executable permission on CLI: ${e.message}")
         return
       }
+    }
+
+    if (!verifyCliProtocolVersion()) {
+      val required = pluginSettings().requiredLsProtocolVersion
+      val message =
+        "Snyk CLI at $cliPath does not support the required Language Server protocol " +
+          "version ($required). The Snyk Language Server will not be started. " +
+          "Please update the Snyk CLI."
+      logger.warn(message)
+      if (!protocolVersionWarningDisplayed) {
+        val openSettingsAction =
+          NotificationAction.createSimpleExpiring("Open Snyk settings") {
+            ApplicationManager.getApplication().invokeLater {
+              if (project.isDisposed) return@invokeLater
+              ShowSettingsUtil.getInstance()
+                .showSettingsDialog(project, SnykProjectSettingsConfigurable::class.java)
+            }
+          }
+        SnykBalloonNotificationHelper.showWarn(message, project, openSettingsAction)
+        protocolVersionWarningDisplayed = true
+      }
+      return
     }
 
     try {
@@ -236,6 +263,50 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       logger.error("Initialization of Snyk Language Server for ${project.name} failed", e)
       isInitialized = false
       if (processIsAlive()) process.destroyForcibly()
+    }
+  }
+
+  /**
+   * Invokes the CLI binary with `language-server --protocolVersion` and verifies the printed
+   * protocol version matches the plugin's required Language Server protocol version. The check is
+   * fail-closed: any error (timeout, non-zero exit, missing flag, parse failure) causes this method
+   * to return false so that the LS will not be started.
+   */
+  internal fun verifyCliProtocolVersion(): Boolean {
+    val ps = pluginSettings()
+    val required = ps.requiredLsProtocolVersion
+    return try {
+      val processBuilder = ProcessBuilder(cliPath, "language-server", "--protocolVersion")
+      processBuilder.redirectErrorStream(false)
+      val p = processBuilder.start()
+      val output = p.inputStream.bufferedReader().use { it.readText() }
+      val finished = p.waitFor(PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+      if (!finished) {
+        p.destroyForcibly()
+        logger.warn(
+          "CLI protocol version check timed out after $PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS seconds"
+        )
+        return false
+      }
+      val exit = p.exitValue()
+      if (exit != 0) {
+        logger.warn("CLI protocol version check exited with code $exit, output='$output'")
+        return false
+      }
+      val parsed = output.trim().toIntOrNull()
+      if (parsed == null) {
+        logger.warn("CLI protocol version check returned non-integer output: '$output'")
+        return false
+      }
+      ps.currentLSProtocolVersion = parsed
+      val matches = parsed == required
+      if (!matches) {
+        logger.warn("CLI protocol version mismatch: cli=$parsed required=$required")
+      }
+      matches
+    } catch (e: Exception) {
+      logger.warn("Failed to invoke CLI for protocol version check: ${e.message}", e)
+      false
     }
   }
 
