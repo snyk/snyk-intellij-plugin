@@ -109,6 +109,10 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
         val submitIgnoreRequestHandler = SubmitIgnoreRequestHandler(project)
         loadHandlerGenerators += { submitIgnoreRequestHandler.submitIgnoreRequestCommand(it) }
       }
+      ScanIssue.SECRETS -> {
+        val submitIgnoreRequestHandler = SubmitIgnoreRequestHandler(project)
+        loadHandlerGenerators += { submitIgnoreRequestHandler.submitIgnoreRequestCommand(it) }
+      }
       ScanIssue.INFRASTRUCTURE_AS_CODE -> {
         val applyIgnoreInFileHandler = IgnoreInFileHandler(project)
         loadHandlerGenerators += { applyIgnoreInFileHandler.generateIgnoreInFileCommand(it) }
