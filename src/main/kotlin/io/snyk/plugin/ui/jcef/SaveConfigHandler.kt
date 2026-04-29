@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -9,6 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDefaultCliPath
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
@@ -171,8 +173,8 @@ class SaveConfigHandler(
 
     // Notify all open projects' language servers so global settings propagate everywhere.
     // Without this, only the current project's LS/HTML page would reflect global changes.
-    for (openProject in com.intellij.ide.impl.ProjectUtil.getOpenProjects()) {
-      if (!openProject.isDisposed) {
+    for (openProject in ProjectUtil.getOpenProjects()) {
+      if (!openProject.isDisposed && !SnykPluginDisposable.getInstance(openProject).isDisposed()) {
         LanguageServerWrapper.getInstance(openProject).updateConfiguration()
       }
     }
