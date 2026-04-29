@@ -813,24 +813,25 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(AuthenticationType.API_TOKEN, realSettings.authenticationType)
   }
 
-  fun `test applyGlobalSettings with null field clears explicit change flag`() {
+  fun `test applyGlobalSettings with null field preserves existing explicit change flag`() {
     val realSettings = SnykApplicationSettingsStateService()
     // Pre-mark the key as explicitly changed
     realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
     assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD))
     every { pluginSettings() } returns realSettings
 
-    // Send config WITHOUT manageBinariesAutomatically (null) to trigger the clear
+    // Send diff-based payload WITHOUT manageBinariesAutomatically -- absence means "no change".
     val jsonConfig = """{"activateSnykOpenSource": true}"""
     invokeParseAndSaveConfig(jsonConfig)
 
-    assertFalse(
-      "AUTOMATIC_DOWNLOAD should be cleared when manageBinariesAutomatically is absent",
+    assertTrue(
+      "AUTOMATIC_DOWNLOAD must remain marked when manageBinariesAutomatically is absent" +
+        " (LS UI sends diff-based updates; absence != user reset)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
     )
   }
 
-  fun `test applyGlobalSettings with absent fields clears all their flags`() {
+  fun `test applyGlobalSettings with absent fields preserves all existing flags`() {
     val realSettings = SnykApplicationSettingsStateService()
     // Pre-mark several keys as explicitly changed
     val keysToPreMark =
@@ -853,26 +854,26 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     }
     every { pluginSettings() } returns realSettings
 
-    // Send empty config (all nullable fields absent) -- all flags should be cleared
+    // Send empty diff -- all previously-asserted user overrides must remain marked.
     val jsonConfig = """{}"""
     invokeParseAndSaveConfig(jsonConfig)
 
     for (key in keysToPreMark) {
-      assertFalse(
-        "Key '$key' should be cleared when its config field is absent",
+      assertTrue(
+        "Key '$key' must remain marked when its config field is absent from diff payload",
         realSettings.isExplicitlyChanged(key),
       )
     }
   }
 
-  fun `test applyGlobalSettings clears flag for absent field but keeps flag for present field`() {
+  fun `test applyGlobalSettings preserves flag for absent field while updating present field`() {
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.manageBinariesAutomatically = true
     realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
     realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
     every { pluginSettings() } returns realSettings
 
-    // Send config with manageBinariesAutomatically changed but cliPath absent
+    // Send diff with manageBinariesAutomatically changed, cliPath absent.
     val jsonConfig = """{"manageBinariesAutomatically": false}"""
     invokeParseAndSaveConfig(jsonConfig)
 
@@ -880,9 +881,51 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       "AUTOMATIC_DOWNLOAD should remain marked (field present and changed)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
     )
-    assertFalse(
-      "CLI_PATH should be cleared (field absent)",
+    assertTrue(
+      "CLI_PATH must remain marked when its field is absent from a diff-based payload",
       realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
+    )
+  }
+
+  fun `test applyGlobalSettings partial payload does not wipe machine-scoped user overrides`() {
+    // Regression for diff-based payloads: changing one machine-scoped field must not silently
+    // revoke unrelated overrides. Previously, absent fields cleared explicitChanges and queued
+    // pending resets, causing the LS to fall back to org/system defaults despite local settings.
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.cliPath = "/usr/local/bin/snyk"
+    realSettings.cliBaseDownloadURL = "https://downloads.snyk.io/fips"
+    realSettings.cliReleaseChannel = "preview"
+    realSettings.ignoreUnknownCA = true
+    realSettings.manageBinariesAutomatically = false
+    realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_PATH)
+    realSettings.markExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL)
+    realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
+    realSettings.markExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE)
+    realSettings.markExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD)
+    every { pluginSettings() } returns realSettings
+
+    // LS-style diff payload toggling only one unrelated field.
+    invokeParseAndSaveConfig("""{"activateSnykOpenSource": true}""")
+
+    // Values are untouched.
+    assertEquals("/usr/local/bin/snyk", realSettings.cliPath)
+    assertEquals("https://downloads.snyk.io/fips", realSettings.cliBaseDownloadURL)
+    assertEquals("preview", realSettings.cliReleaseChannel)
+    assertTrue(realSettings.ignoreUnknownCA)
+    assertFalse(realSettings.manageBinariesAutomatically)
+
+    // Explicit-change flags are preserved across diff-based saves.
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH))
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL))
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL))
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE))
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD))
+
+    // No spurious reset signals queued for the absent machine-scoped keys.
+    val resets = realSettings.consumePendingResets()
+    assertTrue(
+      "No pending resets should be queued for absent fields in a diff payload, got: $resets",
+      resets.isEmpty(),
     )
   }
 
@@ -901,50 +944,35 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals("preview", realSettings.cliReleaseChannel)
   }
 
-  fun `test applyGlobalSettings with null cliReleaseChannel clears CLI_RELEASE_CHANNEL`() {
+  fun `test applyGlobalSettings with null cliReleaseChannel preserves CLI_RELEASE_CHANNEL flag`() {
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.markExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL)
     assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL))
     every { pluginSettings() } returns realSettings
 
-    // Send config WITHOUT cliReleaseChannel (null) to trigger the clear
+    // Diff-based payload with cliReleaseChannel absent must not clear the existing flag.
     val jsonConfig = """{"activateSnykOpenSource": true}"""
     invokeParseAndSaveConfig(jsonConfig)
 
-    assertFalse(
-      "CLI_RELEASE_CHANNEL should be cleared when cliReleaseChannel is absent",
+    assertTrue(
+      "CLI_RELEASE_CHANNEL must remain marked when cliReleaseChannel is absent from diff",
       realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_RELEASE_CHANNEL),
     )
   }
 
-  fun `test applyGlobalSettings with null field adds pending reset`() {
+  fun `test applyGlobalSettings with absent machine-scoped fields does not queue pending resets`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
-    // Send config WITHOUT manageBinariesAutomatically (null) to trigger pending reset
+    // Diff-based payload omits all machine-scoped fields; no resets should be queued, otherwise
+    // the LS would drop the user's local cli_path/proxy_insecure/etc. on every unrelated save.
     val jsonConfig = """{"activateSnykOpenSource": true}"""
     invokeParseAndSaveConfig(jsonConfig)
 
     val resets = realSettings.consumePendingResets()
     assertTrue(
-      "AUTOMATIC_DOWNLOAD should be in pending resets when field is absent",
-      resets.contains(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
-    )
-    assertTrue(
-      "CLI_PATH should be in pending resets when field is absent",
-      resets.contains(LsSettingsKeys.CLI_PATH),
-    )
-    assertTrue(
-      "BINARY_BASE_URL should be in pending resets when field is absent",
-      resets.contains(LsSettingsKeys.BINARY_BASE_URL),
-    )
-    assertTrue(
-      "CLI_RELEASE_CHANNEL should be in pending resets when field is absent",
-      resets.contains(LsSettingsKeys.CLI_RELEASE_CHANNEL),
-    )
-    assertTrue(
-      "PROXY_INSECURE should be in pending resets when field is absent",
-      resets.contains(LsSettingsKeys.PROXY_INSECURE),
+      "No machine-scoped key should be in pending resets when its field is absent, got: $resets",
+      resets.isEmpty(),
     )
   }
 
