@@ -8,14 +8,16 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
+import io.snyk.plugin.pluginSettings
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.annotations.NotNull
 import snyk.SnykBundle
+import snyk.common.ProductType
 import snyk.common.lsp.LanguageServerWrapper
 
 @Suppress("UselessCallOnCollection")
-@Service
+@Service(Service.Level.APP)
 class FolderConfigSettings {
   private val logger = Logger.getInstance(FolderConfigSettings::class.java)
   private val configs: MutableMap<String, LspFolderConfig> =
@@ -495,6 +497,37 @@ class FolderConfigSettings {
   }
 
   /**
+   * Sets the per-folder severity filter on every workspace folder of [project]. Marks each folder's
+   * `severity_filter_*` key as explicitly changed so [LanguageServerWrapper.getSettings] forwards
+   * `changed = true` to snyk-ls.
+   *
+   * @return true if at least one workspace folder config was updated, false when [project] has no
+   *   folder configs (the caller should silently no-op rather than mutate global flags).
+   */
+  fun setSeverityEnabledForProject(
+    project: Project,
+    severity: Severity,
+    enabled: Boolean,
+  ): Boolean {
+    val key =
+      when (severity) {
+        Severity.CRITICAL -> LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL
+        Severity.HIGH -> LsFolderSettingsKeys.SEVERITY_FILTER_HIGH
+        Severity.MEDIUM -> LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM
+        Severity.LOW -> LsFolderSettingsKeys.SEVERITY_FILTER_LOW
+        else -> return false
+      }
+    val folderConfigs = getFolderConfigs(project)
+    if (folderConfigs.isEmpty()) return false
+    val ps = pluginSettings()
+    folderConfigs.forEach { fc ->
+      addFolderConfig(fc.withSetting(key, enabled, changed = true))
+      ps.markExplicitlyChanged(fc.folderPath, key)
+    }
+    return true
+  }
+
+  /**
    * Whether this severity is effectively enabled for the **Snyk tool window of this project**:
    * aggregates [getFolderConfigs] (workspace folders for [project] only). If at least one folder
    * enables the level, the toolbar shows it as enabled. Per-folder values fall back to
@@ -519,6 +552,57 @@ class FolderConfigSettings {
       (fc.settings?.get(key)?.value as? Boolean) ?: globalSeverityEnabled
     }
   }
+
+  /**
+   * Sets the per-folder product enablement on every workspace folder of [project]. Marks each
+   * folder's `snyk_*_enabled` key as explicitly changed so [LanguageServerWrapper.getSettings]
+   * forwards `changed = true` to snyk-ls.
+   *
+   * @return true if at least one workspace folder config was updated, false when [project] has no
+   *   folder configs (the caller should silently no-op rather than mutate global flags).
+   */
+  fun setProductEnabledForProject(
+    project: Project,
+    productType: ProductType,
+    enabled: Boolean,
+  ): Boolean {
+    val key = productEnablementKey(productType) ?: return false
+    val folderConfigs = getFolderConfigs(project)
+    if (folderConfigs.isEmpty()) return false
+    val ps = pluginSettings()
+    folderConfigs.forEach { fc ->
+      addFolderConfig(fc.withSetting(key, enabled, changed = true))
+      ps.markExplicitlyChanged(fc.folderPath, key)
+    }
+    return true
+  }
+
+  /**
+   * Whether this product is effectively enabled for the **Snyk tool window of this project**:
+   * aggregates [getFolderConfigs] (workspace folders for [project] only). If at least one folder
+   * enables the product, the toolbar shows it as enabled. Per-folder values fall back to
+   * [globalProductEnabled] when that workspace folder has no explicit `snyk_*_enabled` key.
+   */
+  fun isProductEnabledForProjectToolWindow(
+    productType: ProductType,
+    project: Project,
+    globalProductEnabled: Boolean,
+  ): Boolean {
+    val key = productEnablementKey(productType) ?: return false
+    val folderConfigs = getFolderConfigs(project)
+    if (folderConfigs.isEmpty()) return globalProductEnabled
+    return folderConfigs.any { fc ->
+      (fc.settings?.get(key)?.value as? Boolean) ?: globalProductEnabled
+    }
+  }
+
+  private fun productEnablementKey(productType: ProductType): String? =
+    when (productType) {
+      ProductType.OSS -> LsFolderSettingsKeys.SNYK_OSS_ENABLED
+      ProductType.CODE_SECURITY -> LsFolderSettingsKeys.SNYK_CODE_ENABLED
+      ProductType.IAC -> LsFolderSettingsKeys.SNYK_IAC_ENABLED
+      ProductType.SECRETS -> LsFolderSettingsKeys.SNYK_SECRETS_ENABLED
+    }
 
   private fun findContainingFolderConfig(filePath: String, project: Project): LspFolderConfig? {
     val normalizedFilePath = normalizePath(filePath)

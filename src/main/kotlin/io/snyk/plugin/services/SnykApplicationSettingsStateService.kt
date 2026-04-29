@@ -21,7 +21,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 
-@Service
+@Service(Service.Level.APP)
 @State(
   name = "SnykApplicationSettingsState",
   storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],
@@ -279,30 +279,10 @@ class SnykApplicationSettingsStateService :
       else -> false
     }
 
-  fun hasSeverityTreeFiltered(severity: Severity): Boolean =
-    when (severity) {
-      Severity.CRITICAL -> treeFiltering.criticalSeverity
-      Severity.HIGH -> treeFiltering.highSeverity
-      Severity.MEDIUM -> treeFiltering.mediumSeverity
-      Severity.LOW -> treeFiltering.lowSeverity
-      else -> false
-    }
-
-  fun setSeverityTreeFiltered(severity: Severity, state: Boolean) {
-    when (severity) {
-      Severity.CRITICAL -> treeFiltering.criticalSeverity = state
-      Severity.HIGH -> treeFiltering.highSeverity = state
-      Severity.MEDIUM -> treeFiltering.mediumSeverity = state
-      Severity.LOW -> treeFiltering.lowSeverity = state
-      else -> throw IllegalArgumentException("Unknown severity: $severity")
-    }
-  }
-
-  fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean =
-    hasSeverityEnabled(severity) && hasSeverityTreeFiltered(severity)
+  fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean = hasSeverityEnabled(severity)
 
   fun hasSeverityEnabledForFile(severity: Severity, file: VirtualFile, project: Project): Boolean {
-    val fcs = project.service<FolderConfigSettings>()
+    val fcs = service<FolderConfigSettings>()
     return fcs.getSeverityFilterForFile(severity, file, project) ?: hasSeverityEnabled(severity)
   }
 
@@ -310,8 +290,7 @@ class SnykApplicationSettingsStateService :
     severity: Severity,
     file: VirtualFile,
     project: Project,
-  ): Boolean =
-    hasSeverityEnabledForFile(severity, file, project) && hasSeverityTreeFiltered(severity)
+  ): Boolean = hasSeverityEnabledForFile(severity, file, project)
 
   fun hasOnlyOneSeverityEnabled(): Boolean =
     arrayOf(
@@ -328,19 +307,19 @@ class SnykApplicationSettingsStateService :
    * multi-root folder severity when [getFolderConfigs] is non-empty.
    */
   fun hasOnlyOneSeverityTreeFilterActive(project: Project): Boolean {
-    val fcs = project.service<FolderConfigSettings>()
+    val fcs = service<FolderConfigSettings>()
     return listOf(Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW).count { sev ->
-      hasSeverityTreeFiltered(sev) &&
-        fcs.isSeverityEnabledForProjectToolWindow(sev, project, hasSeverityEnabled(sev))
+      fcs.isSeverityEnabledForProjectToolWindow(sev, project, hasSeverityEnabled(sev))
     } == 1
   }
 
+  /**
+   * Default the per-product tree filter to match the product's enablement so that re-enabling a
+   * product in Settings makes its branch visible again without a separate toolbar click. Severity
+   * filtering is folder-scoped (see [FolderConfigSettings.setSeverityEnabledForProject]) and is not
+   * handled here.
+   */
   fun matchFilteringWithEnablement() {
-    treeFiltering.criticalSeverity = criticalSeverityEnabled
-    treeFiltering.highSeverity = highSeverityEnabled
-    treeFiltering.mediumSeverity = mediumSeverityEnabled
-    treeFiltering.lowSeverity = lowSeverityEnabled
-
     treeFiltering.ossResults = ossScanEnable
     treeFiltering.codeSecurityResults = snykCodeSecurityIssuesScanEnable
     treeFiltering.iacResults = iacScanEnabled
@@ -388,9 +367,4 @@ class TreeFiltering {
   var ossResults: Boolean = true
   var codeSecurityResults: Boolean = true
   var iacResults: Boolean = true
-
-  var lowSeverity = true
-  var mediumSeverity = true
-  var highSeverity = true
-  var criticalSeverity = true
 }

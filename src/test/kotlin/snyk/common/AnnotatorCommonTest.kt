@@ -10,13 +10,10 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.snyk.plugin.Severity
 import io.snyk.plugin.isCliInstalled
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import org.junit.After
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
@@ -68,14 +65,5 @@ class AnnotatorCommonTest {
 
     verify(exactly = 1) { LanguageServerWrapper.getInstance(projectMock) }
     verify(exactly = 1) { lsWrapperMock.isInitialized }
-  }
-
-  @Test
-  fun `isSeverityToShow without file respects global enablement and UNKNOWN`() {
-    pluginState.highSeverityEnabled = true
-    assertTrue(AnnotatorCommon(projectMock).isSeverityToShow(Severity.HIGH))
-    pluginState.highSeverityEnabled = false
-    assertFalse(AnnotatorCommon(projectMock).isSeverityToShow(Severity.HIGH))
-    assertTrue(AnnotatorCommon(projectMock).isSeverityToShow(Severity.UNKNOWN))
   }
 }

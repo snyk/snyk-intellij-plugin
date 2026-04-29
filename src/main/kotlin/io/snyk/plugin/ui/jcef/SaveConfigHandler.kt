@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
+import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -12,6 +13,7 @@ import io.snyk.plugin.getDefaultCliPath
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.nio.file.Paths
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
@@ -169,7 +171,13 @@ class SaveConfigHandler(
       config.folderConfigs?.let { applyFolderConfigs(it) }
     }
 
-    LanguageServerWrapper.getInstance(project).updateConfiguration()
+    // Notify all open projects' language servers so global settings propagate everywhere.
+    // Without this, only the current project's LS/HTML page would reflect global changes.
+    for (openProject in ProjectUtil.getOpenProjects()) {
+      if (!openProject.isDisposed && !SnykPluginDisposable.getInstance(openProject).isDisposed()) {
+        LanguageServerWrapper.getInstance(openProject).updateConfiguration()
+      }
+    }
   }
 
   private fun applyGlobalSettings(

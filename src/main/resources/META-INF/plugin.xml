@@ -44,7 +44,7 @@
                  restartRequired="false"
     />
     <registryKey key="snyk.useHtmlTreeView"
-                 defaultValue="false"
+                 defaultValue="true"
                  description="Use server-driven HTML tree view rendered via JCEF instead of native Swing tree"
                   restartRequired="true"
     />

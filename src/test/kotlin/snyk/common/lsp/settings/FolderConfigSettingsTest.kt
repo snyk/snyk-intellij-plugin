@@ -5,10 +5,13 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromPathToUriString
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import java.nio.file.Paths
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.junit.After
@@ -19,6 +22,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import snyk.common.ProductType
 import snyk.common.lsp.LanguageServerWrapper
 
 class FolderConfigSettingsTest {
@@ -1680,6 +1684,281 @@ class FolderConfigSettingsTest {
         Severity.HIGH,
         projectMock,
         globalSeverityEnabled = false,
+      )
+    )
+  }
+
+  @Test
+  fun `setSeverityEnabledForProject writes severity_filter_ to all workspace folders for all severities and states`() {
+    val cases =
+      listOf(
+        Severity.CRITICAL to LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+        Severity.HIGH to LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+        Severity.MEDIUM to LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+        Severity.LOW to LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+      )
+    val states = listOf(true, false)
+
+    for ((severity, key) in cases) {
+      for (state in states) {
+        settings.clear()
+        val ps = SnykApplicationSettingsStateService()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings() } returns ps
+        try {
+          val projectMock = mockk<Project>(relaxed = true)
+          val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+          val n1 = Paths.get("/tmp/snyk_set_sev_p1").normalize().toAbsolutePath().toString()
+          val n2 = Paths.get("/tmp/snyk_set_sev_p2").normalize().toAbsolutePath().toString()
+          settings.addFolderConfig(folderConfig(folderPath = n1, baseBranch = "main"))
+          settings.addFolderConfig(folderConfig(folderPath = n2, baseBranch = "main"))
+
+          val wf1 =
+            WorkspaceFolder().apply {
+              uri = n1.fromPathToUriString()
+              name = "p1"
+            }
+          val wf2 =
+            WorkspaceFolder().apply {
+              uri = n2.fromPathToUriString()
+              name = "p2"
+            }
+          mockkObject(LanguageServerWrapper.Companion)
+          every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+          every {
+            lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+          } returns setOf(wf1, wf2)
+          every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf1, wf2)
+
+          val applied = settings.setSeverityEnabledForProject(projectMock, severity, state)
+
+          assertTrue("$severity=$state should be applied", applied)
+          for (path in listOf(n1, n2)) {
+            val cfg = settings.getFolderConfig(path)
+            val setting = cfg.settings?.get(key)
+            assertEquals("$path/$key value", state, setting?.value)
+            assertEquals("$path/$key changed flag", true, setting?.changed)
+            assertTrue(
+              "$path/$key should be marked explicitly changed",
+              ps.isExplicitlyChanged(path, key),
+            )
+          }
+        } finally {
+          unmockkAll()
+        }
+      }
+    }
+  }
+
+  @Test
+  fun `setSeverityEnabledForProject returns false when no folder configs and does not touch global`() {
+    val ps = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns ps
+    try {
+      val projectMock = mockk<Project>(relaxed = true)
+      val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+      mockkObject(LanguageServerWrapper.Companion)
+      every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+      every {
+        lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+      } returns emptySet()
+      every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
+
+      val applied = settings.setSeverityEnabledForProject(projectMock, Severity.CRITICAL, false)
+
+      assertFalse(applied)
+      assertTrue(
+        "global criticalSeverityEnabled must remain default true",
+        ps.criticalSeverityEnabled,
+      )
+      assertFalse(
+        "no global explicit change should be recorded",
+        ps.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL),
+      )
+    } finally {
+      unmockkAll()
+    }
+  }
+
+  @Test
+  fun `setSeverityEnabledForProject returns false for unknown severity`() {
+    val ps = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns ps
+    try {
+      val projectMock = mockk<Project>(relaxed = true)
+      val applied = settings.setSeverityEnabledForProject(projectMock, Severity.UNKNOWN, true)
+      assertFalse(applied)
+    } finally {
+      unmockkAll()
+    }
+  }
+
+  @Test
+  fun `setProductEnabledForProject writes snyk_ _enabled to all workspace folders for all products and states`() {
+    val cases =
+      listOf(
+        ProductType.OSS to LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+        ProductType.CODE_SECURITY to LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        ProductType.IAC to LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+        ProductType.SECRETS to LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+      )
+    val states = listOf(false, true)
+
+    for ((productType, key) in cases) {
+      for (state in states) {
+        settings.clear()
+        val ps = SnykApplicationSettingsStateService()
+        mockkStatic("io.snyk.plugin.UtilsKt")
+        every { pluginSettings() } returns ps
+        try {
+          val projectMock = mockk<Project>(relaxed = true)
+          val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+          val n1 = Paths.get("/tmp/snyk_set_prod_p1").normalize().toAbsolutePath().toString()
+          val n2 = Paths.get("/tmp/snyk_set_prod_p2").normalize().toAbsolutePath().toString()
+          settings.addFolderConfig(folderConfig(folderPath = n1, baseBranch = "main"))
+          settings.addFolderConfig(folderConfig(folderPath = n2, baseBranch = "main"))
+
+          val wf1 =
+            WorkspaceFolder().apply {
+              uri = n1.fromPathToUriString()
+              name = "p1"
+            }
+          val wf2 =
+            WorkspaceFolder().apply {
+              uri = n2.fromPathToUriString()
+              name = "p2"
+            }
+          mockkObject(LanguageServerWrapper.Companion)
+          every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+          every {
+            lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+          } returns setOf(wf1, wf2)
+          every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf1, wf2)
+
+          val applied = settings.setProductEnabledForProject(projectMock, productType, state)
+
+          assertTrue("$productType=$state should be applied", applied)
+          for (path in listOf(n1, n2)) {
+            val cfg = settings.getFolderConfig(path)
+            val setting = cfg.settings?.get(key)
+            assertEquals("$path/$key value", state, setting?.value)
+            assertEquals("$path/$key changed flag", true, setting?.changed)
+            assertTrue(
+              "$path/$key should be marked explicitly changed",
+              ps.isExplicitlyChanged(path, key),
+            )
+          }
+        } finally {
+          unmockkAll()
+        }
+      }
+    }
+  }
+
+  @Test
+  fun `setProductEnabledForProject returns false when no folder configs and does not touch global`() {
+    val ps = SnykApplicationSettingsStateService()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns ps
+    try {
+      val projectMock = mockk<Project>(relaxed = true)
+      val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+      mockkObject(LanguageServerWrapper.Companion)
+      every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+      every {
+        lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+      } returns emptySet()
+      every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
+
+      val applied = settings.setProductEnabledForProject(projectMock, ProductType.OSS, false)
+
+      assertFalse(applied)
+      assertTrue("global ossScanEnable must remain default true", ps.ossScanEnable)
+      assertFalse(
+        "no global explicit change should be recorded",
+        ps.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED),
+      )
+    } finally {
+      unmockkAll()
+    }
+  }
+
+  @Test
+  fun `isProductEnabledForProjectToolWindow is true when any folder enables product`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    val path1 = "/tmp/snyk_prod_p1"
+    val path2 = "/tmp/snyk_prod_p2"
+    val n1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+    val n2 = Paths.get(path2).normalize().toAbsolutePath().toString()
+    settings.addFolderConfig(
+      folderConfig(folderPath = n1, baseBranch = "main")
+        .withSetting(LsFolderSettingsKeys.SNYK_OSS_ENABLED, true, changed = true)
+    )
+    settings.addFolderConfig(
+      folderConfig(folderPath = n2, baseBranch = "main")
+        .withSetting(LsFolderSettingsKeys.SNYK_OSS_ENABLED, false, changed = true)
+    )
+    val wf1 =
+      WorkspaceFolder().apply {
+        uri = n1.fromPathToUriString()
+        name = "p1"
+      }
+    val wf2 =
+      WorkspaceFolder().apply {
+        uri = n2.fromPathToUriString()
+        name = "p2"
+      }
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(wf1, wf2)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(wf1, wf2)
+
+    assertTrue(
+      settings.isProductEnabledForProjectToolWindow(
+        ProductType.OSS,
+        projectMock,
+        globalProductEnabled = false,
+      )
+    )
+    assertFalse(
+      settings.isProductEnabledForProjectToolWindow(
+        ProductType.IAC,
+        projectMock,
+        globalProductEnabled = false,
+      )
+    )
+  }
+
+  @Test
+  fun `isProductEnabledForProjectToolWindow falls back to global when no folder configs`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns emptySet()
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
+
+    assertTrue(
+      settings.isProductEnabledForProjectToolWindow(
+        ProductType.OSS,
+        projectMock,
+        globalProductEnabled = true,
+      )
+    )
+    assertFalse(
+      settings.isProductEnabledForProjectToolWindow(
+        ProductType.OSS,
+        projectMock,
+        globalProductEnabled = false,
       )
     )
   }

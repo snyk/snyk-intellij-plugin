@@ -766,10 +766,11 @@ class SnykLanguageClientTest {
     assertTrue("OSS should be enabled", settings.ossScanEnable)
     assertTrue("IaC should be enabled", settings.iacScanEnabled)
     assertTrue("Secrets should be enabled", settings.secretsEnabled)
-    assertTrue("Critical severity should be enabled", settings.criticalSeverityEnabled)
-    assertTrue("High severity should be enabled", settings.highSeverityEnabled)
-    assertTrue("Medium severity should be enabled", settings.mediumSeverityEnabled)
-    assertTrue("Low severity should be enabled", settings.lowSeverityEnabled)
+    // Severity filters are NOT mirrored to global state — they live exclusively in folder configs
+    assertFalse("Critical severity should remain unchanged", settings.criticalSeverityEnabled)
+    assertFalse("High severity should remain unchanged", settings.highSeverityEnabled)
+    assertFalse("Medium severity should remain unchanged", settings.mediumSeverityEnabled)
+    assertFalse("Low severity should remain unchanged", settings.lowSeverityEnabled)
   }
 
   @Test

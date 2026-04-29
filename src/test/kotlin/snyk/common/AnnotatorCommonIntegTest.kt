@@ -75,11 +75,10 @@ class AnnotatorCommonIntegTest : BasePlatformTestCase() {
     every { languageServerWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
 
     val ps = pluginSettings()
-    ps.matchFilteringWithEnablement()
-    ps.setSeverityTreeFiltered(Severity.CRITICAL, false)
-    ps.setSeverityTreeFiltered(Severity.HIGH, false)
-    ps.setSeverityTreeFiltered(Severity.MEDIUM, false)
-    ps.setSeverityTreeFiltered(Severity.LOW, true)
+    ps.criticalSeverityEnabled = false
+    ps.highSeverityEnabled = false
+    ps.mediumSeverityEnabled = false
+    ps.lowSeverityEnabled = true
 
     assertEquals(ps.hasOnlyOneSeverityEnabled(), ps.hasOnlyOneSeverityTreeFilterActive(project))
   }
@@ -90,7 +89,6 @@ class AnnotatorCommonIntegTest : BasePlatformTestCase() {
     val psiFile = myFixture.configureByText("Unknown.java", "class Unknown {}")
     pluginSettings().highSeverityEnabled = false
     assertTrue(annotatorCommon.isSeverityToShow(Severity.UNKNOWN, psiFile))
-    assertTrue(annotatorCommon.isSeverityToShow(Severity.UNKNOWN))
   }
 
   @Test

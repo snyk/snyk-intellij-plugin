@@ -9,7 +9,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.util.xmlb.annotations.OptionTag
 import java.util.Collections
 
-@Service
+@Service(Service.Level.APP)
 @State(
   name = "Workspace.Trust.Settings",
   storages = [Storage("snyk.settings.xml", roamingType = RoamingType.DISABLED)],

@@ -41,9 +41,6 @@ class AnnotatorCommon(val project: Project) {
     // https://github.com/snyk/snyk-intellij-plugin/issues/324
   }
 
-  fun isSeverityToShow(severity: Severity): Boolean =
-    pluginSettings().hasSeverityEnabled(severity) || severity == Severity.UNKNOWN
-
   fun isSeverityToShow(severity: Severity, psiFile: PsiFile): Boolean =
     severity == Severity.UNKNOWN ||
       pluginSettings().hasSeverityEnabledForFile(severity, psiFile.virtualFile, project)
