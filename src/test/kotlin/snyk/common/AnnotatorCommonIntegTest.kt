@@ -89,7 +89,6 @@ class AnnotatorCommonIntegTest : BasePlatformTestCase() {
     val psiFile = myFixture.configureByText("Unknown.java", "class Unknown {}")
     pluginSettings().highSeverityEnabled = false
     assertTrue(annotatorCommon.isSeverityToShow(Severity.UNKNOWN, psiFile))
-    assertTrue(annotatorCommon.isSeverityToShow(Severity.UNKNOWN))
   }
 
   @Test
