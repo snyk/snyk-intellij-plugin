@@ -325,10 +325,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.ossResults = true
 
     // Disable Medium and Low severity filtering
-    pluginSettings().treeFiltering.mediumSeverity = false
-    pluginSettings().treeFiltering.lowSeverity = false
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.criticalSeverity = true
+    pluginSettings().mediumSeverityEnabled = false
+    pluginSettings().lowSeverityEnabled = false
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().criticalSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -364,10 +364,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.codeSecurityResults = true
 
     // Enable only High severity
-    pluginSettings().treeFiltering.mediumSeverity = false
-    pluginSettings().treeFiltering.lowSeverity = false
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.criticalSeverity = false
+    pluginSettings().mediumSeverityEnabled = false
+    pluginSettings().lowSeverityEnabled = false
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().criticalSeverityEnabled = false
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -410,9 +410,9 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.ossResults = false // Disable filtering
 
     // Even if severities are disabled in treeFiltering, issues should still show
-    pluginSettings().treeFiltering.mediumSeverity = false
-    pluginSettings().treeFiltering.lowSeverity = false
-    pluginSettings().treeFiltering.highSeverity = false
+    pluginSettings().mediumSeverityEnabled = false
+    pluginSettings().lowSeverityEnabled = false
+    pluginSettings().highSeverityEnabled = false
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -444,10 +444,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.iacResults = true
 
     // Only enable critical severity
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = false
-    pluginSettings().treeFiltering.mediumSeverity = false
-    pluginSettings().treeFiltering.lowSeverity = false
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = false
+    pluginSettings().mediumSeverityEnabled = false
+    pluginSettings().lowSeverityEnabled = false
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -479,10 +479,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.ossResults = true
 
     // Enable only High severity
-    pluginSettings().treeFiltering.criticalSeverity = false
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = false
-    pluginSettings().treeFiltering.lowSeverity = false
+    pluginSettings().criticalSeverityEnabled = false
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = false
+    pluginSettings().lowSeverityEnabled = false
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -550,10 +550,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.ossResults = true
 
     // Enable all severities
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = true
-    pluginSettings().treeFiltering.lowSeverity = true
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = true
+    pluginSettings().lowSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -742,10 +742,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.codeSecurityResults = true
 
     // Enable all severities
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = true
-    pluginSettings().treeFiltering.lowSeverity = true
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = true
+    pluginSettings().lowSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -810,10 +810,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.ossResults = true
 
     // Enable all severities
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = true
-    pluginSettings().treeFiltering.lowSeverity = true
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = true
+    pluginSettings().lowSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -877,10 +877,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.iacResults = true
 
     // Enable all severities
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = true
-    pluginSettings().treeFiltering.lowSeverity = true
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = true
+    pluginSettings().lowSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -944,10 +944,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.codeSecurityResults = true
 
     // Enable all severities
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = true
-    pluginSettings().treeFiltering.lowSeverity = true
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = true
+    pluginSettings().lowSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 
@@ -1023,10 +1023,10 @@ class SnykToolWindowSnykScanListenerTest : BasePlatformTestCase() {
     pluginSettings().treeFiltering.ossResults = true
 
     // Enable all severities
-    pluginSettings().treeFiltering.criticalSeverity = true
-    pluginSettings().treeFiltering.highSeverity = true
-    pluginSettings().treeFiltering.mediumSeverity = true
-    pluginSettings().treeFiltering.lowSeverity = true
+    pluginSettings().criticalSeverityEnabled = true
+    pluginSettings().highSeverityEnabled = true
+    pluginSettings().mediumSeverityEnabled = true
+    pluginSettings().lowSeverityEnabled = true
 
     val snykFile = io.snyk.plugin.SnykFile(project, file)
 

@@ -9,9 +9,6 @@ import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.progress.runBackgroundableTask
 import com.intellij.openapi.project.Project
 import com.intellij.util.execution.ParametersListUtil
-import io.snyk.plugin.events.SnykProductsOrSeverityListener
-import io.snyk.plugin.events.SnykResultsFilteringListener
-import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.getSnykTaskQueueService
@@ -20,7 +17,6 @@ import io.snyk.plugin.isNewConfigDialogEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.publishAsync
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.settings.HTMLSettingsPanel
@@ -266,15 +262,11 @@ fun executePostApplySettings(project: Project) {
   val settings = pluginSettings()
 
   languageServerWrapper.refreshFeatureFlags()
-  languageServerWrapper.updateConfiguration(true)
-
+  // Sync the in-memory tree-filtering bitmap before pushing config so listeners triggered by
+  // updateConfiguration see consistent state.
   settings.matchFilteringWithEnablement()
-
-  publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
-  publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
-  publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
-    enablementChanged()
-  }
+  // updateConfiguration publishes SNYK_SETTINGS / SNYK_FILTERING / SNYK_ENABLEMENT.
+  languageServerWrapper.updateConfiguration(true)
 }
 
 /**

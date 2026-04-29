@@ -91,45 +91,6 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun hasSeverityTreeFiltered_allSeveritiesEnabledByDefault() {
-    val target = SnykApplicationSettingsStateService()
-
-    assertTrue(target.hasSeverityTreeFiltered(Severity.CRITICAL))
-    assertTrue(target.hasSeverityTreeFiltered(Severity.HIGH))
-    assertTrue(target.hasSeverityTreeFiltered(Severity.MEDIUM))
-    assertTrue(target.hasSeverityTreeFiltered(Severity.LOW))
-  }
-
-  @Test
-  fun hasSeverityTreeFiltered_unknownSeverityReturnsFalse() {
-    val target = SnykApplicationSettingsStateService()
-    assertFalse(target.hasSeverityTreeFiltered(Severity.UNKNOWN))
-  }
-
-  @Test
-  fun setSeverityTreeFiltered_setsEachSeverity() {
-    val target = SnykApplicationSettingsStateService()
-
-    target.setSeverityTreeFiltered(Severity.CRITICAL, false)
-    assertFalse(target.treeFiltering.criticalSeverity)
-
-    target.setSeverityTreeFiltered(Severity.HIGH, false)
-    assertFalse(target.treeFiltering.highSeverity)
-
-    target.setSeverityTreeFiltered(Severity.MEDIUM, false)
-    assertFalse(target.treeFiltering.mediumSeverity)
-
-    target.setSeverityTreeFiltered(Severity.LOW, false)
-    assertFalse(target.treeFiltering.lowSeverity)
-  }
-
-  @Test(expected = IllegalArgumentException::class)
-  fun setSeverityTreeFiltered_unknownSeverityThrows() {
-    val target = SnykApplicationSettingsStateService()
-    target.setSeverityTreeFiltered(Severity.UNKNOWN, true)
-  }
-
-  @Test
   fun hasSeverityEnabledAndFiltered_delegatesToHasSeverityEnabled() {
     val target = SnykApplicationSettingsStateService()
 
@@ -137,11 +98,6 @@ class SnykApplicationSettingsStateServiceTest {
 
     target.criticalSeverityEnabled = false
     assertFalse(target.hasSeverityEnabledAndFiltered(Severity.CRITICAL))
-
-    // treeFiltering is no longer consulted for severity — folder configs are the source of truth
-    target.criticalSeverityEnabled = true
-    target.setSeverityTreeFiltered(Severity.CRITICAL, false)
-    assertTrue(target.hasSeverityEnabledAndFiltered(Severity.CRITICAL))
   }
 
   @Test
@@ -166,22 +122,14 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun matchFilteringWithEnablement_syncsSeveritiesAndProducts() {
+  fun matchFilteringWithEnablement_syncsProductsOnly() {
     val target = SnykApplicationSettingsStateService()
-    target.criticalSeverityEnabled = false
-    target.highSeverityEnabled = false
-    target.mediumSeverityEnabled = true
-    target.lowSeverityEnabled = true
     target.ossScanEnable = false
     target.snykCodeSecurityIssuesScanEnable = true
     target.iacScanEnabled = false
 
     target.matchFilteringWithEnablement()
 
-    assertFalse(target.treeFiltering.criticalSeverity)
-    assertFalse(target.treeFiltering.highSeverity)
-    assertTrue(target.treeFiltering.mediumSeverity)
-    assertTrue(target.treeFiltering.lowSeverity)
     assertFalse(target.treeFiltering.ossResults)
     assertTrue(target.treeFiltering.codeSecurityResults)
     assertFalse(target.treeFiltering.iacResults)

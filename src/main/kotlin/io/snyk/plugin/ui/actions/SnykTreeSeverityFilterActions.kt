@@ -6,12 +6,11 @@ import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.components.service
 import icons.SnykIcons
 import io.snyk.plugin.Severity
-import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.pluginSettings
-import io.snyk.plugin.publishAsync
-import io.snyk.plugin.showSettings
+import io.snyk.plugin.runInBackground
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getDisabledIcon
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.settings.FolderConfigSettings
 
 abstract class SnykTreeSeverityFilterActionBase(private val severity: Severity) : ToggleAction() {
@@ -50,23 +49,19 @@ abstract class SnykTreeSeverityFilterActionBase(private val severity: Severity) 
 
   override fun setSelected(e: AnActionEvent, state: Boolean) {
     val project = e.project!!
-    val globalEnabled = pluginSettings().hasSeverityEnabled(severity)
-    val effectivelyEnabled =
-      service<FolderConfigSettings>()
-        .isSeverityEnabledForProjectToolWindow(severity, project, globalEnabled)
-    if (!effectivelyEnabled) {
-      showSettings(
-        project = project,
-        componentNameToFocus = severity.toPresentableString(),
-        componentHelpHint = "Enable severity level here",
-      )
-      return
-    }
     if (!state && isLastSeverityDisabling(e)) return
 
-    pluginSettings().setSeverityTreeFiltered(severity, state)
-    publishAsync(e.project!!, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) {
-      filtersChanged()
+    // Folder-only by design: if the project has no workspace folder configs yet (e.g. LS still
+    // bootstrapping), silently no-op rather than mutating the app-level severity flags. Clicking a
+    // disabled severity therefore re-enables it per-folder rather than opening Settings.
+    val applied =
+      service<FolderConfigSettings>().setSeverityEnabledForProject(project, severity, state)
+    if (!applied) return
+
+    runInBackground("Snyk: updating configuration", project) {
+      // updateConfiguration publishes SNYK_FILTERING / SNYK_ENABLEMENT / SNYK_SETTINGS so the
+      // tool window panel, severity toolbar, and editor annotators all refresh.
+      LanguageServerWrapper.getInstance(project).updateConfiguration()
     }
   }
 

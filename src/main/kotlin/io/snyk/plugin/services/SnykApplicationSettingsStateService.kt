@@ -279,25 +279,6 @@ class SnykApplicationSettingsStateService :
       else -> false
     }
 
-  fun hasSeverityTreeFiltered(severity: Severity): Boolean =
-    when (severity) {
-      Severity.CRITICAL -> treeFiltering.criticalSeverity
-      Severity.HIGH -> treeFiltering.highSeverity
-      Severity.MEDIUM -> treeFiltering.mediumSeverity
-      Severity.LOW -> treeFiltering.lowSeverity
-      else -> false
-    }
-
-  fun setSeverityTreeFiltered(severity: Severity, state: Boolean) {
-    when (severity) {
-      Severity.CRITICAL -> treeFiltering.criticalSeverity = state
-      Severity.HIGH -> treeFiltering.highSeverity = state
-      Severity.MEDIUM -> treeFiltering.mediumSeverity = state
-      Severity.LOW -> treeFiltering.lowSeverity = state
-      else -> throw IllegalArgumentException("Unknown severity: $severity")
-    }
-  }
-
   fun hasSeverityEnabledAndFiltered(severity: Severity): Boolean = hasSeverityEnabled(severity)
 
   fun hasSeverityEnabledForFile(severity: Severity, file: VirtualFile, project: Project): Boolean {
@@ -332,12 +313,13 @@ class SnykApplicationSettingsStateService :
     } == 1
   }
 
+  /**
+   * Default the per-product tree filter to match the product's enablement so that re-enabling a
+   * product in Settings makes its branch visible again without a separate toolbar click. Severity
+   * filtering is folder-scoped (see [FolderConfigSettings.setSeverityEnabledForProject]) and is not
+   * handled here.
+   */
   fun matchFilteringWithEnablement() {
-    treeFiltering.criticalSeverity = criticalSeverityEnabled
-    treeFiltering.highSeverity = highSeverityEnabled
-    treeFiltering.mediumSeverity = mediumSeverityEnabled
-    treeFiltering.lowSeverity = lowSeverityEnabled
-
     treeFiltering.ossResults = ossScanEnable
     treeFiltering.codeSecurityResults = snykCodeSecurityIssuesScanEnable
     treeFiltering.iacResults = iacScanEnabled
@@ -385,9 +367,4 @@ class TreeFiltering {
   var ossResults: Boolean = true
   var codeSecurityResults: Boolean = true
   var iacResults: Boolean = true
-
-  var lowSeverity = true
-  var mediumSeverity = true
-  var highSeverity = true
-  var criticalSeverity = true
 }

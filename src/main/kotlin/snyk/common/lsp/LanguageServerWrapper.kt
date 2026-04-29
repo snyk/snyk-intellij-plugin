@@ -12,12 +12,16 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.concurrency.AppExecutorUtil
+import io.snyk.plugin.events.SnykProductsOrSeverityListener
+import io.snyk.plugin.events.SnykResultsFilteringListener
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.runInBackground
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.toLanguageServerURI
@@ -795,8 +799,22 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     val params = DidChangeConfigurationParams(getSettings())
     languageServer.workspaceService.didChangeConfiguration(params)
 
+    // Notify listeners locally so the tool window tree, severity toolbar, and editor annotators
+    // refresh immediately rather than waiting on snyk-ls to echo a `$/snyk.configuration`
+    // notification back. Idempotent w.r.t. any later inbound config from the LS.
+    publishConfigurationChanged()
+
     if (runScan && pluginSettings().scanOnSave) {
       sendScanCommand()
+    }
+  }
+
+  private fun publishConfigurationChanged() {
+    if (project.isDisposed) return
+    publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
+    publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
+    publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
+      enablementChanged()
     }
   }
 

@@ -10,10 +10,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.getDefaultCliPath
-import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.nio.file.Paths
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
