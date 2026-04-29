@@ -192,7 +192,6 @@ class SaveConfigHandler(
       isPresent = (config.manageBinariesAutomatically != null),
       newValue = config.manageBinariesAutomatically,
       currentValue = { settings.manageBinariesAutomatically },
-      addPendingResetWhenAbsent = true,
     ) {
       settings.manageBinariesAutomatically = it
     }
@@ -205,7 +204,6 @@ class SaveConfigHandler(
       isPresent = cliPathProvided,
       newValue = resolvedCliPath,
       currentValue = { settings.cliPath },
-      addPendingResetWhenAbsent = true,
     ) {
       settings.cliPath = it
     }
@@ -216,7 +214,6 @@ class SaveConfigHandler(
       isPresent = (config.cliBaseDownloadURL != null),
       newValue = config.cliBaseDownloadURL,
       currentValue = { settings.cliBaseDownloadURL },
-      addPendingResetWhenAbsent = true,
     ) {
       settings.cliBaseDownloadURL = it
     }
@@ -227,7 +224,6 @@ class SaveConfigHandler(
       isPresent = (config.cliReleaseChannel != null),
       newValue = config.cliReleaseChannel,
       currentValue = { settings.cliReleaseChannel },
-      addPendingResetWhenAbsent = true,
     ) {
       settings.cliReleaseChannel = it
     }
@@ -238,7 +234,6 @@ class SaveConfigHandler(
       isPresent = (config.insecure != null),
       newValue = config.insecure,
       currentValue = { settings.ignoreUnknownCA },
-      addPendingResetWhenAbsent = true,
     ) {
       settings.ignoreUnknownCA = it
     }
@@ -499,14 +494,14 @@ class SaveConfigHandler(
     isPresent: Boolean,
     newValue: T?,
     currentValue: () -> Any?,
-    addPendingResetWhenAbsent: Boolean = false,
     assign: (T) -> Unit,
   ) {
+    // Diff-based wire contract: the LS settings UI sends only fields that changed. An absent or
+    // null field therefore means "no change" and MUST NOT clear the existing explicit-change flag
+    // or emit a reset signal. Doing so would silently revoke unrelated user overrides (e.g. the
+    // user's cli_path or proxy_insecure) every time any other field is saved, causing the LS to
+    // fall back to org/system defaults despite the user's local settings still being set.
     if (!isPresent || newValue == null) {
-      settings.clearExplicitlyChanged(key)
-      if (addPendingResetWhenAbsent) {
-        settings.addPendingReset(key)
-      }
       return
     }
 
