@@ -1415,6 +1415,54 @@ class FolderConfigSettingsTest {
   }
 
   @Test
+  fun `getAdditionalParameters quotes tokens containing spaces for round-trip safety`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    // Simulate a stored parameter list where one token contains a space
+    // (e.g. from parsing -Dprojects="my project")
+    val config1 =
+      folderConfig(
+        folderPath = path1,
+        baseBranch = "main",
+        additionalParameters = listOf("-Dprojects=my project", "--json"),
+      )
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    // ParametersListUtil.join() should quote the token with spaces so it round-trips correctly
+    assertEquals(
+      "Token with spaces should be quoted for round-trip safety",
+      "\"-Dprojects=my project\" --json",
+      result,
+    )
+
+    // Verify round-trip: re-parsing the display string should yield the original list
+    val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
+    assertEquals(
+      "Round-trip through display and re-parse should preserve tokens",
+      listOf("-Dprojects=my project", "--json"),
+      reparsed,
+    )
+  }
+
+  @Test
   fun `getAdditionalParameters returns empty when parameters are empty lists`() {
     val projectMock = mockk<Project>(relaxed = true)
     val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
