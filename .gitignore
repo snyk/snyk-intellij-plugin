@@ -65,3 +65,7 @@ test-output.txt
 ARCHITECTURE.md
 BUSINESS.md
 DESIGN.md
+.verify-agent-progress
+.commit-progress
+.verify-range
+.commit-reviewed

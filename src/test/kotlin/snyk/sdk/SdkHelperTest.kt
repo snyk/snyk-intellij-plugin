@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.projectRoots.SdkType
 import com.intellij.openapi.roots.ModuleRootManager
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import io.mockk.every
 import io.mockk.mockk
@@ -13,6 +14,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import snyk.common.lsp.LsSdk
@@ -74,7 +76,7 @@ class SdkHelperTest {
     val result = SdkHelper.getSdks(project)
 
     assertEquals(1, result.size)
-    assertEquals(LsSdk("Python SDK", "/usr/bin/python3"), result[0])
+    assertEquals(LsSdk("Python SDK", FileUtil.toSystemDependentName("/usr/bin/python3")), result[0])
   }
 
   @Test
@@ -87,11 +89,18 @@ class SdkHelperTest {
     val result = SdkHelper.getSdks(project)
 
     assertEquals(2, result.size)
+    assertTrue(
+      result.contains(LsSdk("Java SDK", FileUtil.toSystemDependentName("/usr/lib/jvm/java-17")))
+    )
+    assertTrue(
+      result.contains(LsSdk("Python SDK", FileUtil.toSystemDependentName("/usr/bin/python3")))
+    )
   }
 
   @Test
   fun `getSdks deduplicates across many modules simulating large monorepo`() {
-    val modules = (1..1000).map { createModuleWithSdk("Java SDK", "/usr/lib/jvm/java-17") }.toTypedArray()
+    val modules =
+      (1..1000).map { createModuleWithSdk("Java SDK", "/usr/lib/jvm/java-17") }.toTypedArray()
 
     every { moduleManager.modules } returns modules
 
