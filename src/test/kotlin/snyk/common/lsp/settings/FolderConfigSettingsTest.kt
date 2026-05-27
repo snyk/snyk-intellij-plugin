@@ -2010,4 +2010,292 @@ class FolderConfigSettingsTest {
       )
     )
   }
+
+  @Test
+  fun `parsing additional parameters keeps hyphenated values intact and does not split on hyphens`() {
+    // Regression: -Dprojects=my-project must stay one token; "-project" must not be split off.
+    val parsed = com.intellij.util.execution.ParametersListUtil.parse("-Dprojects=my-project")
+    assertEquals(listOf("-Dprojects=my-project"), parsed)
+  }
+
+  @Test
+  fun `parsing additional parameters keeps comma-separated hyphenated values intact`() {
+    val parsed =
+      com.intellij.util.execution.ParametersListUtil.parse(
+        "-Dprojects=my-project,other-project,a-b-c"
+      )
+    assertEquals(listOf("-Dprojects=my-project,other-project,a-b-c"), parsed)
+  }
+
+  @Test
+  fun `parsing additional parameters handles hyphenated flag together with hyphenated value`() {
+    val parsed =
+      com.intellij.util.execution.ParametersListUtil.parse(
+        "--scan-all-unmanaged -Dprojects=foo-bar"
+      )
+    assertEquals(listOf("--scan-all-unmanaged", "-Dprojects=foo-bar"), parsed)
+  }
+
+  @Test
+  fun `parsing additional parameters strips double quotes around hyphenated value`() {
+    val parsed = com.intellij.util.execution.ParametersListUtil.parse("-Dprojects=\"my-project\"")
+    assertEquals(listOf("-Dprojects=my-project"), parsed)
+  }
+
+  @Test
+  fun `parsing additional parameters preserves quoted hyphenated value with embedded space`() {
+    // -Dprojects="my-project with space" must stay one token because the quotes group it.
+    val parsed =
+      com.intellij.util.execution.ParametersListUtil.parse(
+        "-Dprojects=\"my-project with space\""
+      )
+    assertEquals(listOf("-Dprojects=my-project with space"), parsed)
+  }
+
+  @Test
+  fun `parsing additional parameters preserves quoted hyphenated comma-separated values with spaces`() {
+    val parsed =
+      com.intellij.util.execution.ParametersListUtil.parse(
+        "-Dprojects=\"my-project,other project,a-b\" --json"
+      )
+    assertEquals(listOf("-Dprojects=my-project,other project,a-b", "--json"), parsed)
+  }
+
+  @Test
+  fun `parsing additional parameters handles combination of hyphenated flag, hyphenated and quoted values`() {
+    val parsed =
+      com.intellij.util.execution.ParametersListUtil.parse(
+        "--scan-all-unmanaged -Dprojects=\"my-project with space\" --json"
+      )
+    assertEquals(
+      listOf("--scan-all-unmanaged", "-Dprojects=my-project with space", "--json"),
+      parsed,
+    )
+  }
+
+  @Test
+  fun `getAdditionalParameters preserves hyphenated tokens without unnecessary quoting`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    val config1 =
+      folderConfig(
+        folderPath = path1,
+        baseBranch = "main",
+        additionalParameters = listOf("--scan-all-unmanaged", "-Dprojects=my-project", "--json"),
+      )
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    // No tokens contain whitespace, so nothing should be quoted.
+    assertEquals(
+      "Hyphenated tokens without spaces should not be quoted",
+      "--scan-all-unmanaged -Dprojects=my-project --json",
+      result,
+    )
+
+    val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
+    assertEquals(
+      "Round-trip must preserve the original hyphenated tokens",
+      listOf("--scan-all-unmanaged", "-Dprojects=my-project", "--json"),
+      reparsed,
+    )
+  }
+
+  @Test
+  fun `getAdditionalParameters round-trips hyphenated comma-separated values`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    val config1 =
+      folderConfig(
+        folderPath = path1,
+        baseBranch = "main",
+        additionalParameters = listOf("-Dprojects=my-project,other-project,a-b-c", "--json"),
+      )
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    assertEquals(
+      "Comma-separated hyphenated values without spaces should not be quoted",
+      "-Dprojects=my-project,other-project,a-b-c --json",
+      result,
+    )
+
+    val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
+    assertEquals(
+      listOf("-Dprojects=my-project,other-project,a-b-c", "--json"),
+      reparsed,
+    )
+  }
+
+  @Test
+  fun `getAdditionalParameters quotes hyphenated tokens that contain spaces`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    val config1 =
+      folderConfig(
+        folderPath = path1,
+        baseBranch = "main",
+        additionalParameters = listOf("-Dprojects=my-project with space", "--json"),
+      )
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    assertEquals(
+      "Hyphenated token containing a space must be quoted to round-trip safely",
+      "\"-Dprojects=my-project with space\" --json",
+      result,
+    )
+
+    val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
+    assertEquals(
+      listOf("-Dprojects=my-project with space", "--json"),
+      reparsed,
+    )
+  }
+
+  @Test
+  fun `getAdditionalParameters round-trips mixed hyphen, space, and quote combinations`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    // Tokens that together exercise hyphenated flags, hyphenated values, comma lists,
+    // tokens containing spaces, and tokens without spaces — all must round-trip.
+    val tokens =
+      listOf(
+        "--scan-all-unmanaged",
+        "-Dprojects=my-project",
+        "-Dpaths=my-project with space",
+        "-Dother=a-b,c-d,e f",
+        "--json",
+      )
+    val config1 =
+      folderConfig(folderPath = path1, baseBranch = "main", additionalParameters = tokens)
+    settings.addFolderConfig(config1)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
+    assertEquals(
+      "Round-trip must preserve every token across hyphen/space/quote combinations",
+      tokens,
+      reparsed,
+    )
+  }
+
+  @Test
+  fun `parse then store then getAdditionalParameters round-trips hyphenated user input`() {
+    val projectMock = mockk<Project>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    val path1 = "/test/project1"
+    val normalizedPath1 = Paths.get(path1).normalize().toAbsolutePath().toString()
+
+    // Simulate the exact pipeline used in applyFolderConfigChanges: user types a string,
+    // it is parsed into tokens, stored, then later re-joined for display/transport.
+    val userInput =
+      "--scan-all-unmanaged -Dprojects=my-project,other-project " +
+        "-Dpaths=\"my-project with space\" --json"
+    val parsedTokens = com.intellij.util.execution.ParametersListUtil.parse(userInput)
+    assertEquals(
+      "User input must parse without splitting on hyphens",
+      listOf(
+        "--scan-all-unmanaged",
+        "-Dprojects=my-project,other-project",
+        "-Dpaths=my-project with space",
+        "--json",
+      ),
+      parsedTokens,
+    )
+
+    val config =
+      folderConfig(folderPath = path1, baseBranch = "main", additionalParameters = parsedTokens)
+    settings.addFolderConfig(config)
+
+    val workspaceFolder1 =
+      WorkspaceFolder().apply {
+        uri = normalizedPath1.fromPathToUriString()
+        name = "project1"
+      }
+
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+    every {
+      lsWrapperMock.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+    } returns setOf(workspaceFolder1)
+    every { lsWrapperMock.configuredWorkspaceFolders } returns mutableSetOf(workspaceFolder1)
+
+    val result = settings.getAdditionalParameters(projectMock)
+    val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
+    assertEquals(
+      "Round-trip through parse → store → join → parse must be lossless",
+      parsedTokens,
+      reparsed,
+    )
+  }
 }
