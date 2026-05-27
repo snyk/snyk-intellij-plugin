@@ -2,6 +2,7 @@ package snyk.common.editor
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.diagnostic.LogLevel
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors
@@ -14,8 +15,10 @@ import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiCompiledElement
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.toLanguageServerURI
@@ -58,8 +61,14 @@ class LineEndingEditorFactoryListener : EditorFactoryListener, Disposable {
       return
     }
 
-    val psiFile = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
-    val virtualFile = psiFile?.virtualFile
+    // Both getPsiFile() and virtualFile access require a read lock enforced from IntelliJ 2026.1.
+    // editorCreated is dispatched on the EDT which already holds the implicit read lock,
+    // so ReadAction.compute returns immediately without blocking.
+    val (psiFile, virtualFile) =
+      ReadAction.compute<Pair<PsiFile?, VirtualFile?>, RuntimeException> {
+        val psi = PsiDocumentManager.getInstance(project).getPsiFile(editor.document)
+        Pair(psi, psi?.virtualFile)
+      }
     if (psiFile == null || virtualFile == null || psiFile is PsiCompiledElement) {
       return
     }

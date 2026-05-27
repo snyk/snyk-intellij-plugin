@@ -151,6 +151,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
 
       val template = inputStream.bufferedReader().use { it.readText() }
       val settings = pluginSettings()
+      val isCustomChannel = settings.cliReleaseChannel !in listOf("stable", "rc", "preview")
 
       template
         .replace(
@@ -171,6 +172,13 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
           "{{CHANNEL_PREVIEW_SELECTED}}",
           if (settings.cliReleaseChannel == "preview") "selected" else "",
         )
+        .replace("{{CHANNEL_CUSTOM_SELECTED}}", if (isCustomChannel) "selected" else "")
+        .replace(
+          "{{CLI_RELEASE_CHANNEL_CUSTOM_VALUE}}",
+          if (isCustomChannel) settings.cliReleaseChannel else "",
+        )
+        .replace("{{CLI_RELEASE_CHANNEL_CUSTOM_HIDDEN}}", if (isCustomChannel) "" else "hidden")
+        .replace("{{INSECURE_CHECKED}}", if (settings.ignoreUnknownCA) "checked" else "")
     } catch (e: Exception) {
       logger.warn("Failed to load fallback HTML", e)
       null

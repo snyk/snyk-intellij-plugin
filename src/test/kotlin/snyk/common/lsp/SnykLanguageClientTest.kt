@@ -236,6 +236,28 @@ class SnykLanguageClientTest {
   }
 
   @Test
+  fun `hasAuthenticated persists refreshed OAuth token and force saves settings`() {
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    settings.token =
+      """{"access_token":"old","refresh_token":"old-refresh","expiry":"2026-05-06T10:00:00Z"}"""
+    val refreshedToken =
+      """{"access_token":"fresh","refresh_token":"fresh-refresh","expiry":"2026-05-06T11:00:00Z"}"""
+
+    cut.hasAuthenticated(HasAuthenticatedParam(refreshedToken, ""))
+
+    assertEquals(refreshedToken, settings.token)
+    verify(exactly = 1) { lsWrapperMock.cancelPreviousLogin() }
+    verify(exactly = 1) { StoreUtil.saveSettings(applicationMock, true) }
+  }
+
+  @Test
   fun `addTrustedPaths should not run when disposed`() {
     every { applicationMock.isDisposed } returns true
     every { projectMock.isDisposed } returns true
