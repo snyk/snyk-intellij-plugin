@@ -2046,9 +2046,7 @@ class FolderConfigSettingsTest {
   fun `parsing additional parameters preserves quoted hyphenated value with embedded space`() {
     // -Dprojects="my-project with space" must stay one token because the quotes group it.
     val parsed =
-      com.intellij.util.execution.ParametersListUtil.parse(
-        "-Dprojects=\"my-project with space\""
-      )
+      com.intellij.util.execution.ParametersListUtil.parse("-Dprojects=\"my-project with space\"")
     assertEquals(listOf("-Dprojects=my-project with space"), parsed)
   }
 
@@ -2155,10 +2153,7 @@ class FolderConfigSettingsTest {
     )
 
     val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
-    assertEquals(
-      listOf("-Dprojects=my-project,other-project,a-b-c", "--json"),
-      reparsed,
-    )
+    assertEquals(listOf("-Dprojects=my-project,other-project,a-b-c", "--json"), reparsed)
   }
 
   @Test
@@ -2198,10 +2193,7 @@ class FolderConfigSettingsTest {
     )
 
     val reparsed = com.intellij.util.execution.ParametersListUtil.parse(result)
-    assertEquals(
-      listOf("-Dprojects=my-project with space", "--json"),
-      reparsed,
-    )
+    assertEquals(listOf("-Dprojects=my-project with space", "--json"), reparsed)
   }
 
   @Test
