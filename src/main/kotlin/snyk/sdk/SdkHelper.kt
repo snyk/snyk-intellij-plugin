@@ -16,7 +16,7 @@ class SdkHelper {
         val moduleSdk = ModuleRootManager.getInstance(module).sdk
         addSdkToList(moduleSdk, list)
       }
-      return list.toList()
+      return list.distinct()
     }
 
     private fun addSdkToList(sdk: Sdk?, list: MutableList<LsSdk>) {

@@ -6,6 +6,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.execution.ParametersListUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.pluginSettings
@@ -102,7 +103,7 @@ class FolderConfigSettings {
             ?.filterIsInstance<String>() ?: emptyList()
         }
         .filter { it.isNotEmpty() }
-        .joinToString(" ") { it.joinToString(" ") }
+        .joinToString(" ") { ParametersListUtil.join(it) }
     return additionalParameters
   }
 
