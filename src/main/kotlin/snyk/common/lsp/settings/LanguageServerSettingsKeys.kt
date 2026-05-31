@@ -34,6 +34,7 @@ object LsFolderSettingsKeys {
   // Product enablement (folder-scope)
   const val SNYK_CODE_ENABLED = "snyk_code_enabled"
   const val SNYK_OSS_ENABLED = "snyk_oss_enabled"
+  const val SNYK_OSS_UNMANAGED_ENABLED = "snyk_oss_unmanaged_enabled"
   const val SNYK_IAC_ENABLED = "snyk_iac_enabled"
   const val SNYK_SECRETS_ENABLED = "snyk_secrets_enabled"
 

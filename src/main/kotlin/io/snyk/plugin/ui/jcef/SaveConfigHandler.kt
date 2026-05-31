@@ -679,6 +679,16 @@ class SaveConfigHandler(
             it,
           )
       }
+      folderConfig.snykOssUnmanagedEnabled?.let {
+        updated =
+          applyFolderSetting(
+            updated,
+            settings,
+            folderPath,
+            LsFolderSettingsKeys.SNYK_OSS_UNMANAGED_ENABLED,
+            it,
+          )
+      }
       folderConfig.snykCodeEnabled?.let {
         updated =
           applyFolderSetting(

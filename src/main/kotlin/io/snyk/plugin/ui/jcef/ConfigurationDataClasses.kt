@@ -140,6 +140,8 @@ data class FolderConfigData(
   val severityFilterLow: Boolean? = null,
   @SerializedName(value = "snyk_oss_enabled", alternate = ["snykOssEnabled"])
   val snykOssEnabled: Boolean? = null,
+  @SerializedName(value = "snyk_oss_unmanaged_enabled", alternate = ["snykOssUnmanagedEnabled"])
+  val snykOssUnmanagedEnabled: Boolean? = null,
   @SerializedName(value = "snyk_code_enabled", alternate = ["snykCodeEnabled"])
   val snykCodeEnabled: Boolean? = null,
   @SerializedName(value = "snyk_iac_enabled", alternate = ["snykIacEnabled"])

@@ -1051,6 +1051,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
               "severity_filter_medium" to true,
               "severity_filter_low" to false,
               "snyk_oss_enabled" to true,
+              "snyk_oss_unmanaged_enabled" to true,
               "snyk_code_enabled" to false,
               "snyk_iac_enabled" to true,
               "snyk_secrets_enabled" to false,
@@ -1082,6 +1083,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(true, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.value)
     assertEquals(false, s[LsFolderSettingsKeys.SCAN_NET_NEW]?.value)
     assertEquals(true, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.value)
+    assertEquals(true, s[LsFolderSettingsKeys.SNYK_OSS_UNMANAGED_ENABLED]?.value)
     assertEquals(false, s[LsFolderSettingsKeys.SNYK_CODE_ENABLED]?.value)
     assertEquals(42, s[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
   }
