@@ -62,8 +62,7 @@ data class SaveConfigRequest(
   val activateSnykIac: Boolean? = null,
   @SerializedName(value = "snyk_secrets_enabled", alternate = ["activateSnykSecrets"])
   val activateSnykSecrets: Boolean? = null,
-  @SerializedName(value = "scan_automatic", alternate = ["scanningMode"])
-  val scanningMode: String? = null,
+  @SerializedName("scan_automatic") val scanningMode: Boolean? = null,
 
   // Connection Settings
   @SerializedName("organization") val organization: String? = null,

@@ -282,13 +282,11 @@ class SaveConfigHandler(
       }
 
       // Scanning mode
-      val hasScanningMode = (config.scanningMode != null)
-      val scanOnSaveValue = config.scanningMode?.let { mode -> mode == "auto" }
       applyGlobalSetting(
         settings = settings,
         key = LsFolderSettingsKeys.SCAN_AUTOMATIC,
-        isPresent = hasScanningMode,
-        newValue = scanOnSaveValue,
+        isPresent = (config.scanningMode != null),
+        newValue = config.scanningMode,
         currentValue = { settings.scanOnSave },
       ) {
         settings.scanOnSave = it
