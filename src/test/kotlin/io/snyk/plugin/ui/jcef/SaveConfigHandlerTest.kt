@@ -88,10 +88,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     realSettings.scanOnSave = false
     every { pluginSettings() } returns realSettings
 
-    val jsonConfig = """{"scanningMode": "auto"}"""
-    invokeParseAndSaveConfig(jsonConfig)
+    invokeParseAndSaveConfig("""{"scan_automatic": true}""")
 
     assertTrue(realSettings.scanOnSave)
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
   }
 
   fun `test parseAndSaveConfig should update organization and endpoint`() {
@@ -556,7 +556,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
             "activateSnykCode": true,
             "activateSnykIac": true,
             "activateSnykSecrets": true,
-            "scanningMode": "auto",
+            "scan_automatic": true,
             "severity_filter_critical": true,
             "severity_filter_high": true,
             "severity_filter_medium": false,
@@ -1227,12 +1227,12 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(AuthenticationType.PAT, realSettings.authenticationType)
   }
 
-  fun `test parseAndSaveConfig scanningMode manual sets scanOnSave false and marks SCAN_AUTOMATIC`() {
+  fun `test parseAndSaveConfig scan_automatic false sets scanOnSave false and marks SCAN_AUTOMATIC`() {
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.scanOnSave = true
     every { pluginSettings() } returns realSettings
 
-    invokeParseAndSaveConfig("""{"scanningMode": "manual"}""")
+    invokeParseAndSaveConfig("""{"scan_automatic": false}""")
 
     assertFalse(realSettings.scanOnSave)
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
