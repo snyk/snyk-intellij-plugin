@@ -116,6 +116,24 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private val gson = Gson()
   private var loginFuture: CompletableFuture<Any>? = null
 
+  // Caches the (expensive) CLI protocol-version check. The check spawns a CLI subprocess that
+  // blocks up to PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS, and it is re-run on every
+  // ensureLanguageServerInitialized() call while the LS is not initialized (e.g. an incompatible
+  // CLI). The result only changes when the CLI binary or the required protocol version changes, so
+  // we key the cache on those and skip the subprocess on a hit. Volatile because tests invoke
+  // verifyCliProtocolVersion() directly, outside the isInitializing lock that otherwise serializes
+  // it via initialize().
+  @Volatile private var protocolVersionCheckCache: ProtocolVersionCheckResult? = null
+
+  private data class ProtocolVersionCheckResult(
+    val cliPath: String,
+    val lastModified: Long,
+    val size: Long,
+    val requiredVersion: Int,
+    val compatible: Boolean,
+    val parsedVersion: Int?,
+  )
+
   // internal for test set up
   internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> =
     ConcurrentHashMap.newKeySet()
@@ -275,6 +293,43 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   internal fun verifyCliProtocolVersion(): Boolean {
     val ps = pluginSettings()
     val required = ps.requiredLsProtocolVersion
+    val cliFile = getCliFile()
+    val currentPath = cliFile.absolutePath
+    val lastModified = cliFile.lastModified()
+    val size = cliFile.length()
+
+    protocolVersionCheckCache?.let { cached ->
+      if (
+        cached.cliPath == currentPath &&
+          cached.lastModified == lastModified &&
+          cached.size == size &&
+          cached.requiredVersion == required
+      ) {
+        // Re-apply the cached version so callers/settings observe the same value as a fresh check.
+        cached.parsedVersion?.let { ps.currentLSProtocolVersion = it }
+        return cached.compatible
+      }
+    }
+
+    val (compatible, parsedVersion) = runCliProtocolVersionCheck(required)
+    parsedVersion?.let { ps.currentLSProtocolVersion = it }
+    protocolVersionCheckCache =
+      ProtocolVersionCheckResult(
+        cliPath = currentPath,
+        lastModified = lastModified,
+        size = size,
+        requiredVersion = required,
+        compatible = compatible,
+        parsedVersion = parsedVersion,
+      )
+    return compatible
+  }
+
+  /**
+   * Runs the CLI protocol-version subprocess. Returns whether the CLI's protocol version matches
+   * [required], plus the parsed version (null when the check could not produce an integer).
+   */
+  private fun runCliProtocolVersionCheck(required: Int): Pair<Boolean, Int?> {
     return try {
       val processBuilder = ProcessBuilder(cliPath, "language-server", "--protocolVersion")
       processBuilder.redirectErrorStream(false)
@@ -286,27 +341,26 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         logger.warn(
           "CLI protocol version check timed out after $PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS seconds"
         )
-        return false
+        return false to null
       }
       val exit = p.exitValue()
       if (exit != 0) {
         logger.warn("CLI protocol version check exited with code $exit, output='$output'")
-        return false
+        return false to null
       }
       val parsed = output.trim().toIntOrNull()
       if (parsed == null) {
         logger.warn("CLI protocol version check returned non-integer output: '$output'")
-        return false
+        return false to null
       }
-      ps.currentLSProtocolVersion = parsed
       val matches = parsed == required
       if (!matches) {
         logger.warn("CLI protocol version mismatch: cli=$parsed required=$required")
       }
-      matches
+      matches to parsed
     } catch (e: Exception) {
       logger.warn("Failed to invoke CLI for protocol version check: ${e.message}", e)
-      false
+      false to null
     }
   }
 
@@ -607,6 +661,8 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     runInBackground("Snyk: restarting language server...") {
       shutdown()
       Thread.sleep(1000)
+      // Force a fresh protocol-version check on an explicit restart, even if the binary is unchanged.
+      protocolVersionCheckCache = null
       ensureLanguageServerInitialized()
       addContentRoots(project)
     }
