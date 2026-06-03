@@ -1115,7 +1115,9 @@ class LanguageServerWrapperTest {
 
       // Replace the binary at the same path with one reporting a different version. The longer body
       // changes the file size, so the cache key differs regardless of mtime granularity.
-      scriptFile.writeText("#!/bin/sh\n# replaced binary reporting a different protocol version\necho 1\n")
+      scriptFile.writeText(
+        "#!/bin/sh\n# replaced binary reporting a different protocol version\necho 1\n"
+      )
       scriptFile.setExecutable(true)
 
       assertFalse(cut.verifyCliProtocolVersion())

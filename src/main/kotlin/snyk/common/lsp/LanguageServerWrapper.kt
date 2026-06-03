@@ -661,7 +661,8 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     runInBackground("Snyk: restarting language server...") {
       shutdown()
       Thread.sleep(1000)
-      // Force a fresh protocol-version check on an explicit restart, even if the binary is unchanged.
+      // Force a fresh protocol-version check on an explicit restart, even if the binary is
+      // unchanged.
       protocolVersionCheckCache = null
       ensureLanguageServerInitialized()
       addContentRoots(project)
