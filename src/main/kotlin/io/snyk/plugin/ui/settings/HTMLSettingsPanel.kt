@@ -118,20 +118,34 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     val lsWrapper = LanguageServerWrapper.getInstance(project)
     lastLsError = null
 
-    // Try to get HTML from LS, with retries if LS is still initializing
+    // Try to get HTML from LS, with retries if LS is still initializing.
+    // Only query the LS once it is already initialized; we must NOT force
+    // initialization from here. ensureLanguageServerInitialized() re-runs the
+    // CLI protocol-version check (a subprocess that blocks up to 10s) on every
+    // call while the LS is not up, so forcing it here would stall the settings
+    // dialog for ~30s before the fallback renders when the CLI is missing or
+    // incompatible. The fallback exists precisely for that case, so fall back
+    // quickly instead. A short poll still picks up an init that another thread
+    // (e.g. project startup) is completing in the background.
     repeat(3) { attempt ->
-      try {
-        val lsHtml = lsWrapper.getConfigHtml()
-        logger.debug(
-          "getHtmlContent attempt ${attempt + 1}: lsHtml is ${if (lsHtml != null) "available (${lsHtml.length} chars)" else "null"}"
-        )
-        if (lsHtml != null && lsHtml.isNotBlank()) {
-          isUsingFallback = false
-          return lsHtml
+      if (lsWrapper.isInitialized) {
+        try {
+          val lsHtml = lsWrapper.getConfigHtml()
+          logger.debug(
+            "getHtmlContent attempt ${attempt + 1}: lsHtml is ${if (lsHtml != null) "available (${lsHtml.length} chars)" else "null"}"
+          )
+          if (lsHtml != null && lsHtml.isNotBlank()) {
+            isUsingFallback = false
+            return lsHtml
+          }
+        } catch (e: Exception) {
+          logger.warn("getHtmlContent attempt ${attempt + 1} failed", e)
+          lastLsError = e.message
         }
-      } catch (e: Exception) {
-        logger.warn("getHtmlContent attempt ${attempt + 1} failed", e)
-        lastLsError = e.message
+      } else {
+        logger.debug(
+          "getHtmlContent attempt ${attempt + 1}: language server not initialized, will use fallback if it does not come up"
+        )
       }
       // Wait a bit before retry if LS might still be initializing
       if (attempt < 2) {

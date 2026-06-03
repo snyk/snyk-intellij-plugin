@@ -1066,6 +1066,66 @@ class LanguageServerWrapperTest {
     }
   }
 
+  @Test
+  fun `verifyCliProtocolVersion caches result and does not re-run subprocess for unchanged CLI`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val invocationLog =
+      java.io.File.createTempFile("snyk-cli-invocations-", ".log").apply { deleteOnExit() }
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        // Records each invocation in a separate file so the script's own size/mtime stay unchanged.
+        writeText(
+          "#!/bin/sh\necho run >> '${invocationLog.absolutePath}'\necho ${settings.requiredLsProtocolVersion}\n"
+        )
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      val first = cut.verifyCliProtocolVersion()
+      val second = cut.verifyCliProtocolVersion()
+
+      assertTrue(first)
+      assertTrue(second)
+      assertEquals(
+        "subprocess should run once and the result be served from cache afterwards",
+        1,
+        invocationLog.readLines().count { it.isNotBlank() },
+      )
+    } finally {
+      scriptFile.delete()
+      invocationLog.delete()
+    }
+  }
+
+  @Test
+  fun `verifyCliProtocolVersion re-runs when the CLI binary at the same path changes`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        writeText("#!/bin/sh\necho ${settings.requiredLsProtocolVersion}\n")
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      assertTrue(cut.verifyCliProtocolVersion())
+
+      // Replace the binary at the same path with one reporting a different version. The longer body
+      // changes the file size, so the cache key differs regardless of mtime granularity.
+      scriptFile.writeText(
+        "#!/bin/sh\n# replaced binary reporting a different protocol version\necho 1\n"
+      )
+      scriptFile.setExecutable(true)
+
+      assertFalse(cut.verifyCliProtocolVersion())
+    } finally {
+      scriptFile.delete()
+    }
+  }
+
   private data class VerifyProtocolScenario(
     val name: String,
     val script: String,
