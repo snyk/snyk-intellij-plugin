@@ -1072,6 +1072,11 @@ class LanguageServerWrapperTest {
     val folderPath = Paths.get("/work/reset-project").toAbsolutePath().toString()
     settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
     settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.PREFERRED_ORG)
+    // Non-scalar overrides emit identically: the queue stores only string keys and the emit always
+    // builds {value: null, changed: true}, carrying no type information.
+    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
+    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
 
     val actual = cut.getSettings()
 
@@ -1088,6 +1093,18 @@ class LanguageServerWrapperTest {
         ?: error("expected preferred_org reset setting")
     assertNull(orgSetting.value)
     assertEquals(true, orgSetting.changed)
+
+    for (key in
+      listOf(
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+      )) {
+      val setting =
+        folderConfig.settings?.get(key) ?: error("expected $key reset setting (non-scalar field)")
+      assertNull(setting.value)
+      assertEquals(true, setting.changed)
+    }
   }
 
   @Test

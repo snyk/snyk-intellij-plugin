@@ -813,6 +813,12 @@ class SaveConfigHandler(
         LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
         LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
         LsFolderSettingsKeys.PREFERRED_ORG,
+        // Non-scalar overrides: additional_parameters is a list, scan_command_config is a nested
+        // object. The reset path is type-agnostic — a JSON null literal is JsonNull regardless of
+        // the field's normal type, and the emit path always sends {value: null, changed: true}.
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
       )
   }
 }

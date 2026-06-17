@@ -1356,7 +1356,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
               "folderPath": ${gson.toJson(folderPath)},
               "snyk_code_enabled": null,
               "scan_automatic": null,
-              "preferred_org": null
+              "preferred_org": null,
+              "additional_parameters": null,
+              "additional_environment": null,
+              "scan_command_config": null
             }
           ]
         }
@@ -1370,6 +1373,89 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(keys.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
     assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_AUTOMATIC))
     assertTrue(keys.contains(LsFolderSettingsKeys.PREFERRED_ORG))
+    // Non-scalar overrides (list + nested object) reset the same as scalars: a JSON null literal
+    // is JsonNull regardless of the field's normal type, so present-null detection still fires.
+    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
+    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
+    assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
+  }
+
+  fun `test saveConfig non-scalar folder fields sent as null clear stored overrides and queue resets`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-reset-nonscalar")
+        .toAbsolutePath()
+        .normalize()
+        .toString()
+    // Pre-seed user overrides for the three non-scalar fields: additional_parameters is a list,
+    // additional_environment is a map, scan_command_config is a nested object map.
+    val fcs = service<FolderConfigSettings>()
+    var seeded = fcs.getFolderConfig(folderPath)
+    seeded =
+      seeded.withSetting(
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        listOf("--all-projects"),
+        changed = true,
+      )
+    seeded =
+      seeded.withSetting(
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        mapOf("HTTP_PROXY" to "http://localhost:8080"),
+        changed = true,
+      )
+    seeded =
+      seeded.withSetting(
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+        mapOf("oss" to mapOf("preScanCommand" to "echo hi")),
+        changed = true,
+      )
+    fcs.addFolderConfig(seeded)
+    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
+    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
+
+    val json =
+      """
+        {
+          "folderConfigs": [
+            {
+              "folderPath": ${gson.toJson(folderPath)},
+              "additional_parameters": null,
+              "additional_environment": null,
+              "scan_command_config": null
+            }
+          ]
+        }
+      """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(json)
+
+    // Pending resets queued for all three non-scalar keys.
+    val resets = realSettings.consumePendingFolderResets()
+    val keys = resets[folderPath] ?: error("expected pending resets for $folderPath")
+    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
+    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
+    assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
+
+    // Explicit-changed flags cleared so the overrides don't re-assert on the next sync.
+    assertFalse(
+      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
+    )
+    assertFalse(
+      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
+    )
+    assertFalse(
+      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
+    )
+
+    // Stale stored overrides removed (reset signal carries null, not a re-asserted value).
+    val stored = fcs.getFolderConfig(folderPath)
+    assertNull(stored.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
+    assertNull(stored.settings?.get(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
+    assertNull(stored.settings?.get(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
   }
 
   fun `test saveConfig folder reset clears the persisted folder explicit-changed flag`() {
