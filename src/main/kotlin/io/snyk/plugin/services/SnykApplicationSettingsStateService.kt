@@ -55,6 +55,11 @@ class SnykApplicationSettingsStateService :
   // Transient: not persisted, consumed once by getSettings().
   @Transient private val pendingResets: MutableSet<String> = mutableSetOf()
 
+  // Per-folder keys pending a reset signal ({ value: null, changed: true }) to the LS.
+  // folder path -> set of setting keys. Transient: consumed once by getSettings().
+  @Transient
+  private val pendingFolderResets: MutableMap<String, MutableSet<String>> = mutableMapOf()
+
   fun addPendingReset(key: String) {
     pendingResets.add(key)
   }
@@ -62,6 +67,16 @@ class SnykApplicationSettingsStateService :
   fun consumePendingResets(): Set<String> {
     val snapshot = pendingResets.toSet()
     pendingResets.clear()
+    return snapshot
+  }
+
+  fun addPendingFolderReset(folderPath: String, key: String) {
+    pendingFolderResets.getOrPut(folderPath) { mutableSetOf() }.add(key)
+  }
+
+  fun consumePendingFolderResets(): Map<String, Set<String>> {
+    val snapshot = pendingFolderResets.mapValues { (_, keys) -> keys.toSet() }
+    pendingFolderResets.clear()
     return snapshot
   }
 

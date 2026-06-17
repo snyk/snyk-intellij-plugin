@@ -92,6 +92,7 @@ import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.common.lsp.settings.LspFolderConfig
+import snyk.common.lsp.settings.withSetting
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -820,7 +821,35 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         }
         .toList()
 
-    return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
+    val folderConfigsWithResets = applyPendingFolderResets(folderConfigsList, ps)
+
+    return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsWithResets)
+  }
+
+  /**
+   * Merges one-shot per-folder reset signals into the outbound folder configs. A reset emits
+   * `{value: null, changed: true}` for the cleared key, which snyk-ls turns into an Unset of the
+   * `user:folder:` override (fallback to org/LDX/default). Resets bypass
+   * [applyPersistedFolderChangedFlags] (which derives `changed` from folderExplicitChanges and
+   * would otherwise drop a freshly-cleared key) and add an entry for a reset-only folder that has
+   * no other outbound settings.
+   */
+  private fun applyPendingFolderResets(
+    folderConfigs: List<LspFolderConfig>,
+    ps: SnykApplicationSettingsStateService,
+  ): List<LspFolderConfig> {
+    val pending = ps.consumePendingFolderResets()
+    if (pending.isEmpty()) return folderConfigs
+
+    val byPath = folderConfigs.associateBy { it.folderPath }.toMutableMap()
+    for ((folderPath, keys) in pending) {
+      var config = byPath[folderPath] ?: LspFolderConfig(folderPath = folderPath)
+      for (key in keys) {
+        config = config.withSetting(key, value = null, changed = true)
+      }
+      byPath[folderPath] = config
+    }
+    return byPath.values.toList()
   }
 
   private fun applyPersistedFolderChangedFlags(

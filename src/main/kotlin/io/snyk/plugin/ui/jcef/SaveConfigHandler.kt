@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
@@ -24,6 +25,7 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.withSetting
+import snyk.common.lsp.settings.withoutSetting
 import snyk.trust.WorkspaceTrustService
 
 class SaveConfigHandler(
@@ -169,6 +171,10 @@ class SaveConfigHandler(
     val isFallback = config.isFallbackForm == true
     if (!isFallback) {
       config.folderConfigs?.let { applyFolderConfigs(it) }
+      // A folder field present as JSON null is a reset. Gson maps it to a Kotlin null on
+      // FolderConfigData (indistinguishable from absent), so applyFolderConfigs() skips it.
+      // Re-parse the raw JSON tree to detect present-with-null folder fields and queue resets.
+      applyFolderResetsFromRawJson(jsonString)
     }
 
     // Notify all open projects' language servers so global settings propagate everywhere.
@@ -539,6 +545,51 @@ class SaveConfigHandler(
     return existing.withSetting(key, value, changed = true)
   }
 
+  /**
+   * Detects per-folder fields sent as JSON `null` (the dialog's "Reset overrides" output) and
+   * queues a reset for each. Gson deserializes a JSON null to a Kotlin null on the nullable
+   * [FolderConfigData] fields, which is indistinguishable from an absent field, so the raw JSON
+   * tree is the only place present-with-null can be detected.
+   *
+   * For each reset field we: remove the stored override (so it can't re-assert on a later sync),
+   * clear its persisted folder explicit-change flag, and queue a pending folder reset that
+   * [LanguageServerWrapper.getSettings] emits as `{value: null, changed: true}`.
+   */
+  private fun applyFolderResetsFromRawJson(jsonString: String) {
+    val root =
+      try {
+        gson.fromJson(jsonString, JsonObject::class.java)
+      } catch (e: JsonSyntaxException) {
+        logger.warn("Could not parse JSON for folder resets: ${jsonString.take(200)}", e)
+        return
+      } ?: return
+
+    val folderConfigsJson = root.getAsJsonArray("folderConfigs") ?: return
+    val fcs = service<FolderConfigSettings>()
+    val settings = pluginSettings()
+
+    for (element in folderConfigsJson) {
+      if (!element.isJsonObject) continue
+      val folderObject = element.asJsonObject
+      val folderPath =
+        folderObject.get("folderPath")?.takeIf { it.isJsonPrimitive }?.asString ?: continue
+
+      var updated = fcs.getFolderConfig(folderPath)
+      var changed = false
+      for (key in FOLDER_RESET_KEYS) {
+        val field = folderObject.get(key) ?: continue
+        if (!field.isJsonNull) continue
+        updated = updated.withoutSetting(key)
+        settings.clearExplicitlyChanged(folderPath, key)
+        settings.addPendingFolderReset(folderPath, key)
+        changed = true
+      }
+      if (changed) {
+        fcs.addFolderConfig(updated)
+      }
+    }
+  }
+
   private fun applyFolderConfigs(folderConfigs: List<FolderConfigData>) {
     val fcs = service<FolderConfigSettings>()
     val settings = pluginSettings()
@@ -740,5 +791,28 @@ class SaveConfigHandler(
 
       fcs.addFolderConfig(updated)
     }
+  }
+
+  companion object {
+    // Org-scope folder fields the dialog's "Reset overrides" button clears (sent as JSON null).
+    // Keys are LS setting names; preferred_org is included (its LS reset also clears
+    // org_set_by_user). Must stay in sync with the JS FOLDER_RESET_FIELDS list in snyk-ls.
+    private val FOLDER_RESET_KEYS =
+      setOf(
+        LsFolderSettingsKeys.SCAN_AUTOMATIC,
+        LsFolderSettingsKeys.SCAN_NET_NEW,
+        LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+        LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+        LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+        LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+        LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+        LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+        LsFolderSettingsKeys.PREFERRED_ORG,
+      )
   }
 }

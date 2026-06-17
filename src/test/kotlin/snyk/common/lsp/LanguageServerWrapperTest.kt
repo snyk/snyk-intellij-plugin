@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import junit.framework.TestCase.fail
 import org.apache.commons.lang3.SystemUtils
@@ -1064,6 +1065,44 @@ class LanguageServerWrapperTest {
     } finally {
       scriptFile.delete()
     }
+  }
+
+  @Test
+  fun `getSettings emits pending folder reset as value null changed true`() {
+    val folderPath = Paths.get("/work/reset-project").toAbsolutePath().toString()
+    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.PREFERRED_ORG)
+
+    val actual = cut.getSettings()
+
+    val folderConfig =
+      actual.folderConfigs?.firstOrNull { it.folderPath == folderPath }
+        ?: error("expected a folder config carrying the reset for $folderPath")
+    val codeSetting =
+      folderConfig.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+        ?: error("expected snyk_code_enabled reset setting")
+    assertNull(codeSetting.value)
+    assertEquals(true, codeSetting.changed)
+    val orgSetting =
+      folderConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)
+        ?: error("expected preferred_org reset setting")
+    assertNull(orgSetting.value)
+    assertEquals(true, orgSetting.changed)
+  }
+
+  @Test
+  fun `getSettings consumes pending folder resets so a second call does not re-emit`() {
+    val folderPath = Paths.get("/work/reset-project-2").toAbsolutePath().toString()
+    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC)
+
+    cut.getSettings()
+    val second = cut.getSettings()
+
+    val folderConfig = second.folderConfigs?.firstOrNull { it.folderPath == folderPath }
+    assertNull(
+      "pending folder reset is one-shot; the second sync must not re-emit it",
+      folderConfig?.settings?.get(LsFolderSettingsKeys.SCAN_AUTOMATIC),
+    )
   }
 
   private data class VerifyProtocolScenario(
