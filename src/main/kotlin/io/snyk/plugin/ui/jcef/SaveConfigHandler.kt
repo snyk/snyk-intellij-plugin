@@ -551,6 +551,11 @@ class SaveConfigHandler(
    * [FolderConfigData] fields, which is indistinguishable from an absent field, so the raw JSON
    * tree is the only place present-with-null can be detected.
    *
+   * Any folder field present as JSON null is forwarded as a reset. snyk-ls is authoritative over
+   * which folder-scoped keys are resettable: it acts only on keys it recognizes and ignores nulls
+   * on others, so forwarding extra present-nulls is a safe no-op. The IDE therefore does not
+   * maintain a whitelist of resettable keys.
+   *
    * For each reset field we: remove the stored override (so it can't re-assert on a later sync),
    * clear its persisted folder explicit-change flag, and queue a pending folder reset that
    * [LanguageServerWrapper.getSettings] emits as `{value: null, changed: true}`.
@@ -576,9 +581,9 @@ class SaveConfigHandler(
 
       var updated = fcs.getFolderConfig(folderPath)
       var changed = false
-      for (key in FOLDER_RESET_KEYS) {
-        val field = folderObject.get(key) ?: continue
-        if (!field.isJsonNull) continue
+      for ((key, value) in folderObject.entrySet()) {
+        if (key == "folderPath") continue
+        if (!value.isJsonNull) continue
         updated = updated.withoutSetting(key)
         settings.clearExplicitlyChanged(folderPath, key)
         settings.addPendingFolderReset(folderPath, key)
@@ -791,34 +796,5 @@ class SaveConfigHandler(
 
       fcs.addFolderConfig(updated)
     }
-  }
-
-  companion object {
-    // Org-scope folder fields the dialog's "Reset overrides" button clears (sent as JSON null).
-    // Keys are LS setting names; preferred_org is included (its LS reset also clears
-    // org_set_by_user). Must stay in sync with the JS FOLDER_RESET_FIELDS list in snyk-ls.
-    private val FOLDER_RESET_KEYS =
-      setOf(
-        LsFolderSettingsKeys.SCAN_AUTOMATIC,
-        LsFolderSettingsKeys.SCAN_NET_NEW,
-        LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
-        LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
-        LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
-        LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
-        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
-        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
-        LsFolderSettingsKeys.SNYK_IAC_ENABLED,
-        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
-        LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
-        LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
-        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
-        LsFolderSettingsKeys.PREFERRED_ORG,
-        // Non-scalar overrides: additional_parameters is a list, scan_command_config is a nested
-        // object. The reset path is type-agnostic — a JSON null literal is JsonNull regardless of
-        // the field's normal type, and the emit path always sends {value: null, changed: true}.
-        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
-        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
-        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
-      )
   }
 }
