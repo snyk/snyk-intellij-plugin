@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
-import com.intellij.execution.configurations.ParametersListUtil
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
@@ -432,8 +431,7 @@ class SaveConfigHandler(
 
       // Global (Project Defaults) advanced settings — apply to machine-scope plugin state,
       // not to FolderConfigSettings (those are handled separately in applyFolderConfigs).
-      val joinedAdditionalParameters =
-        config.additionalParameters?.let { ParametersListUtil.join(it) }
+      val joinedAdditionalParameters = config.additionalParameters?.let { it.joinToString(" ") }
       applyGlobalSetting(
         settings = settings,
         key = LsSettingsKeys.ADDITIONAL_PARAMETERS,

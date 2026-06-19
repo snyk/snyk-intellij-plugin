@@ -2,7 +2,6 @@ package snyk.common.lsp
 
 import com.google.gson.Gson
 import com.intellij.configurationStore.StoreUtil
-import com.intellij.execution.configurations.ParametersListUtil
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
@@ -294,7 +293,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
             val strVal =
               when (it) {
                 is String -> it
-                is List<*> -> ParametersListUtil.join(it.filterIsInstance<String>())
+                is List<*> -> it.filterIsInstance<String>().joinToString(" ")
                 else -> null
               }
             strVal?.let { v ->
