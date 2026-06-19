@@ -125,6 +125,8 @@ class SnykApplicationSettingsStateService :
         (cliBaseDownloadURL ?: "").trim() != PLUGIN_DEFAULT_BINARY_BASE_URL
       LsSettingsKeys.CLI_RELEASE_CHANNEL -> cliReleaseChannel != PLUGIN_DEFAULT_CLI_RELEASE_CHANNEL
       LsSettingsKeys.AUTHENTICATION_METHOD -> authenticationType != AuthenticationType.OAUTH2
+      LsSettingsKeys.ADDITIONAL_PARAMETERS -> globalAdditionalParameters.isNotBlank()
+      LsSettingsKeys.ADDITIONAL_ENVIRONMENT -> globalAdditionalEnvironment.isNotBlank()
       else -> false
     }
 
@@ -228,6 +230,12 @@ class SnykApplicationSettingsStateService :
   // Instant could not be used here due to serialisation Exception
   var lastTimeFeedbackRequestShown: Date = Date.from(Instant.now())
   var showFeedbackRequest = true
+
+  // Global (Project Defaults) advanced settings — sent as top-level entries in the LS settings map.
+  // Distinct from per-folder additional_parameters / additional_environment in
+  // FolderConfigSettings.
+  var globalAdditionalParameters: String = ""
+  var globalAdditionalEnvironment: String = ""
 
   /** Random UUID used by analytics events if enabled. */
   var userAnonymousId = UUID.randomUUID().toString()

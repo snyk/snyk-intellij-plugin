@@ -1066,6 +1066,50 @@ class LanguageServerWrapperTest {
     }
   }
 
+  @Test
+  fun `getSettings emits global additional_parameters when set`() {
+    settings.globalAdditionalParameters = "--severity-threshold=high --debug"
+
+    val actual = cut.getSettings()
+
+    assertEquals(
+      "--severity-threshold=high --debug",
+      actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+    assertEquals(true, actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.changed)
+  }
+
+  @Test
+  fun `getSettings emits global additional_environment when set`() {
+    settings.globalAdditionalEnvironment = "VAR1=value1;VAR2=value2"
+
+    val actual = cut.getSettings()
+
+    assertEquals(
+      "VAR1=value1;VAR2=value2",
+      actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value,
+    )
+    assertEquals(true, actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.changed)
+  }
+
+  @Test
+  fun `getSettings omits global additional_parameters when blank`() {
+    settings.globalAdditionalParameters = ""
+
+    val actual = cut.getSettings()
+
+    assertFalse(actual.settings?.containsKey(LsSettingsKeys.ADDITIONAL_PARAMETERS) ?: false)
+  }
+
+  @Test
+  fun `getSettings omits global additional_environment when blank`() {
+    settings.globalAdditionalEnvironment = ""
+
+    val actual = cut.getSettings()
+
+    assertFalse(actual.settings?.containsKey(LsSettingsKeys.ADDITIONAL_ENVIRONMENT) ?: false)
+  }
+
   private data class VerifyProtocolScenario(
     val name: String,
     val script: String,

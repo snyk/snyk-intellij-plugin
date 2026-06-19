@@ -99,6 +99,14 @@ data class SaveConfigRequest(
   @SerializedName(value = "cli_release_channel", alternate = ["cliReleaseChannel"])
   val cliReleaseChannel: String? = null,
 
+  // Global (Project Defaults) advanced settings — top-level fields, distinct from per-folder
+  // FolderConfigData fields
+  @SerializedName(value = "additional_parameters", alternate = ["additionalParameters"])
+  @com.google.gson.annotations.JsonAdapter(StringOrListTypeAdapter::class)
+  val additionalParameters: List<String>? = null,
+  @SerializedName(value = "additional_environment", alternate = ["additionalEnv"])
+  val additionalEnv: String? = null,
+
   // Trusted Folders
   @SerializedName(value = "trusted_folders", alternate = ["trustedFolders"])
   val trustedFolders: List<String>? = null,

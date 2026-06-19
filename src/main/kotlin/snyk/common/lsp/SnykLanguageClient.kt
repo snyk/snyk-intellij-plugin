@@ -286,6 +286,24 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
+          // Global (Project Defaults) advanced settings — top-level settings map only.
+          // Do NOT mirror these from folderConfigs (that would conflate global and folder scope).
+          settings[LsSettingsKeys.ADDITIONAL_PARAMETERS]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.globalAdditionalParameters != strVal) {
+                ps.globalAdditionalParameters = strVal
+                settingsChanged = true
+              }
+            }
+          }
+          settings[LsSettingsKeys.ADDITIONAL_ENVIRONMENT]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.globalAdditionalEnvironment != strVal) {
+                ps.globalAdditionalEnvironment = strVal
+                settingsChanged = true
+              }
+            }
+          }
         }
 
         // Process folder-scope settings from folderConfigs: only when exactly one folder is

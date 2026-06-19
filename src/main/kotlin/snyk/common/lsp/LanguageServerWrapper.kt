@@ -694,6 +694,25 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     settingsMap[LsSettingsKeys.RUNTIME_VERSION] =
       ConfigSetting(value = SystemUtils.JAVA_VERSION, changed = true)
 
+    // Global (Project Defaults) advanced settings — only emit when set to avoid clobbering LS-side
+    // defaults.
+    if (ps.globalAdditionalParameters.isNotBlank()) {
+      settingsMap[LsSettingsKeys.ADDITIONAL_PARAMETERS] =
+        ConfigSetting(
+          value = ps.globalAdditionalParameters,
+          changed =
+            ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.ADDITIONAL_PARAMETERS),
+        )
+    }
+    if (ps.globalAdditionalEnvironment.isNotBlank()) {
+      settingsMap[LsSettingsKeys.ADDITIONAL_ENVIRONMENT] =
+        ConfigSetting(
+          value = ps.globalAdditionalEnvironment,
+          changed =
+            ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.ADDITIONAL_ENVIRONMENT),
+        )
+    }
+
     val trustService = service<WorkspaceTrustService>()
     val trustedPaths = trustService.settings.getTrustedPaths()
     settingsMap[LsSettingsKeys.TRUSTED_FOLDERS] =

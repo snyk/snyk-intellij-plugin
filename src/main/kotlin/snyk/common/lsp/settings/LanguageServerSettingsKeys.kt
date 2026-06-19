@@ -22,6 +22,11 @@ object LsSettingsKeys {
   const val RUNTIME_NAME = "runtime_name"
   const val RUNTIME_VERSION = "runtime_version"
 
+  // Global (Project Defaults tab) advanced settings — top-level settings map, distinct from folder
+  // scope
+  const val ADDITIONAL_PARAMETERS = "additional_parameters"
+  const val ADDITIONAL_ENVIRONMENT = "additional_environment"
+
   // Write-only (IDE → LS only, never sent back)
   const val TOKEN = "token"
   const val SEND_ERROR_REPORTS = "send_error_reports"
