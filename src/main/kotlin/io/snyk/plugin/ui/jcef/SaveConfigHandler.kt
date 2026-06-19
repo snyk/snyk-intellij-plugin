@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
+import com.intellij.execution.configurations.ParametersListUtil
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
@@ -431,7 +432,8 @@ class SaveConfigHandler(
 
       // Global (Project Defaults) advanced settings — apply to machine-scope plugin state,
       // not to FolderConfigSettings (those are handled separately in applyFolderConfigs).
-      val joinedAdditionalParameters = config.additionalParameters?.joinToString(" ")
+      val joinedAdditionalParameters =
+        config.additionalParameters?.let { ParametersListUtil.join(it) }
       applyGlobalSetting(
         settings = settings,
         key = LsSettingsKeys.ADDITIONAL_PARAMETERS,
@@ -449,6 +451,15 @@ class SaveConfigHandler(
         currentValue = { settings.globalAdditionalEnvironment },
       ) {
         settings.globalAdditionalEnvironment = it ?: ""
+      }
+      // Bug fix: propagate clear-to-LS when user empties global additional settings.
+      // applyGlobalSetting skips null/absent values; a blank value IS present but must
+      // be forwarded as a null-reset so LS learns the field was cleared.
+      if (config.additionalParameters != null && joinedAdditionalParameters.isNullOrBlank()) {
+        settings.addPendingReset(LsSettingsKeys.ADDITIONAL_PARAMETERS)
+      }
+      if (config.additionalEnv != null && config.additionalEnv.isBlank()) {
+        settings.addPendingReset(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)
       }
 
       // Trusted folders - sync the list (add new, remove missing)

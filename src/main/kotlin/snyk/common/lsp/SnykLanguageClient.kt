@@ -2,6 +2,7 @@ package snyk.common.lsp
 
 import com.google.gson.Gson
 import com.intellij.configurationStore.StoreUtil
+import com.intellij.execution.configurations.ParametersListUtil
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnAction
@@ -289,9 +290,16 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           // Global (Project Defaults) advanced settings — top-level settings map only.
           // Do NOT mirror these from folderConfigs (that would conflate global and folder scope).
           settings[LsSettingsKeys.ADDITIONAL_PARAMETERS]?.value?.let {
-            (it as? String)?.let { strVal ->
-              if (ps.globalAdditionalParameters != strVal) {
-                ps.globalAdditionalParameters = strVal
+            // LS may send additional_parameters as a String or a JSON array (List).
+            val strVal =
+              when (it) {
+                is String -> it
+                is List<*> -> ParametersListUtil.join(it.filterIsInstance<String>())
+                else -> null
+              }
+            strVal?.let { v ->
+              if (ps.globalAdditionalParameters != v) {
+                ps.globalAdditionalParameters = v
                 settingsChanged = true
               }
             }
