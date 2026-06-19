@@ -391,17 +391,20 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertFalse(realSettings.lowSeverityEnabled)
   }
 
-  fun `test parseAndSaveConfig handles null values gracefully`() {
+  fun `test parseAndSaveConfig explicit null organization resets to project defaults`() {
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.organization = "original-org"
+    realSettings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
     every { pluginSettings() } returns realSettings
 
-    // JSON with explicit null value
+    // Explicit JSON null at the top level is a user "reset to Project Defaults" request.
     val jsonConfig = """{"organization": null, "activateSnykOpenSource": true}"""
     invokeParseAndSaveConfig(jsonConfig)
 
-    // Organization should remain unchanged since null is not a valid String
-    assertEquals("original-org", realSettings.organization)
+    // Organization override is cleared, value restored to default, and a one-shot reset is queued.
+    assertNull(realSettings.organization)
+    assertFalse(realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION))
+    assertTrue(realSettings.consumePendingResets().contains(LsSettingsKeys.ORGANIZATION))
     assertTrue(realSettings.ossScanEnable)
   }
 
@@ -1338,6 +1341,88 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals("/usr/bin/snyk", realSettings.cliPath)
     val after = service<FolderConfigSettings>().getFolderConfig(folderPath)
     assertEquals(before.settings, after.settings)
+  }
+
+  fun `test parseAndSaveConfig global reset for product toggle queues reset and restores default`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.iacScanEnabled = false
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"snyk_iac_enabled": null}""")
+
+    // Default restored, explicit flag cleared, one-shot reset queued.
+    assertTrue(realSettings.iacScanEnabled)
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertTrue(realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+  }
+
+  fun `test parseAndSaveConfig global reset for severity filter queues reset`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.mediumSeverityEnabled = false
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"severity_filter_medium": null}""")
+
+    assertTrue(realSettings.mediumSeverityEnabled)
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
+    assertTrue(
+      realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)
+    )
+  }
+
+  fun `test parseAndSaveConfig global reset for risk score threshold clears value`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.riskScoreThreshold = 500
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"risk_score_threshold": null}""")
+
+    assertNull(realSettings.riskScoreThreshold)
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD))
+    assertTrue(
+      realSettings.consumePendingResets().contains(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+    )
+  }
+
+  fun `test parseAndSaveConfig present global field is not treated as reset`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.iacScanEnabled = true
+    every { pluginSettings() } returns realSettings
+
+    // Present non-null value is a normal change, not a reset.
+    invokeParseAndSaveConfig("""{"snyk_iac_enabled": false}""")
+
+    assertFalse(realSettings.iacScanEnabled)
+    assertFalse(realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+  }
+
+  fun `test parseAndSaveConfig absent global field does not queue reset`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    every { pluginSettings() } returns realSettings
+
+    // Diff-based payload omits snyk_iac_enabled -> absence is "no change", not a reset.
+    invokeParseAndSaveConfig("""{"activateSnykOpenSource": true}""")
+
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertTrue(realSettings.consumePendingResets().isEmpty())
+  }
+
+  fun `test parseAndSaveConfig fallback form does not process global resets`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.iacScanEnabled = false
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig("""{"isFallbackForm": true, "snyk_iac_enabled": null}""")
+
+    // Fallback form skips folder/global product handling; nothing reset.
+    assertFalse(realSettings.iacScanEnabled)
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertTrue(realSettings.consumePendingResets().isEmpty())
   }
 
   private fun invokeParseAndSaveConfig(jsonString: String) {

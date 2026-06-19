@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import junit.framework.TestCase.fail
 import org.apache.commons.lang3.SystemUtils
@@ -509,6 +510,32 @@ class LanguageServerWrapperTest {
     val actual = cut.getSettings()
 
     assertEquals(true, actual.settings?.get(LsSettingsKeys.AUTOMATIC_DOWNLOAD)?.changed)
+  }
+
+  @Test
+  fun `getSettings emits one-shot null reset signal then does not re-push on reconnect`() {
+    // Simulate a global reset applied to persisted state: the override was cleared, the value
+    // restored to its plugin default, and a pending reset queued.
+    settings.iacScanEnabled = true // restored default; deviation check must be false
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    settings.addPendingReset(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+    // First getSettings (e.g. didChangeConfiguration after save) emits the one-shot reset.
+    val first = cut.getSettings()
+    val firstSetting = first.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    assertNull("reset must carry value=null", firstSetting?.value)
+    assertEquals("reset must carry changed=true", true, firstSetting?.changed)
+
+    // Second getSettings (simulating reconnect/initialize after the pending reset was consumed)
+    // must NOT re-assert the override: value is the default and changed must be false.
+    val second = cut.getSettings()
+    val secondSetting = second.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    assertEquals("default value re-published", true, secondSetting?.value)
+    assertEquals(
+      "no changed:true on reconnect -- override must stay cleared",
+      false,
+      secondSetting?.changed,
+    )
   }
 
   @Test

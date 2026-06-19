@@ -1,6 +1,7 @@
 package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
@@ -168,6 +169,10 @@ class SaveConfigHandler(
     // Only apply folder configs if not fallback form
     val isFallback = config.isFallbackForm == true
     if (!isFallback) {
+      // Detect top-level fields the user explicitly reset to "Project Defaults" (JSON null) and
+      // queue a one-shot reset signal to the LS. Gson collapses absent and null into Kotlin null,
+      // so this must be done from the raw JSON, not the parsed SaveConfigRequest.
+      applyGlobalResetsFromRawJson(jsonString, settings)
       config.folderConfigs?.let { applyFolderConfigs(it) }
     }
 
@@ -482,6 +487,117 @@ class SaveConfigHandler(
             logger.warn("Failed to add trusted folder: $configPath", e)
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Org-scope global settings the user can reset to "Project Defaults" from the LS HTML dialog.
+   * Each entry maps the JSON field name(s) the HTML/JS may emit to the canonical LS setting key and
+   * the action that restores the persisted plugin default so the value is not re-pushed after the
+   * one-shot reset signal is consumed.
+   *
+   * Detection of a reset is by explicit JSON null at the top level (a present field with a non-null
+   * value is a normal change, an absent field is "no change"). Gson collapses absent and null into
+   * Kotlin null on [SaveConfigRequest], so reset detection must read the raw JSON.
+   */
+  private fun globalResetSpecs(
+    settings: SnykApplicationSettingsStateService
+  ): List<Triple<List<String>, String, () -> Unit>> =
+    listOf(
+      Triple(
+        listOf("snyk_oss_enabled", "activateSnykOpenSource"),
+        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+      ) {
+        settings.ossScanEnable = true
+      },
+      Triple(
+        listOf("snyk_code_enabled", "activateSnykCode"),
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+      ) {
+        settings.snykCodeSecurityIssuesScanEnable = true
+      },
+      Triple(listOf("snyk_iac_enabled", "activateSnykIac"), LsFolderSettingsKeys.SNYK_IAC_ENABLED) {
+        settings.iacScanEnabled = true
+      },
+      Triple(
+        listOf("snyk_secrets_enabled", "activateSnykSecrets"),
+        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+      ) {
+        settings.secretsEnabled = false
+      },
+      Triple(listOf("scan_automatic"), LsFolderSettingsKeys.SCAN_AUTOMATIC) {
+        settings.scanOnSave = true
+      },
+      Triple(listOf("scan_net_new", "enableDeltaFindings"), LsFolderSettingsKeys.SCAN_NET_NEW) {
+        settings.setDeltaEnabled(false)
+      },
+      Triple(
+        listOf("severity_filter_critical", "filterSeverityCritical"),
+        LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+      ) {
+        settings.criticalSeverityEnabled = true
+      },
+      Triple(
+        listOf("severity_filter_high", "filterSeverityHigh"),
+        LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+      ) {
+        settings.highSeverityEnabled = true
+      },
+      Triple(
+        listOf("severity_filter_medium", "filterSeverityMedium"),
+        LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+      ) {
+        settings.mediumSeverityEnabled = true
+      },
+      Triple(
+        listOf("severity_filter_low", "filterSeverityLow"),
+        LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+      ) {
+        settings.lowSeverityEnabled = true
+      },
+      Triple(listOf("issue_view_open_issues"), LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES) {
+        settings.openIssuesEnabled = true
+      },
+      Triple(listOf("issue_view_ignored_issues"), LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES) {
+        settings.ignoredIssuesEnabled = false
+      },
+      Triple(
+        listOf("risk_score_threshold", "riskScoreThreshold"),
+        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+      ) {
+        settings.riskScoreThreshold = null
+      },
+      Triple(listOf("organization"), LsSettingsKeys.ORGANIZATION) { settings.organization = null },
+    )
+
+  /**
+   * For each org-scope global key sent as an explicit JSON null at the top level, clear the
+   * explicit-change tracking, restore the persisted plugin default, and queue a one-shot `{ value:
+   * null, changed: true }` reset signal so the LS Unsets its user:global override exactly once.
+   * After the pending reset is consumed by [LanguageServerWrapper.getSettings] the restored default
+   * value must NOT re-assert the override on reconnect.
+   */
+  private fun applyGlobalResetsFromRawJson(
+    jsonString: String,
+    settings: SnykApplicationSettingsStateService,
+  ) {
+    val root =
+      try {
+        JsonParser.parseString(jsonString)
+      } catch (e: Exception) {
+        logger.warn("Could not parse config JSON for global reset detection", e)
+        return
+      }
+    if (!root.isJsonObject) return
+    val obj = root.asJsonObject
+
+    for ((fieldNames, key, restoreDefault) in globalResetSpecs(settings)) {
+      val isReset = fieldNames.any { obj.has(it) && obj.get(it).isJsonNull }
+      if (isReset) {
+        settings.clearExplicitlyChanged(key)
+        restoreDefault()
+        settings.addPendingReset(key)
       }
     }
   }
