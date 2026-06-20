@@ -337,6 +337,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
           enablementChanged()
         }
+        HTMLSettingsPanel.instance?.reloadFromLanguageServer()
       } catch (e: Exception) {
         logger.error("Error processing snyk configuration", e)
       }

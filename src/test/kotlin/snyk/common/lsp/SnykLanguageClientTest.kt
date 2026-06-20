@@ -1752,6 +1752,63 @@ class SnykLanguageClientTest {
     verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), match { it.size == 1 }) }
   }
 
+  @Test
+  fun `snykConfiguration reloads HTMLSettingsPanel when panel is open`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.instance = panelMock
+
+    try {
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param)
+
+      verify(timeout = 5000, exactly = 1) { panelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.instance = null
+    }
+  }
+
+  @Test
+  fun `snykConfiguration does not crash when settings panel is closed`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    HTMLSettingsPanel.instance = null
+
+    val param = LspConfigurationParam()
+    // Should not throw
+    cut.snykConfiguration(param)
+
+    // Give async time to complete; no exception means the test passes
+    Thread.sleep(500)
+  }
+
+  @Test
+  fun `snykConfiguration does not call reloadFromLanguageServer when SnykLanguageClient is disposed`() {
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.instance = panelMock
+
+    try {
+      cut.dispose()
+
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param)
+
+      Thread.sleep(500)
+      verify(exactly = 0) { panelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.instance = null
+    }
+  }
+
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
     val rangeString = Gson().toJson(range)
     val jsonString =
