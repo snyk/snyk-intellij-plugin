@@ -38,8 +38,8 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     private val instances = ConcurrentHashMap<Project, HTMLSettingsPanel>()
 
     /**
-     * Register [panel] as the active settings panel for [project]. Called from [init].
-     * Visible to tests for mock setup; not part of the public consumer API.
+     * Register [panel] as the active settings panel for [project]. Called from [init]. Visible to
+     * tests for mock setup; not part of the public consumer API.
      */
     internal fun registerForProject(project: Project, panel: HTMLSettingsPanel) {
       instances[project] = panel
@@ -47,9 +47,8 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
 
     /**
      * Remove the registration for [project]. Called from [dispose]; the atomic two-argument
-     * [remove] overload ensures a late-arriving [dispose] from a replaced instance cannot evict
-     * the newer registration.
-     * Visible to tests for mock teardown; not part of the public consumer API.
+     * [remove] overload ensures a late-arriving [dispose] from a replaced instance cannot evict the
+     * newer registration. Visible to tests for mock teardown; not part of the public consumer API.
      */
     internal fun unregisterForProject(project: Project, panel: HTMLSettingsPanel) {
       instances.remove(project, panel)

@@ -75,10 +75,7 @@ class HTMLSettingsPanelTest : BasePlatformTestCase() {
   fun `test shouldSkipReload returns true when lsHtml is blank`() {
     val result = HTMLSettingsPanel.shouldSkipReload("   ", isModified = false)
 
-    assertTrue(
-      "shouldSkipReload should return true (skip) when lsHtml is blank",
-      result,
-    )
+    assertTrue("shouldSkipReload should return true (skip) when lsHtml is blank", result)
   }
 
   // Happy path: non-blank html, not modified → reload should proceed
@@ -97,9 +94,6 @@ class HTMLSettingsPanelTest : BasePlatformTestCase() {
   fun `test shouldSkipReload returns true when lsHtml is empty string`() {
     val result = HTMLSettingsPanel.shouldSkipReload("", isModified = false)
 
-    assertTrue(
-      "shouldSkipReload should return true (skip) when lsHtml is empty",
-      result,
-    )
+    assertTrue("shouldSkipReload should return true (skip) when lsHtml is empty", result)
   }
 }
