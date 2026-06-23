@@ -23,6 +23,7 @@ import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.awt.BorderLayout
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -34,7 +35,28 @@ import snyk.common.lsp.LanguageServerWrapper
 class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
   companion object {
-    @Volatile var instance: HTMLSettingsPanel? = null
+    private val instances = ConcurrentHashMap<Project, HTMLSettingsPanel>()
+
+    /**
+     * Register [panel] as the active settings panel for [project]. Called from [init].
+     * Visible to tests for mock setup; not part of the public consumer API.
+     */
+    internal fun registerForProject(project: Project, panel: HTMLSettingsPanel) {
+      instances[project] = panel
+    }
+
+    /**
+     * Remove the registration for [project]. Called from [dispose]; the atomic two-argument
+     * [remove] overload ensures a late-arriving [dispose] from a replaced instance cannot evict
+     * the newer registration.
+     * Visible to tests for mock teardown; not part of the public consumer API.
+     */
+    internal fun unregisterForProject(project: Project, panel: HTMLSettingsPanel) {
+      instances.remove(project, panel)
+    }
+
+    /** Returns the active [HTMLSettingsPanel] for [project], or null if none is open. */
+    fun getForProject(project: Project): HTMLSettingsPanel? = instances[project]
 
     /**
      * Pure comparison used for unit testing without JCEF: returns true when [rawHtml] themes to a
@@ -70,7 +92,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     // Set panel background to match IDE theme (prevents white flash)
     background = UIUtil.getPanelBackground()
 
-    instance = this
+    registerForProject(project, this)
     Disposer.register(SnykPluginDisposable.getInstance(project), this)
     initializePanel()
     subscribeToCliDownloadEvents()
@@ -471,9 +493,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
   override fun dispose() {
     isDisposed = true
     lastThemedHtml = null
-    if (instance === this) {
-      instance = null
-    }
+    unregisterForProject(project, this)
     disposeCurrentBrowser()
   }
 }
