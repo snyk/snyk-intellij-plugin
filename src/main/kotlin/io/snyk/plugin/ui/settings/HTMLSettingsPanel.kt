@@ -44,6 +44,14 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
       val themed = ThemeBasedStylingGenerator.replaceWithCustomStyles(rawHtml)
       return themed != currentThemedHtml
     }
+
+    /**
+     * Pure guard used for unit testing: returns true when the LS-triggered reload should be
+     * skipped. Reload is skipped when [isModified] is true (user has unsaved edits — data-loss
+     * guard) or when [lsHtml] is blank (empty LS response — robustness guard).
+     */
+    internal fun shouldSkipReload(lsHtml: String, isModified: Boolean): Boolean =
+      isModified || lsHtml.isBlank()
   }
 
   private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
@@ -195,17 +203,15 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     }
   }
 
-  private fun initializeJcefBrowser(html: String) {
+  /**
+   * Shared browser initialisation body. Accepts already-themed HTML so the caller controls when
+   * theming occurs; [lastThemedHtml] is updated only after JCEF browser creation succeeds to avoid
+   * recording a stale value if browser initialisation throws.
+   */
+  private fun initializeJcefBrowserFromThemed(themedHtml: String) {
     removeAll()
-
-    // Dispose existing browser before creating new one
     disposeCurrentBrowser()
 
-    // Apply theme first (before nonce) so the themed content can be compared for change detection
-    val themedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
-    lastThemedHtml = themedHtml
-
-    // Generate new nonce and replace placeholder in the already-themed HTML
     currentNonce = JCEFUtils.generateNonce()
     val processedHtml = themedHtml.replace("ideNonce", currentNonce)
 
@@ -237,13 +243,21 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     val loadHandler = handler.generateSaveConfigHandler(jcefBrowser, currentNonce)
     cefClient.addLoadHandler(loadHandler, jcefBrowser.cefBrowser)
 
-    // Add browser to panel first (it already has IDE background from createBrowser)
     add(jcefBrowser.component, BorderLayout.CENTER)
     revalidate()
     repaint()
 
-    // Then load the actual content
     jcefBrowser.loadHTML(processedHtml, jcefBrowser.cefBrowser.url ?: "about:blank")
+
+    // Record themed HTML after a successful initialisation so change-detection stays correct
+    // even if browser creation throws on a subsequent call.
+    lastThemedHtml = themedHtml
+  }
+
+  private fun initializeJcefBrowser(html: String) {
+    // Apply theme first (before nonce) so the themed content can be compared for change detection
+    val themedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
+    initializeJcefBrowserFromThemed(themedHtml)
   }
 
   private fun disposeCurrentBrowser() {
@@ -276,15 +290,24 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
       val lsWrapper = LanguageServerWrapper.getInstance(project)
       val lsHtml = lsWrapper.getConfigHtml() ?: return@executeOnPooledThread
 
-      // themedHtmlDiffersFromCurrent reads Swing/theme APIs and must run on the EDT
+      // Skip reload when the user has unsaved edits (data-loss guard) or when the LS returned a
+      // blank string that would wipe the settings page (robustness guard).
+      if (shouldSkipReload(lsHtml, isModified())) return@executeOnPooledThread
+
+      // Theming and browser init both require the EDT (Swing/JBUI APIs). The pooled thread only
+      // fetches raw HTML from the LS; all UI work is dispatched via invokeLater.
       ApplicationManager.getApplication()
         .invokeLater(
           {
             if (isDisposed) return@invokeLater
+            // Re-check isModified on the EDT to close the TOCTOU window: user could have started
+            // editing between the pooled-thread guard check and this EDT dispatch.
+            if (isModified()) return@invokeLater
+            val themedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(lsHtml)
             // Skip re-render when themed content is unchanged (prevents flicker)
-            if (!themedHtmlDiffersFromCurrent(lsHtml)) return@invokeLater
+            if (themedHtml == lastThemedHtml) return@invokeLater
             isUsingFallback = false
-            initializeJcefBrowser(lsHtml)
+            initializeJcefBrowserFromThemed(themedHtml)
           },
           ModalityState.any(),
         )

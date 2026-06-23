@@ -58,4 +58,48 @@ class HTMLSettingsPanelTest : BasePlatformTestCase() {
       result,
     )
   }
+
+  // Data-loss guard: skip reload when user has unsaved edits
+  fun `test shouldSkipReload returns true when isModified is true`() {
+    val lsHtml = "<html><body>non-blank LS content</body></html>"
+
+    val result = HTMLSettingsPanel.shouldSkipReload(lsHtml, isModified = true)
+
+    assertTrue(
+      "shouldSkipReload should return true (skip) when the panel has unsaved modifications",
+      result,
+    )
+  }
+
+  // Robustness guard: skip reload when LS returns an empty/blank string
+  fun `test shouldSkipReload returns true when lsHtml is blank`() {
+    val result = HTMLSettingsPanel.shouldSkipReload("   ", isModified = false)
+
+    assertTrue(
+      "shouldSkipReload should return true (skip) when lsHtml is blank",
+      result,
+    )
+  }
+
+  // Happy path: non-blank html, not modified → reload should proceed
+  fun `test shouldSkipReload returns false when not modified and html not blank`() {
+    val lsHtml = "<html><body>valid content</body></html>"
+
+    val result = HTMLSettingsPanel.shouldSkipReload(lsHtml, isModified = false)
+
+    assertFalse(
+      "shouldSkipReload should return false (proceed) when html is non-blank and panel is unmodified",
+      result,
+    )
+  }
+
+  // Empty string is also blank
+  fun `test shouldSkipReload returns true when lsHtml is empty string`() {
+    val result = HTMLSettingsPanel.shouldSkipReload("", isModified = false)
+
+    assertTrue(
+      "shouldSkipReload should return true (skip) when lsHtml is empty",
+      result,
+    )
+  }
 }
