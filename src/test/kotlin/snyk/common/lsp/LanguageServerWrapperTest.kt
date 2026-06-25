@@ -1093,21 +1093,23 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `getSettings omits global additional_parameters when blank`() {
+  fun `getSettings emits global additional_parameters with changed=false when blank`() {
     settings.globalAdditionalParameters = ""
 
     val actual = cut.getSettings()
 
-    assertFalse(actual.settings?.containsKey(LsSettingsKeys.ADDITIONAL_PARAMETERS) ?: false)
+    assertEquals("", actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.value)
+    assertEquals(false, actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.changed)
   }
 
   @Test
-  fun `getSettings omits global additional_environment when blank`() {
+  fun `getSettings emits global additional_environment with changed=false when blank`() {
     settings.globalAdditionalEnvironment = ""
 
     val actual = cut.getSettings()
 
-    assertFalse(actual.settings?.containsKey(LsSettingsKeys.ADDITIONAL_ENVIRONMENT) ?: false)
+    assertEquals("", actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value)
+    assertEquals(false, actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.changed)
   }
 
   private data class VerifyProtocolScenario(

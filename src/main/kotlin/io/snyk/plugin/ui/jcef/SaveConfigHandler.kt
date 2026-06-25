@@ -450,16 +450,6 @@ class SaveConfigHandler(
       ) {
         settings.globalAdditionalEnvironment = it ?: ""
       }
-      // Bug fix: propagate clear-to-LS when user empties global additional settings.
-      // applyGlobalSetting skips null/absent values; a blank value IS present but must
-      // be forwarded as a null-reset so LS learns the field was cleared.
-      if (config.additionalParameters != null && joinedAdditionalParameters.isNullOrBlank()) {
-        settings.addPendingReset(LsSettingsKeys.ADDITIONAL_PARAMETERS)
-      }
-      if (config.additionalEnv != null && config.additionalEnv.isBlank()) {
-        settings.addPendingReset(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)
-      }
-
       // Trusted folders - sync the list (add new, remove missing)
       config.trustedFolders?.let { folders ->
         val trustService = service<WorkspaceTrustService>()
