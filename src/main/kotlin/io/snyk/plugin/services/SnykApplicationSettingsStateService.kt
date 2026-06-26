@@ -101,8 +101,11 @@ class SnykApplicationSettingsStateService :
   fun consumePendingFolderResets(ownedFolderPaths: Set<String>? = null): Map<String, Set<String>> =
     synchronized(pendingResetsLock) {
       val owned =
-        if (ownedFolderPaths == null) pendingFolderResets.keys.toSet()
-        else pendingFolderResets.keys.intersect(ownedFolderPaths)
+        if (ownedFolderPaths == null) {
+          pendingFolderResets.keys.toSet()
+        } else {
+          pendingFolderResets.keys.intersect(ownedFolderPaths)
+        }
       val snapshot = owned.associateWith { pendingFolderResets.getValue(it).toSet() }
       owned.forEach { pendingFolderResets.remove(it) }
       snapshot
