@@ -53,6 +53,9 @@ class SnykApplicationSettingsStateService :
 
   // Keys pending a reset signal ({ value: null, changed: true }) to the LS.
   // Transient: not persisted, consumed once by getSettings().
+  // APP-scoped and mutated from multiple threads (JCEF query thread enqueues; every
+  // getSettings() across the multi-project fan-out consumes), so guard all access with
+  // [pendingResetsLock] — the consume is a compound snapshot-then-clear that must be atomic.
   @Transient private val pendingResets: MutableSet<String> = mutableSetOf()
 
   // Per-folder keys pending a reset signal ({ value: null, changed: true }) to the LS.
@@ -60,18 +63,23 @@ class SnykApplicationSettingsStateService :
   @Transient
   private val pendingFolderResets: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
+  @Transient private val pendingResetsLock = Any()
+
   fun addPendingReset(key: String) {
-    pendingResets.add(key)
+    synchronized(pendingResetsLock) { pendingResets.add(key) }
   }
 
-  fun consumePendingResets(): Set<String> {
-    val snapshot = pendingResets.toSet()
-    pendingResets.clear()
-    return snapshot
-  }
+  fun consumePendingResets(): Set<String> =
+    synchronized(pendingResetsLock) {
+      val snapshot = pendingResets.toSet()
+      pendingResets.clear()
+      snapshot
+    }
 
   fun addPendingFolderReset(folderPath: String, key: String) {
-    pendingFolderResets.getOrPut(folderPath) { mutableSetOf() }.add(key)
+    synchronized(pendingResetsLock) {
+      pendingFolderResets.getOrPut(folderPath) { mutableSetOf() }.add(key)
+    }
   }
 
   /**
@@ -82,17 +90,24 @@ class SnykApplicationSettingsStateService :
    * consume to the calling project's workspace folders. Keys must already be normalized
    * ([FolderConfigSettings.normalizePath]) to match how resets are queued. A null set consumes all
    * (used by tests and any single-window caller).
+   *
+   * ponytail: consume-and-remove, so if the SAME folder is open in two project windows only the
+   * first window's LS receives the {value:null,changed:true} Unset; the second keeps its own
+   * user:folder override until its next unrelated config change. The shared override is already
+   * removed from FolderConfigSettings so it won't re-assert. Upgrade path if multi-window/same-folder
+   * matters: ref-count owners per folder and drop the entry only after all owners consume.
    */
   fun consumePendingFolderResets(
     ownedFolderPaths: Set<String>? = null
-  ): Map<String, Set<String>> {
-    val owned =
-      if (ownedFolderPaths == null) pendingFolderResets.keys.toSet()
-      else pendingFolderResets.keys.intersect(ownedFolderPaths)
-    val snapshot = owned.associateWith { pendingFolderResets.getValue(it).toSet() }
-    owned.forEach { pendingFolderResets.remove(it) }
-    return snapshot
-  }
+  ): Map<String, Set<String>> =
+    synchronized(pendingResetsLock) {
+      val owned =
+        if (ownedFolderPaths == null) pendingFolderResets.keys.toSet()
+        else pendingFolderResets.keys.intersect(ownedFolderPaths)
+      val snapshot = owned.associateWith { pendingFolderResets.getValue(it).toSet() }
+      owned.forEach { pendingFolderResets.remove(it) }
+      snapshot
+    }
 
   fun markExplicitlyChanged(settingKey: String) {
     explicitChanges.add(settingKey)

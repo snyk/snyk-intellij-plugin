@@ -631,7 +631,12 @@ class SaveConfigHandler(
     val settings = pluginSettings()
 
     for (folderConfig in folderConfigs) {
-      val folderPath = folderConfig.folderPath
+      // Normalize once so the per-folder explicit-change flags are keyed identically to the store
+      // (FolderConfigSettings), the reset queue (applyFolderResetsFromRawJson), and the outbound
+      // merge (applyPendingFolderResets) — all of which key by the normalized path. A raw,
+      // non-normalized path here would store the flag under a different key and silently no-op a
+      // later reset of the same folder.
+      val folderPath = fcs.normalizePath(folderConfig.folderPath)
       val existing = fcs.getFolderConfig(folderPath)
       var updated = existing
 

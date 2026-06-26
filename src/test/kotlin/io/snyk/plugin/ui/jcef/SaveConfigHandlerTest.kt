@@ -1414,6 +1414,41 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(resets[normalized]?.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED) == true)
   }
 
+  fun `test applyFolderConfigs keys the explicit-change flag by the normalized path`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val fcs = service<FolderConfigSettings>()
+    val baseDir =
+      Files.createTempDirectory("snyk-savecfg-set-norm").toAbsolutePath().normalize().toString()
+    val normalized = fcs.normalizePath(baseDir)
+    // Non-normalized inbound path (trailing slash + redundant "." segment). The store and the
+    // reset/outbound paths key by the normalized path; if applyFolderConfigs keyed the explicit
+    // flag by the raw path, a later reset of the same folder would silently no-op.
+    val rawPath = "$baseDir/./"
+
+    val json =
+      """
+        {
+          "folderConfigs": [
+            { "folderPath": ${gson.toJson(rawPath)}, "snyk_code_enabled": false }
+          ]
+        }
+      """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(json)
+
+    assertTrue(
+      "explicit-change flag must be keyed by the normalized path, not the raw inbound path",
+      realSettings.isExplicitlyChanged(normalized, LsFolderSettingsKeys.SNYK_CODE_ENABLED),
+    )
+    assertFalse(
+      "raw path must not carry the explicit-change flag",
+      realSettings.isExplicitlyChanged(rawPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED),
+    )
+  }
+
   fun `test saveConfig non-scalar folder fields sent as null clear stored overrides and queue resets`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
