@@ -67,7 +67,6 @@ import snyk.common.ProductType
 import snyk.common.editor.DocumentChanger
 import snyk.common.lsp.progress.ProgressManager
 import snyk.common.lsp.settings.FolderConfigSettings
-import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.sdk.SdkHelper
@@ -313,17 +312,10 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
           }
         }
 
-        // Process folder-scope settings from folderConfigs: only when exactly one folder is
-        // present do we mirror its settings to global plugin state. With multiple folders, nothing
-        // is toggled globally (per-folder state lives in FolderConfigSettings).
+        // folderConfigs are stored exclusively in FolderConfigSettings (below); they must never
+        // be mirrored into global plugin state. Global (Project Defaults) for the dual-scope keys
+        // arrives only via the top-level `settings` map and is owned by the form-save path.
         val folderConfigsList = configurationParam.folderConfigs
-
-        if (folderConfigsList?.size == 1) {
-          folderConfigsList.first().settings?.let { folderSettings ->
-            settingsChanged =
-              applyFolderScopeSettingsToPluginState(folderSettings, ps) || settingsChanged
-          }
-        }
 
         if (settingsChanged) {
           StoreUtil.saveSettings(ApplicationManager.getApplication(), true)
@@ -366,95 +358,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         logger.error("Error processing snyk configuration", e)
       }
     }
-  }
-
-  /**
-   * Applies folder-scope settings from an LS folder config to the global plugin state. Returns true
-   * if any setting was changed. Only called when `$/snyk.configuration` includes exactly one
-   * `folderConfig`; with multiple folders, this is not invoked.
-   */
-  private fun applyFolderScopeSettingsToPluginState(
-    folderSettings: Map<String, snyk.common.lsp.settings.ConfigSetting>,
-    ps: io.snyk.plugin.services.SnykApplicationSettingsStateService,
-  ): Boolean {
-    var changed = false
-
-    folderSettings[LsFolderSettingsKeys.SNYK_CODE_ENABLED]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.snykCodeSecurityIssuesScanEnable != boolVal) {
-          ps.snykCodeSecurityIssuesScanEnable = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.ossScanEnable != boolVal) {
-          ps.ossScanEnable = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.iacScanEnabled != boolVal) {
-          ps.iacScanEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SNYK_SECRETS_ENABLED]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.secretsEnabled != boolVal) {
-          ps.secretsEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    // Severity filters are NOT mirrored to global state — they live exclusively in
-    // folder configs and are read via isSeverityEnabledForProjectToolWindow(). Writing
-    // them to global state would corrupt other projects sharing the same singleton.
-
-    folderSettings[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value?.let {
-      if (it is Number && ps.riskScoreThreshold != it.toInt()) {
-        ps.riskScoreThreshold = it.toInt()
-        changed = true
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.openIssuesEnabled != boolVal) {
-          ps.openIssuesEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.ignoredIssuesEnabled != boolVal) {
-          ps.ignoredIssuesEnabled = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.scanOnSave != boolVal) {
-          ps.scanOnSave = boolVal
-          changed = true
-        }
-      }
-    }
-    folderSettings[LsFolderSettingsKeys.SCAN_NET_NEW]?.value?.let {
-      (it as? Boolean)?.let { boolVal ->
-        if (ps.isDeltaFindingsEnabled() != boolVal) {
-          ps.setDeltaEnabled(boolVal)
-          changed = true
-        }
-      }
-    }
-
-    return changed
   }
 
   @JsonNotification(value = "$/snyk.scan")
