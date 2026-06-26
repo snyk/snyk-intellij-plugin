@@ -177,7 +177,7 @@ class FolderConfigSettingsTest {
   }
 
   @Test
-  fun `getFolderConfig creates and stores new config if not found, with normalized path`() {
+  fun `getFolderConfig returns a normalized default for unknown folder without persisting it`() {
     val rawPath = "/new/folder/./for/creation"
     val expectedNormalizedPath = Paths.get(rawPath).normalize().toAbsolutePath().toString()
 
@@ -216,17 +216,11 @@ class FolderConfigSettingsTest {
       newConfig.settings?.get(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)?.value,
     )
 
-    val allConfigs = settings.getAll()
-    assertEquals("A new config should have been added", 1, allConfigs.size)
-    assertTrue(
-      "Internal map should contain the new config with normalized path as key",
-      allConfigs.containsKey(expectedNormalizedPath),
-    )
-    assertEquals(
-      "Stored config folderPath should match",
-      expectedNormalizedPath,
-      allConfigs[expectedNormalizedPath]?.folderPath,
-    )
+    // The default is transient: reading an unknown folder must NOT materialize an override in the
+    // store (the LS owns folder overrides; a persist-on-read would emit a default user:folder
+    // config
+    // the user never set — the opposite of a reset).
+    assertTrue("Reading an unknown folder must not persist a config", settings.getAll().isEmpty())
   }
 
   @Test

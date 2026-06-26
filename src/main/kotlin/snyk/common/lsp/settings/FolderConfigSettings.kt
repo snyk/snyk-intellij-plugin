@@ -41,34 +41,33 @@ class FolderConfigSettings {
     return normalizedAbsolutePath
   }
 
+  // Pure read: returns the stored override or a transient default. The LS owns folder overrides
+  // (populated via [addAll] from didChangeConfiguration); the IDE must not materialize one as a
+  // side-effect of a read. Persisting the default here let a folder merely *present* in a save
+  // payload (or rendered in the settings dialog) acquire a default user:folder override it never
+  // had — emitted to the LS as if user-chosen, the opposite of a reset. Writes go through
+  // [addFolderConfig] only.
   internal fun getFolderConfig(folderPath: String): LspFolderConfig {
     val normalizedPath = normalizePath(folderPath)
-    val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
-    return folderConfig
+    return configs[normalizedPath] ?: createEmpty(normalizedPath)
   }
 
-  private fun createEmpty(normalizedAbsolutePath: String): LspFolderConfig {
-    val newConfig =
-      LspFolderConfig(
-        folderPath = normalizedAbsolutePath,
-        settings =
-          mapOf(
-            LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main"),
-            LsFolderSettingsKeys.LOCAL_BRANCHES to ConfigSetting(value = emptyList<String>()),
-            LsFolderSettingsKeys.ADDITIONAL_PARAMETERS to
-              ConfigSetting(value = emptyList<String>()),
-            LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.REFERENCE_FOLDER to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.AUTO_DETERMINED_ORG to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.ORG_SET_BY_USER to ConfigSetting(value = false),
-            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to
-              ConfigSetting(value = emptyMap<String, Any>()),
-          ),
-      )
-    configs[normalizedAbsolutePath] = newConfig
-    return newConfig
-  }
+  private fun createEmpty(normalizedAbsolutePath: String): LspFolderConfig =
+    LspFolderConfig(
+      folderPath = normalizedAbsolutePath,
+      settings =
+        mapOf(
+          LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main"),
+          LsFolderSettingsKeys.LOCAL_BRANCHES to ConfigSetting(value = emptyList<String>()),
+          LsFolderSettingsKeys.ADDITIONAL_PARAMETERS to ConfigSetting(value = emptyList<String>()),
+          LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.REFERENCE_FOLDER to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.AUTO_DETERMINED_ORG to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.ORG_SET_BY_USER to ConfigSetting(value = false),
+          LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to ConfigSetting(value = emptyMap<String, Any>()),
+        ),
+    )
 
   fun getAll(): Map<String, LspFolderConfig> = HashMap(configs)
 
