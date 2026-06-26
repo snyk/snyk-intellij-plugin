@@ -75,6 +75,12 @@ class LanguageServerWrapperTest {
       snykPluginDisposable
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
       folderConfigSettingsMock
+    // normalizePath is used to scope pending folder-reset consumption to owned workspace folders;
+    // delegate to the real normalization so owned paths match the queued (normalized) reset keys.
+    every { folderConfigSettingsMock.normalizePath(any()) } answers
+      {
+        Paths.get(firstArg<String>()).normalize().toAbsolutePath().toString()
+      }
     every { applicationMock.isDisposed } returns false
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
@@ -1070,6 +1076,11 @@ class LanguageServerWrapperTest {
   @Test
   fun `getSettings emits pending folder reset as value null changed true`() {
     val folderPath = Paths.get("/work/reset-project").toAbsolutePath().toString()
+    // The reset queue is consumed scoped to this project's workspace folders, so the folder must
+    // be owned by the wrapper for its reset to be emitted.
+    cut.configuredWorkspaceFolders.add(
+      WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
+    )
     settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
     settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.PREFERRED_ORG)
     // Non-scalar overrides emit identically: the queue stores only string keys and the emit always
@@ -1110,6 +1121,9 @@ class LanguageServerWrapperTest {
   @Test
   fun `getSettings consumes pending folder resets so a second call does not re-emit`() {
     val folderPath = Paths.get("/work/reset-project-2").toAbsolutePath().toString()
+    cut.configuredWorkspaceFolders.add(
+      WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
+    )
     settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC)
 
     cut.getSettings()

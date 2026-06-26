@@ -276,6 +276,35 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun consumePendingFolderResets_scopedToOwnedPaths_leavesOtherProjectsResets() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingFolderReset("/work/a", "snyk_code_enabled")
+    target.addPendingFolderReset("/work/b", "scan_automatic")
+
+    // Project owning only /work/a drains only its reset; /work/b survives for the owning window.
+    val ownedByA = target.consumePendingFolderResets(setOf("/work/a"))
+    assertEquals(setOf("/work/a"), ownedByA.keys)
+    assertEquals(setOf("snyk_code_enabled"), ownedByA["/work/a"])
+
+    val ownedByB = target.consumePendingFolderResets(setOf("/work/b"))
+    assertEquals(setOf("/work/b"), ownedByB.keys)
+    assertEquals(setOf("scan_automatic"), ownedByB["/work/b"])
+
+    assertTrue(target.consumePendingFolderResets().isEmpty())
+  }
+
+  @Test
+  fun consumePendingFolderResets_nullPaths_consumesAll() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingFolderReset("/work/a", "snyk_code_enabled")
+    target.addPendingFolderReset("/work/b", "scan_automatic")
+
+    val all = target.consumePendingFolderResets()
+    assertEquals(setOf("/work/a", "/work/b"), all.keys)
+    assertTrue(target.consumePendingFolderResets().isEmpty())
+  }
+
+  @Test
   fun lsUserAssertedChangeForLsConfigurationKey_trueWhenProductDiffersFromDefaults() {
     val target = SnykApplicationSettingsStateService()
     target.iacScanEnabled = false

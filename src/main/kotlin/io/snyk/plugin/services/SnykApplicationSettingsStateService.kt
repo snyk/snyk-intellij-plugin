@@ -74,9 +74,23 @@ class SnykApplicationSettingsStateService :
     pendingFolderResets.getOrPut(folderPath) { mutableSetOf() }.add(key)
   }
 
-  fun consumePendingFolderResets(): Map<String, Set<String>> {
-    val snapshot = pendingFolderResets.mapValues { (_, keys) -> keys.toSet() }
-    pendingFolderResets.clear()
+  /**
+   * Snapshots and removes pending folder resets. [pendingFolderResets] is APP-scoped (shared across
+   * all open project windows), but [SaveConfigHandler] fans out a save to every open project's
+   * (PROJECT-scoped) language server. To stop the first project in that loop from draining resets
+   * for folders it does not own — starving the windows that do — [ownedFolderPaths] restricts the
+   * consume to the calling project's workspace folders. Keys must already be normalized
+   * ([FolderConfigSettings.normalizePath]) to match how resets are queued. A null set consumes all
+   * (used by tests and any single-window caller).
+   */
+  fun consumePendingFolderResets(
+    ownedFolderPaths: Set<String>? = null
+  ): Map<String, Set<String>> {
+    val owned =
+      if (ownedFolderPaths == null) pendingFolderResets.keys.toSet()
+      else pendingFolderResets.keys.intersect(ownedFolderPaths)
+    val snapshot = owned.associateWith { pendingFolderResets.getValue(it).toSet() }
+    owned.forEach { pendingFolderResets.remove(it) }
     return snapshot
   }
 

@@ -852,7 +852,13 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     folderConfigs: List<LspFolderConfig>,
     ps: SnykApplicationSettingsStateService,
   ): List<LspFolderConfig> {
-    val pending = ps.consumePendingFolderResets()
+    // Consume only the resets for folders this project owns. The reset queue is APP-scoped but
+    // SaveConfigHandler fans out the save to every open project's LS, so an unscoped drain would
+    // let the first project clear other windows' resets (they would then re-assert the override).
+    val fcs = service<FolderConfigSettings>()
+    val ownedFolderPaths =
+      configuredWorkspaceFolders.map { fcs.normalizePath(it.uri.fromUriToPath().toString()) }.toSet()
+    val pending = ps.consumePendingFolderResets(ownedFolderPaths)
     if (pending.isEmpty()) return folderConfigs
 
     val byPath = folderConfigs.associateBy { it.folderPath }.toMutableMap()
