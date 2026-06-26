@@ -111,34 +111,49 @@ class SnykApplicationSettingsStateService :
       snapshot
     }
 
+  // [explicitChanges]/[folderExplicitChanges] are APP-scoped and touched from multiple threads:
+  // the JCEF save thread mutates them (mark/clear, including structural map removal on reset) while
+  // the multi-project getSettings() fan-out reads them via isExplicitlyChanged /
+  // applyPersistedFolderChangedFlags. Guard every access with [pendingResetsLock] (the same lock
+  // the
+  // pending-reset maps use) so a concurrent structural remove can't CME/corrupt/drop flags.
   fun markExplicitlyChanged(settingKey: String) {
-    explicitChanges.add(settingKey)
+    synchronized(pendingResetsLock) { explicitChanges.add(settingKey) }
   }
 
   fun markExplicitlyChanged(folderPath: String, settingKey: String) {
-    folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
+    synchronized(pendingResetsLock) {
+      folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
+    }
   }
 
   fun clearExplicitlyChanged(key: String) {
-    explicitChanges.remove(key)
+    synchronized(pendingResetsLock) { explicitChanges.remove(key) }
   }
 
   fun clearExplicitlyChanged(folderPath: String, key: String) {
-    folderExplicitChanges[folderPath]?.remove(key)
-    if (folderExplicitChanges[folderPath]?.isEmpty() == true) {
-      folderExplicitChanges.remove(folderPath)
+    synchronized(pendingResetsLock) {
+      folderExplicitChanges[folderPath]?.remove(key)
+      if (folderExplicitChanges[folderPath]?.isEmpty() == true) {
+        folderExplicitChanges.remove(folderPath)
+      }
     }
   }
 
   fun clearAllExplicitlyChanged() {
-    explicitChanges.clear()
-    folderExplicitChanges.clear()
+    synchronized(pendingResetsLock) {
+      explicitChanges.clear()
+      folderExplicitChanges.clear()
+    }
   }
 
-  fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
+  fun isExplicitlyChanged(settingKey: String): Boolean =
+    synchronized(pendingResetsLock) { explicitChanges.contains(settingKey) }
 
   fun isExplicitlyChanged(folderPath: String, settingKey: String): Boolean =
-    folderExplicitChanges[folderPath]?.contains(settingKey) == true
+    synchronized(pendingResetsLock) {
+      folderExplicitChanges[folderPath]?.contains(settingKey) == true
+    }
 
   /**
    * snyk-ls applies user:global settings from InitializationOptions / didChangeConfiguration only
