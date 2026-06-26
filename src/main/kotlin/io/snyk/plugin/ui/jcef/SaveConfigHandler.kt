@@ -160,7 +160,9 @@ class SaveConfigHandler(
       try {
         gson.fromJson(jsonString, SaveConfigRequest::class.java)
       } catch (e: JsonSyntaxException) {
-        logger.warn("Invalid JSON config received: ${jsonString.take(200)}", e)
+        // Don't log the payload: it carries the Snyk auth token, and JSON field order is
+        // producer-controlled, so a truncated dump can leak the token. Length is enough to triage.
+        logger.warn("Invalid JSON config received (${jsonString.length} chars): ${e.message}", e)
         throw IllegalArgumentException("Invalid configuration format", e)
       }
 
@@ -591,7 +593,12 @@ class SaveConfigHandler(
       try {
         gson.fromJson(jsonString, JsonObject::class.java)
       } catch (e: JsonSyntaxException) {
-        logger.warn("Could not parse JSON for folder resets: ${jsonString.take(200)}", e)
+        // See note at the saveConfig parse above: the payload carries the auth token, so log only
+        // its length, not its contents.
+        logger.warn(
+          "Could not parse JSON for folder resets (${jsonString.length} chars): ${e.message}",
+          e,
+        )
         return
       } ?: return
 
