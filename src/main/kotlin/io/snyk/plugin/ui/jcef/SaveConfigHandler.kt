@@ -435,6 +435,27 @@ class SaveConfigHandler(
         settings.riskScoreThreshold = it
       }
 
+      // Global (Project Defaults) advanced settings — apply to machine-scope plugin state,
+      // not to FolderConfigSettings (those are handled separately in applyFolderConfigs).
+      val joinedAdditionalParameters = config.additionalParameters?.let { it.joinToString(" ") }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsSettingsKeys.ADDITIONAL_PARAMETERS,
+        isPresent = (config.additionalParameters != null),
+        newValue = joinedAdditionalParameters,
+        currentValue = { settings.globalAdditionalParameters },
+      ) {
+        settings.globalAdditionalParameters = it ?: ""
+      }
+      applyGlobalSetting(
+        settings = settings,
+        key = LsSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        isPresent = (config.additionalEnv != null),
+        newValue = config.additionalEnv,
+        currentValue = { settings.globalAdditionalEnvironment },
+      ) {
+        settings.globalAdditionalEnvironment = it ?: ""
+      }
       // Trusted folders - sync the list (add new, remove missing)
       config.trustedFolders?.let { folders ->
         val trustService = service<WorkspaceTrustService>()
