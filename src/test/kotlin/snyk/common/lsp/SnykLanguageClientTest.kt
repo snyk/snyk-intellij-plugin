@@ -1550,7 +1550,8 @@ class SnykLanguageClientTest {
 
     Thread.sleep(500)
 
-    // Global threshold stays at its pre-set value; the folder override lands in FolderConfigSettings.
+    // Global threshold stays at its pre-set value; the folder override lands in
+    // FolderConfigSettings.
     assertEquals(100, settings.riskScoreThreshold)
     val capturedConfigs = slot<List<LspFolderConfig>>()
     verify(timeout = 5000) { folderConfigSettingsMock.addAll(capture(capturedConfigs)) }

@@ -857,7 +857,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     // let the first project clear other windows' resets (they would then re-assert the override).
     val fcs = service<FolderConfigSettings>()
     val ownedFolderPaths =
-      configuredWorkspaceFolders.map { fcs.normalizePath(it.uri.fromUriToPath().toString()) }.toSet()
+      configuredWorkspaceFolders
+        .map { fcs.normalizePath(it.uri.fromUriToPath().toString()) }
+        .toSet()
     val pending = ps.consumePendingFolderResets(ownedFolderPaths)
     if (pending.isEmpty()) return folderConfigs
 

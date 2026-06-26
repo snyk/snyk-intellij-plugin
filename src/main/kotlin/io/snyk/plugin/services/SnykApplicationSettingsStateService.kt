@@ -94,12 +94,11 @@ class SnykApplicationSettingsStateService :
    * ponytail: consume-and-remove, so if the SAME folder is open in two project windows only the
    * first window's LS receives the {value:null,changed:true} Unset; the second keeps its own
    * user:folder override until its next unrelated config change. The shared override is already
-   * removed from FolderConfigSettings so it won't re-assert. Upgrade path if multi-window/same-folder
-   * matters: ref-count owners per folder and drop the entry only after all owners consume.
+   * removed from FolderConfigSettings so it won't re-assert. Upgrade path if
+   * multi-window/same-folder matters: ref-count owners per folder and drop the entry only after all
+   * owners consume.
    */
-  fun consumePendingFolderResets(
-    ownedFolderPaths: Set<String>? = null
-  ): Map<String, Set<String>> =
+  fun consumePendingFolderResets(ownedFolderPaths: Set<String>? = null): Map<String, Set<String>> =
     synchronized(pendingResetsLock) {
       val owned =
         if (ownedFolderPaths == null) pendingFolderResets.keys.toSet()
