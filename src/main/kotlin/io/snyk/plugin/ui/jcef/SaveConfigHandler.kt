@@ -577,6 +577,11 @@ class SaveConfigHandler(
    * on others, so forwarding extra present-nulls is a safe no-op. The IDE therefore does not
    * maintain a whitelist of resettable keys.
    *
+   * Keys are forwarded verbatim. snyk-ls serves the form and sends folder fields as snake_case LS
+   * keys (matching [LsFolderSettingsKeys] and the stored override keys), so [withoutSetting] and
+   * [SnykApplicationSettingsStateService.addPendingFolderReset] act on the same key the override
+   * was stored under — no camelCase alias resolution is needed (see [FolderConfigData]).
+   *
    * For each reset field we: remove the stored override (so it can't re-assert on a later sync),
    * clear its persisted folder explicit-change flag, and queue a pending folder reset that
    * [LanguageServerWrapper.getSettings] emits as `{value: null, changed: true}`.
@@ -597,8 +602,13 @@ class SaveConfigHandler(
     for (element in folderConfigsJson) {
       if (!element.isJsonObject) continue
       val folderObject = element.asJsonObject
-      val folderPath =
+      val rawFolderPath =
         folderObject.get("folderPath")?.takeIf { it.isJsonPrimitive }?.asString ?: continue
+      // Normalize once so the reset queue and explicit-change flags are keyed identically to the
+      // store (FolderConfigSettings) and the outbound merge in applyPendingFolderResets, which
+      // both key by the normalized path. A raw non-normalized path (trailing slash, file:// URI,
+      // case variant) would otherwise miss the merge and emit a duplicate folder config.
+      val folderPath = fcs.normalizePath(rawFolderPath)
 
       var updated = fcs.getFolderConfig(folderPath)
       var changed = false

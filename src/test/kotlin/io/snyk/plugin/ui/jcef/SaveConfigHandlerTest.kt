@@ -1380,6 +1380,40 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
   }
 
+  fun `test saveConfig folder reset keys the pending queue by the normalized path`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val fcs = service<FolderConfigSettings>()
+    val baseDir =
+      Files.createTempDirectory("snyk-savecfg-reset-norm").toAbsolutePath().normalize().toString()
+    val normalized = fcs.normalizePath(baseDir)
+    // A non-normalized inbound path: trailing slash + redundant "." segment. The reset queue and
+    // the outbound merge (applyPendingFolderResets) both key by the normalized path, so a raw key
+    // here would miss the merge and emit a duplicate folder config that re-asserts the override.
+    val rawPath = "$baseDir/./"
+
+    val json =
+      """
+        {
+          "folderConfigs": [
+            { "folderPath": ${gson.toJson(rawPath)}, "snyk_code_enabled": null }
+          ]
+        }
+      """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(json)
+
+    val resets = realSettings.consumePendingFolderResets()
+    assertEquals(
+      "pending reset must be keyed by the normalized path, not the raw inbound path",
+      setOf(normalized),
+      resets.keys,
+    )
+    assertTrue(resets[normalized]?.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED) == true)
+  }
+
   fun `test saveConfig non-scalar folder fields sent as null clear stored overrides and queue resets`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings

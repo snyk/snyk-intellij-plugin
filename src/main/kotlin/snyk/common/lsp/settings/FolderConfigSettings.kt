@@ -36,7 +36,7 @@ class FolderConfigSettings {
     configs[normalizedAbsolutePath] = folderConfig.copy(folderPath = normalizedAbsolutePath)
   }
 
-  private fun normalizePath(folderPath: String): String {
+  internal fun normalizePath(folderPath: String): String {
     val normalizedAbsolutePath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
     return normalizedAbsolutePath
   }
