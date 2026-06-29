@@ -822,16 +822,15 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     // stored LspFolderConfig already carries each setting's changed flag from where it was written
     // (every writer sets changed=true via withSetting, incl. a reset's {value:null,changed:true}),
     // so it is emitted verbatim — no changed-flag re-derivation, no separate reset queue.
+    val folderConfigSettings = service<FolderConfigSettings>()
     val folderConfigsList =
       configuredWorkspaceFolders
-        .filter {
-          val folderPath = it.uri.fromUriToPath().toString()
-          folderConfigsRefreshed[folderPath] == true
-        }
-        .map {
-          val folderPath = it.uri.fromUriToPath().toString()
-          service<FolderConfigSettings>().getFolderConfig(folderPath)
-        }
+        // Normalize the lookup key the same way updateFolderConfigRefresh stores it, else a folder
+        // whose URI→path isn't already normalized (trailing slash, "." segment) misses the refresh
+        // flag and its settings — and any reset — are silently dropped.
+        .mapNotNull { folderConfigSettings.normalizePathOrNull(it.uri.fromUriToPath().toString()) }
+        .filter { folderConfigsRefreshed[it] == true }
+        .map { folderConfigSettings.getFolderConfig(it) }
         .toList()
 
     return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
