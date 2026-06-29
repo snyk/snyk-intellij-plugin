@@ -75,6 +75,10 @@ class LanguageServerWrapperTest {
       snykPluginDisposable
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
       folderConfigSettingsMock
+    // getSettings normalizes the refresh lookup key via this; the real impl is identity for the
+    // already-normalized absolute paths these tests use, so pass the arg through (relaxed mock
+    // would otherwise return null and drop every folder config).
+    every { folderConfigSettingsMock.normalizePathOrNull(any()) } answers { firstArg() }
     every { applicationMock.isDisposed } returns false
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
