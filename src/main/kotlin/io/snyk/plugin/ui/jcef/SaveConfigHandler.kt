@@ -631,6 +631,13 @@ class SaveConfigHandler(
       // normalizePathOrNull isolates one malformed path so it can't abort the whole save.
       val folderPath = fcs.normalizePathOrNull(rawFolderPath) ?: continue
 
+      // Only an already-stored folder may be rewritten. getFolderConfig synthesizes a default
+      // template for an unknown folder (a pure read since b09b2a16); persisting that here would
+      // materialize a full default user:folder override for a folder the user never configured —
+      // the opposite of a reset. The reset still reaches the LS via addPendingFolderReset below,
+      // so a never-stored folder needs no local write. Matches the VS Code path, which maps over
+      // the already-stored folder configs and never creates an entry for an unknown folder.
+      val existed = fcs.getAll().containsKey(folderPath)
       var updated = fcs.getFolderConfig(folderPath)
       var changed = false
       for ((key, value) in folderObject.entrySet()) {
@@ -641,7 +648,7 @@ class SaveConfigHandler(
         settings.addPendingFolderReset(folderPath, key)
         changed = true
       }
-      if (changed) {
+      if (existed && changed) {
         fcs.addFolderConfig(updated)
       }
     }
@@ -852,7 +859,15 @@ class SaveConfigHandler(
           )
       }
 
-      fcs.addFolderConfig(updated)
+      // Persist only when a setting was actually applied: each applyFolderSetting returns a fresh
+      // copy, so updated differs from `existing` by identity iff at least one `?.let` ran. An
+      // all-null reset payload reaches here too (applyFolderConfigs runs before the raw reset
+      // re-parse) and applies nothing, so without this guard it would persist getFolderConfig's
+      // synthetic default for a never-configured folder — the persist-on-read footgun b09b2a16
+      // removed. Re-persisting an unchanged stored config would be a pointless identical write.
+      if (updated !== existing) {
+        fcs.addFolderConfig(updated)
+      }
     }
   }
 }

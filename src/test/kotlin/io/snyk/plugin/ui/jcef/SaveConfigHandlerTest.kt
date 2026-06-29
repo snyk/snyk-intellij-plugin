@@ -1431,6 +1431,15 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
     assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
     assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
+
+    // Resetting a never-configured folder must not materialize a stored override: getFolderConfig
+    // returns a synthetic default for an unknown folder, and persisting it would re-create the
+    // exact default-on-untouched-folder entry the persist-on-read fix removed. The reset still
+    // ships via the pending queue (asserted above); the local store stays empty.
+    assertFalse(
+      "Resetting a folder with no prior override must not persist a config",
+      service<FolderConfigSettings>().getAll().containsKey(folderPath),
+    )
   }
 
   fun `test saveConfig folder reset keys the pending queue by the normalized path`() {
