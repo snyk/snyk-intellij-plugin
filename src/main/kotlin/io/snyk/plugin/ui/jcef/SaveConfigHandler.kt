@@ -25,7 +25,6 @@ import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.withSetting
-import snyk.common.lsp.settings.withoutSetting
 import snyk.trust.WorkspaceTrustService
 
 class SaveConfigHandler(
@@ -555,24 +554,22 @@ class SaveConfigHandler(
 
   private fun applyFolderSetting(
     existing: snyk.common.lsp.settings.LspFolderConfig,
-    settings: SnykApplicationSettingsStateService,
-    folderPath: String,
     key: String,
     value: Any,
   ): snyk.common.lsp.settings.LspFolderConfig {
     // Semantics: presence of a field in the JSON payload means the user (or JS form) is
     // asserting a value for it. We propagate it to LS as changed=true regardless of whether
-    // the value differs from the previously stored one. Absence of a field is handled by the
-    // caller (we simply don't invoke this function).
-    settings.markExplicitlyChanged(folderPath, key)
+    // the value differs from the previously stored one. The changed=true flag on the stored
+    // LspFolderConfig is the single source of truth — getSettings emits it verbatim. Absence
+    // of a field is handled by the caller (we simply don't invoke this function).
     return existing.withSetting(key, value, changed = true)
   }
 
   /**
    * Detects per-folder fields sent as JSON `null` (the dialog's "Reset overrides" output) and
-   * queues a reset for each. Gson deserializes a JSON null to a Kotlin null on the nullable
-   * [FolderConfigData] fields, which is indistinguishable from an absent field, so the raw JSON
-   * tree is the only place present-with-null can be detected.
+   * writes the reset signal straight into the stored folder config. Gson deserializes a JSON null
+   * to a Kotlin null on the nullable [FolderConfigData] fields, which is indistinguishable from an
+   * absent field, so the raw JSON tree is the only place present-with-null can be detected.
    *
    * Any folder field present as JSON null is forwarded as a reset. snyk-ls is authoritative over
    * which folder-scoped keys are resettable: it acts only on keys it recognizes and ignores nulls
@@ -580,13 +577,13 @@ class SaveConfigHandler(
    * maintain a whitelist of resettable keys.
    *
    * Keys are forwarded verbatim. snyk-ls serves the form and sends folder fields as snake_case LS
-   * keys (matching [LsFolderSettingsKeys] and the stored override keys), so [withoutSetting] and
-   * [SnykApplicationSettingsStateService.addPendingFolderReset] act on the same key the override
-   * was stored under — no camelCase alias resolution is needed (see [FolderConfigData]).
+   * keys (matching [LsFolderSettingsKeys] and the stored override keys), so [withSetting] acts on
+   * the same key the override was stored under — no camelCase alias resolution is needed (see
+   * [FolderConfigData]).
    *
-   * For each reset field we: remove the stored override (so it can't re-assert on a later sync),
-   * clear its persisted folder explicit-change flag, and queue a pending folder reset that
-   * [LanguageServerWrapper.getSettings] emits as `{value: null, changed: true}`.
+   * For each reset field we write `{value: null, changed: true}` into the stored config (mirrors VS
+   * Code `setSetting`); [LanguageServerWrapper.getSettings] emits the stored settings map verbatim,
+   * and snyk-ls's authoritative push-back later overwrites the transient null.
    */
   private fun applyFolderResetsFromRawJson(jsonString: String) {
     val root =
@@ -612,7 +609,6 @@ class SaveConfigHandler(
     val folderConfigsJson =
       root.get("folderConfigs")?.takeIf { it.isJsonArray }?.asJsonArray ?: return
     val fcs = service<FolderConfigSettings>()
-    val settings = pluginSettings()
 
     for (element in folderConfigsJson) {
       if (!element.isJsonObject) continue
@@ -624,28 +620,30 @@ class SaveConfigHandler(
           .get("folderPath")
           ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }
           ?.asString ?: continue
-      // Normalize once so the reset queue and explicit-change flags are keyed identically to the
-      // store (FolderConfigSettings) and the outbound merge in applyPendingFolderResets, which
-      // both key by the normalized path. A raw non-normalized path (trailing slash, file:// URI,
-      // case variant) would otherwise miss the merge and emit a duplicate folder config.
-      // normalizePathOrNull isolates one malformed path so it can't abort the whole save.
+      // Normalize once so the reset writes under the same key the store (FolderConfigSettings)
+      // uses.
+      // A raw non-normalized path (trailing slash, file:// URI, case variant) would otherwise miss
+      // the stored folder. normalizePathOrNull isolates one malformed path so it can't abort the
+      // whole save.
       val folderPath = fcs.normalizePathOrNull(rawFolderPath) ?: continue
 
       // Only an already-stored folder may be rewritten. getFolderConfig synthesizes a default
       // template for an unknown folder (a pure read since b09b2a16); persisting that here would
       // materialize a full default user:folder override for a folder the user never configured —
-      // the opposite of a reset. The reset still reaches the LS via addPendingFolderReset below,
-      // so a never-stored folder needs no local write. Matches the VS Code path, which maps over
-      // the already-stored folder configs and never creates an entry for an unknown folder.
+      // the opposite of a reset. Matches the VS Code path, which maps over the already-stored
+      // folder configs and never creates an entry for an unknown folder. A never-stored folder
+      // has no override to reset, so it needs no write.
       val existed = fcs.getAll().containsKey(folderPath)
       var updated = fcs.getFolderConfig(folderPath)
       var changed = false
       for ((key, value) in folderObject.entrySet()) {
         if (key == "folderPath") continue
         if (!value.isJsonNull) continue
-        updated = updated.withoutSetting(key)
-        settings.clearExplicitlyChanged(folderPath, key)
-        settings.addPendingFolderReset(folderPath, key)
+        // Write the reset signal directly into the stored config (mirrors VS Code setSetting):
+        // getSettings emits the settings map verbatim, so {value:null, changed:true} reaches the
+        // LS, which Unsets the user:folder override. snyk-ls then pushes back the resolved config
+        // via $/snyk.configuration, overwriting this transient null in FolderConfigSettings.
+        updated = updated.withSetting(key, value = null, changed = true)
         changed = true
       }
       if (existed && changed) {
@@ -656,41 +654,22 @@ class SaveConfigHandler(
 
   private fun applyFolderConfigs(folderConfigs: List<FolderConfigData>) {
     val fcs = service<FolderConfigSettings>()
-    val settings = pluginSettings()
 
     for (folderConfig in folderConfigs) {
-      // Normalize once so the per-folder explicit-change flags are keyed identically to the store
-      // (FolderConfigSettings), the reset queue (applyFolderResetsFromRawJson), and the outbound
-      // merge (applyPendingFolderResets) — all of which key by the normalized path. A raw,
-      // non-normalized path here would store the flag under a different key and silently no-op a
-      // later reset of the same folder. normalizePathOrNull isolates one malformed path so it can't
-      // abort the whole save.
+      // Normalize once so the stored config and the reset path (applyFolderResetsFromRawJson) key
+      // by
+      // the same normalized path. normalizePathOrNull isolates one malformed path so it can't abort
+      // the whole save.
       val folderPath = fcs.normalizePathOrNull(folderConfig.folderPath) ?: continue
       val existing = fcs.getFolderConfig(folderPath)
       var updated = existing
 
       folderConfig.additionalParameters?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, it)
       }
-
       folderConfig.additionalEnv?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT, it)
       }
-
       folderConfig.scanCommandConfig?.let { scanCommands ->
         val mapped =
           scanCommands.mapValues { (_, v) ->
@@ -701,162 +680,55 @@ class SaveConfigHandler(
               postScanOnlyReferenceFolder = v.postScanOnlyReferenceFolder ?: true,
             )
           }
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
-            mapped,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG, mapped)
       }
-
       folderConfig.preferredOrg?.let {
-        updated =
-          applyFolderSetting(updated, settings, folderPath, LsFolderSettingsKeys.PREFERRED_ORG, it)
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.PREFERRED_ORG, it)
       }
-
       folderConfig.autoDeterminedOrg?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.AUTO_DETERMINED_ORG,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.AUTO_DETERMINED_ORG, it)
       }
       folderConfig.orgSetByUser?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.ORG_SET_BY_USER,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ORG_SET_BY_USER, it)
       }
-
       folderConfig.scanAutomatic?.let {
-        updated =
-          applyFolderSetting(updated, settings, folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC, it)
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_AUTOMATIC, it)
       }
       folderConfig.scanNetNew?.let {
-        updated =
-          applyFolderSetting(updated, settings, folderPath, LsFolderSettingsKeys.SCAN_NET_NEW, it)
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_NET_NEW, it)
       }
       folderConfig.severityFilterCritical?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL, it)
       }
       folderConfig.severityFilterHigh?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, it)
       }
-
       folderConfig.severityFilterMedium?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM, it)
       }
-
       folderConfig.severityFilterLow?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_LOW, it)
       }
-
       folderConfig.snykOssEnabled?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SNYK_OSS_ENABLED,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_OSS_ENABLED, it)
       }
       folderConfig.snykCodeEnabled?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SNYK_CODE_ENABLED,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_CODE_ENABLED, it)
       }
       folderConfig.snykIacEnabled?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SNYK_IAC_ENABLED,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_IAC_ENABLED, it)
       }
       folderConfig.snykSecretsEnabled?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, it)
       }
       folderConfig.issueViewOpenIssues?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it)
       }
       folderConfig.issueViewIgnoredIssues?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it)
       }
       folderConfig.riskScoreThreshold?.let {
-        updated =
-          applyFolderSetting(
-            updated,
-            settings,
-            folderPath,
-            LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
-            it,
-          )
+        updated = applyFolderSetting(updated, LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, it)
       }
 
       // Persist only when a setting was actually applied: each applyFolderSetting returns a fresh

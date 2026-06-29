@@ -1122,9 +1122,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       true,
       stored[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.changed,
     )
-    assertTrue(
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
-    )
   }
 
   fun `test saveConfig second identical folderConfigs keeps changed true for fields present in payload`() {
@@ -1146,8 +1143,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val s = service<FolderConfigSettings>().getFolderConfig(folderPath).settings ?: error("s")
     assertEquals(true, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.changed)
     assertEquals(true, s[LsFolderSettingsKeys.SNYK_OSS_ENABLED]?.changed)
-    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC))
-    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SNYK_OSS_ENABLED))
   }
 
   fun `test saveConfig folder field absent from payload leaves stored value and explicit flag untouched`() {
@@ -1172,10 +1167,8 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val s = fcs.getFolderConfig(folderPath).settings ?: error("s")
     assertEquals(listOf("--debug"), s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value)
     assertEquals(false, s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.changed)
-    assertFalse(
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
-    )
-    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC))
+    // The touched field is stored as changed=true; the absent one keeps its prior changed=false.
+    assertEquals(true, s[LsFolderSettingsKeys.SCAN_AUTOMATIC]?.changed)
   }
 
   fun `test saveConfig folder additional_parameters present marks changed and explicit flag`() {
@@ -1202,9 +1195,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.value,
     )
     assertEquals(true, s[LsFolderSettingsKeys.ADDITIONAL_PARAMETERS]?.changed)
-    assertTrue(
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
-    )
   }
 
   fun `test parseAndSaveConfig empty cliPath resolves to default CLI path`() {
@@ -1368,9 +1358,17 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     val goodPath =
       Files.createTempDirectory("snyk-savecfg-good").toAbsolutePath().normalize().toString()
+    // Pre-seed an override so the reset has something to clear (a never-stored folder writes
+    // nothing -- see the never-configured-folder test).
+    val fcs = service<FolderConfigSettings>()
+    fcs.addFolderConfig(
+      fcs
+        .getFolderConfig(goodPath)
+        .withSetting(LsFolderSettingsKeys.SNYK_CODE_ENABLED, true, changed = true)
+    )
     // A malformed path (NUL byte) makes Paths.get throw InvalidPathException; a number
     // folderPath is a non-string primitive. Neither should abort the loop -- the valid
-    // folder reset must still be queued. Char(0) embeds the NUL without a raw NUL in source.
+    // folder reset must still be written. Char(0) embeds the NUL without a raw NUL in source.
     val nulPath = gson.toJson("bad${Char(0)}path")
     val json =
       """
@@ -1386,19 +1384,37 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    val resets = realSettings.consumePendingFolderResets()
-    val keys = resets[goodPath] ?: error("expected pending resets for $goodPath")
-    assertTrue(keys.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    // The bogus number path must not leak an entry into the queue.
-    assertEquals("only the valid folder should be queued", 1, resets.size)
+    val stored = fcs.getFolderConfig(goodPath).settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    assertNotNull("expected the valid folder's reset to be written", stored)
+    assertNull(stored?.value)
+    assertEquals(true, stored?.changed)
+    // The bogus paths must not leak a stored entry.
+    assertFalse(fcs.getAll().containsKey("bad${Char(0)}path"))
+    assertFalse(fcs.getAll().containsKey("123"))
   }
 
-  fun `test saveConfig folder field sent as null queues a pending folder reset`() {
+  fun `test saveConfig folder field sent as null writes value null changed true into the stored config`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
     val folderPath =
       Files.createTempDirectory("snyk-savecfg-reset").toAbsolutePath().normalize().toString()
+    // Pre-seed overrides so the reset has prior values to clear.
+    val fcs = service<FolderConfigSettings>()
+    var seeded = fcs.getFolderConfig(folderPath)
+    for (key in
+      listOf(
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.SCAN_AUTOMATIC,
+        LsFolderSettingsKeys.PREFERRED_ORG,
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+      )) {
+      seeded = seeded.withSetting(key, "seeded", changed = true)
+    }
+    fcs.addFolderConfig(seeded)
+
     // Written as a raw JSON string so the reset fields are explicit JSON null (a Kotlin map would
     // drop null values during gson serialization, hiding the present-with-null case under test).
     val json =
@@ -1421,28 +1437,55 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    val resets = realSettings.consumePendingFolderResets()
-    val keys = resets[folderPath] ?: error("expected pending resets for $folderPath")
-    assertTrue(keys.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_AUTOMATIC))
-    assertTrue(keys.contains(LsFolderSettingsKeys.PREFERRED_ORG))
-    // Non-scalar overrides (list + nested object) reset the same as scalars: a JSON null literal
-    // is JsonNull regardless of the field's normal type, so present-null detection still fires.
-    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
-    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
-    assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
+    val stored = fcs.getFolderConfig(folderPath)
+    // Scalars and non-scalars reset identically: a JSON null literal is JsonNull regardless of the
+    // field's normal type, so present-null detection fires for all of them.
+    for (key in
+      listOf(
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.SCAN_AUTOMATIC,
+        LsFolderSettingsKeys.PREFERRED_ORG,
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+      )) {
+      val setting = stored.settings?.get(key) ?: error("expected reset setting for $key")
+      assertNull("$key value must be null after reset", setting.value)
+      assertEquals("$key must be changed=true after reset", true, setting.changed)
+    }
+  }
 
-    // Resetting a never-configured folder must not materialize a stored override: getFolderConfig
-    // returns a synthetic default for an unknown folder, and persisting it would re-create the
-    // exact default-on-untouched-folder entry the persist-on-read fix removed. The reset still
-    // ships via the pending queue (asserted above); the local store stays empty.
+  fun `test saveConfig reset of a never-configured folder does not persist a config`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val folderPath =
+      Files.createTempDirectory("snyk-savecfg-reset-unknown")
+        .toAbsolutePath()
+        .normalize()
+        .toString()
+    val json =
+      """
+        {
+          "folderConfigs": [
+            { "folderPath": ${gson.toJson(folderPath)}, "snyk_code_enabled": null }
+          ]
+        }
+      """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(json)
+
+    // getFolderConfig returns a synthetic default for an unknown folder; persisting it on a reset
+    // would re-create the default-on-untouched-folder entry the persist-on-read fix removed. A
+    // never-configured folder has no override to reset, so the store stays empty.
     assertFalse(
       "Resetting a folder with no prior override must not persist a config",
       service<FolderConfigSettings>().getAll().containsKey(folderPath),
     )
   }
 
-  fun `test saveConfig folder reset keys the pending queue by the normalized path`() {
+  fun `test saveConfig folder reset writes the stored config keyed by the normalized path`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
@@ -1450,9 +1493,14 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val baseDir =
       Files.createTempDirectory("snyk-savecfg-reset-norm").toAbsolutePath().normalize().toString()
     val normalized = fcs.normalizePath(baseDir)
-    // A non-normalized inbound path: trailing slash + redundant "." segment. The reset queue and
-    // the outbound merge (applyPendingFolderResets) both key by the normalized path, so a raw key
-    // here would miss the merge and emit a duplicate folder config that re-asserts the override.
+    // Pre-seed under the normalized path so the reset has an override to clear.
+    fcs.addFolderConfig(
+      fcs
+        .getFolderConfig(normalized)
+        .withSetting(LsFolderSettingsKeys.SNYK_CODE_ENABLED, true, changed = true)
+    )
+    // A non-normalized inbound path: trailing slash + redundant "." segment. The store keys by the
+    // normalized path, so a raw key here would miss the stored folder and emit a duplicate.
     val rawPath = "$baseDir/./"
 
     val json =
@@ -1467,16 +1515,14 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    val resets = realSettings.consumePendingFolderResets()
-    assertEquals(
-      "pending reset must be keyed by the normalized path, not the raw inbound path",
-      setOf(normalized),
-      resets.keys,
-    )
-    assertTrue(resets[normalized]?.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED) == true)
+    val setting =
+      fcs.getFolderConfig(normalized).settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+        ?: error("reset must be written under the normalized path, not the raw inbound path")
+    assertNull(setting.value)
+    assertEquals(true, setting.changed)
   }
 
-  fun `test applyFolderConfigs keys the explicit-change flag by the normalized path`() {
+  fun `test applyFolderConfigs stores the config keyed by the normalized path with changed true`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
@@ -1484,9 +1530,9 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     val baseDir =
       Files.createTempDirectory("snyk-savecfg-set-norm").toAbsolutePath().normalize().toString()
     val normalized = fcs.normalizePath(baseDir)
-    // Non-normalized inbound path (trailing slash + redundant "." segment). The store and the
-    // reset/outbound paths key by the normalized path; if applyFolderConfigs keyed the explicit
-    // flag by the raw path, a later reset of the same folder would silently no-op.
+    // Non-normalized inbound path (trailing slash + redundant "." segment). The store keys by the
+    // normalized path; if applyFolderConfigs stored under the raw path, a later reset of the same
+    // folder would miss it.
     val rawPath = "$baseDir/./"
 
     val json =
@@ -1501,17 +1547,18 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    assertTrue(
-      "explicit-change flag must be keyed by the normalized path, not the raw inbound path",
-      realSettings.isExplicitlyChanged(normalized, LsFolderSettingsKeys.SNYK_CODE_ENABLED),
-    )
-    assertFalse(
-      "raw path must not carry the explicit-change flag",
-      realSettings.isExplicitlyChanged(rawPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED),
+    val setting =
+      fcs.getFolderConfig(normalized).settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+        ?: error("config must be stored under the normalized path, not the raw inbound path")
+    assertEquals(false, setting.value)
+    assertEquals(
+      "a present field is sent to the LS as changed=true (single source of truth)",
+      true,
+      setting.changed,
     )
   }
 
-  fun `test saveConfig non-scalar folder fields sent as null clear stored overrides and queue resets`() {
+  fun `test saveConfig non-scalar folder fields sent as null write value null changed true into the stored config`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
@@ -1543,9 +1590,6 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         changed = true,
       )
     fcs.addFolderConfig(seeded)
-    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
-    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
-    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
 
     val json =
       """
@@ -1564,46 +1608,34 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    // Pending resets queued for all three non-scalar keys.
-    val resets = realSettings.consumePendingFolderResets()
-    val keys = resets[folderPath] ?: error("expected pending resets for $folderPath")
-    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
-    assertTrue(keys.contains(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
-    assertTrue(keys.contains(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
-
-    // Explicit-changed flags cleared so the overrides don't re-assert on the next sync.
-    assertFalse(
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
-    )
-    assertFalse(
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
-    )
-    assertFalse(
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
-    )
-
-    // Stale stored overrides removed (reset signal carries null, not a re-asserted value).
+    // The reset overwrites each seeded override with {value:null, changed:true} in the stored
+    // config.
     val stored = fcs.getFolderConfig(folderPath)
-    assertNull(stored.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS))
-    assertNull(stored.settings?.get(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT))
-    assertNull(stored.settings?.get(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG))
+    for (key in
+      listOf(
+        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
+        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+      )) {
+      val setting = stored.settings?.get(key) ?: error("expected reset setting for $key")
+      assertNull("$key value must be null after reset", setting.value)
+      assertEquals("$key must be changed=true after reset", true, setting.changed)
+    }
   }
 
-  fun `test saveConfig folder reset clears the persisted folder explicit-changed flag`() {
+  fun `test saveConfig folder reset overwrites a prior override with value null changed true`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
     val folderPath =
       Files.createTempDirectory("snyk-savecfg-reset2").toAbsolutePath().normalize().toString()
-    // Pre-seed an explicit change + stored override as if the user had previously set the value.
-    realSettings.markExplicitlyChanged(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    // Pre-seed a stored override as if the user had previously set the value.
     val fcs = service<FolderConfigSettings>()
     fcs.addFolderConfig(
       fcs
         .getFolderConfig(folderPath)
         .withSetting(LsFolderSettingsKeys.SNYK_CODE_ENABLED, true, changed = true)
     )
-    assertTrue(realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED))
 
     val json =
       """
@@ -1617,13 +1649,12 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    assertFalse(
-      "reset must clear the folder explicit-changed flag so it doesn't re-assert on the next sync",
-      realSettings.isExplicitlyChanged(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED),
-    )
-    // Stale stored override removed (the reset signal carries the null, not a re-asserted value).
-    val stored = fcs.getFolderConfig(folderPath)
-    assertNull(stored.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    // The prior value is replaced by the reset signal {value:null, changed:true}, which getSettings
+    // emits to the LS as an Unset (the override can't re-assert on a later sync).
+    val setting =
+      fcs.getFolderConfig(folderPath).settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    assertNull(setting?.value)
+    assertEquals(true, setting?.changed)
   }
 
   fun `test saveConfig non-null folder field is not treated as a reset`() {
@@ -1644,12 +1675,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(json)
 
-    assertTrue(
-      "a present non-null field is a normal set, not a pending reset",
-      realSettings.consumePendingFolderResets().isEmpty(),
-    )
+    // A present non-null field is a normal set, not a reset: the stored value is the boolean, not
+    // null.
     val stored = service<FolderConfigSettings>().getFolderConfig(folderPath)
     assertEquals(false, stored.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value)
+    assertEquals(true, stored.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.changed)
   }
 
   private fun invokeParseAndSaveConfig(jsonString: String) {

@@ -9,7 +9,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.execution.ParametersListUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
-import io.snyk.plugin.pluginSettings
 import java.io.IOError
 import java.nio.file.InvalidPathException
 import java.nio.file.Paths
@@ -517,12 +516,11 @@ class FolderConfigSettings {
   }
 
   /**
-   * Sets the per-folder severity filter on every workspace folder of [project]. Marks each folder's
-   * `severity_filter_*` key as explicitly changed so [LanguageServerWrapper.getSettings] forwards
-   * `changed = true` to snyk-ls.
+   * Sets the per-folder severity filter on every workspace folder of [project]. The `changed =
+   * true` flag on the stored config is forwarded verbatim by [LanguageServerWrapper.getSettings].
    *
    * @return true if at least one workspace folder config was updated, false when [project] has no
-   *   folder configs (the caller should silently no-op rather than mutate global flags).
+   *   folder configs (the caller should silently no-op).
    */
   fun setSeverityEnabledForProject(
     project: Project,
@@ -539,11 +537,7 @@ class FolderConfigSettings {
       }
     val folderConfigs = getFolderConfigs(project)
     if (folderConfigs.isEmpty()) return false
-    val ps = pluginSettings()
-    folderConfigs.forEach { fc ->
-      addFolderConfig(fc.withSetting(key, enabled, changed = true))
-      ps.markExplicitlyChanged(fc.folderPath, key)
-    }
+    folderConfigs.forEach { fc -> addFolderConfig(fc.withSetting(key, enabled, changed = true)) }
     return true
   }
 
@@ -574,12 +568,11 @@ class FolderConfigSettings {
   }
 
   /**
-   * Sets the per-folder product enablement on every workspace folder of [project]. Marks each
-   * folder's `snyk_*_enabled` key as explicitly changed so [LanguageServerWrapper.getSettings]
-   * forwards `changed = true` to snyk-ls.
+   * Sets the per-folder product enablement on every workspace folder of [project]. The `changed =
+   * true` flag on the stored config is forwarded verbatim by [LanguageServerWrapper.getSettings].
    *
    * @return true if at least one workspace folder config was updated, false when [project] has no
-   *   folder configs (the caller should silently no-op rather than mutate global flags).
+   *   folder configs (the caller should silently no-op).
    */
   fun setProductEnabledForProject(
     project: Project,
@@ -589,11 +582,7 @@ class FolderConfigSettings {
     val key = productEnablementKey(productType) ?: return false
     val folderConfigs = getFolderConfigs(project)
     if (folderConfigs.isEmpty()) return false
-    val ps = pluginSettings()
-    folderConfigs.forEach { fc ->
-      addFolderConfig(fc.withSetting(key, enabled, changed = true))
-      ps.markExplicitlyChanged(fc.folderPath, key)
-    }
+    folderConfigs.forEach { fc -> addFolderConfig(fc.withSetting(key, enabled, changed = true)) }
     return true
   }
 

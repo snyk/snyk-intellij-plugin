@@ -75,18 +75,6 @@ class LanguageServerWrapperTest {
       snykPluginDisposable
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
       folderConfigSettingsMock
-    // normalizePath is used to scope pending folder-reset consumption to owned workspace folders;
-    // delegate to the real normalization so owned paths match the queued (normalized) reset keys.
-    every { folderConfigSettingsMock.normalizePath(any()) } answers
-      {
-        Paths.get(firstArg<String>()).normalize().toAbsolutePath().toString()
-      }
-    // applyPendingFolderResets scopes owned folders via normalizePathOrNull; delegate to the real
-    // normalization (relaxed mock would return null and drop every owned path).
-    every { folderConfigSettingsMock.normalizePathOrNull(any()) } answers
-      {
-        Paths.get(firstArg<String>()).normalize().toAbsolutePath().toString()
-      }
     every { applicationMock.isDisposed } returns false
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
@@ -967,7 +955,10 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `getSettings applies persisted folder changed flags`() {
+  fun `getSettings emits the stored folder config changed flag verbatim`() {
+    // The stored LspFolderConfig is the single source of truth for the changed flag; getSettings
+    // emits it as-is with no re-derivation. A folder writer (e.g. the reset path) sets changed=true
+    // on the stored config and that flag reaches the LS unchanged.
     val folderPath = "/test/changed-folder"
     val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
     val folderUri = Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
@@ -976,7 +967,7 @@ class LanguageServerWrapperTest {
       LspFolderConfig(
         folderPath = normalizedPath,
         settings =
-          mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main", changed = false)),
+          mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main", changed = true)),
       )
 
     every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
@@ -984,14 +975,11 @@ class LanguageServerWrapperTest {
     cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "changed"))
     cut.updateFolderConfigRefresh(normalizedPath, true)
 
-    // Mark base_branch as explicitly changed for this folder
-    settings.markExplicitlyChanged(normalizedPath, LsFolderSettingsKeys.BASE_BRANCH)
-
     val result = cut.getSettings()
 
     val outputConfig = result.folderConfigs?.first()
     assertEquals(
-      "Changed flag should be overridden to true",
+      "Stored changed flag is emitted verbatim",
       true,
       outputConfig?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.changed,
     )
@@ -1080,116 +1068,90 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `getSettings emits pending folder reset as value null changed true`() {
+  fun `getSettings emits a stored folder reset as value null changed true`() {
+    // A reset is written straight into the stored folder config as {value:null, changed:true}
+    // (SaveConfigHandler.applyFolderResetsFromRawJson, mirroring VS Code). getSettings emits the
+    // stored settings map verbatim, so the null reaches the LS as an Unset signal.
     val folderPath = Paths.get("/work/reset-project").toAbsolutePath().toString()
-    // The reset queue is consumed scoped to this project's workspace folders, so the folder must
-    // be owned by the wrapper for its reset to be emitted.
+    val storedReset =
+      LspFolderConfig(
+        folderPath = folderPath,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = null, changed = true),
+            LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = null, changed = true),
+            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to ConfigSetting(value = null, changed = true),
+          ),
+      )
+    every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns storedReset
     cut.configuredWorkspaceFolders.add(
       WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
     )
-    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
-    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.PREFERRED_ORG)
-    // Non-scalar overrides emit identically: the queue stores only string keys and the emit always
-    // builds {value: null, changed: true}, carrying no type information.
-    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)
-    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT)
-    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG)
+    cut.updateFolderConfigRefresh(folderPath, true)
 
     val actual = cut.getSettings()
 
     val folderConfig =
       actual.folderConfigs?.firstOrNull { it.folderPath == folderPath }
         ?: error("expected a folder config carrying the reset for $folderPath")
-    val codeSetting =
-      folderConfig.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
-        ?: error("expected snyk_code_enabled reset setting")
-    assertNull(codeSetting.value)
-    assertEquals(true, codeSetting.changed)
-    val orgSetting =
-      folderConfig.settings?.get(LsFolderSettingsKeys.PREFERRED_ORG)
-        ?: error("expected preferred_org reset setting")
-    assertNull(orgSetting.value)
-    assertEquals(true, orgSetting.changed)
-
     for (key in
       listOf(
-        LsFolderSettingsKeys.ADDITIONAL_PARAMETERS,
-        LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT,
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.PREFERRED_ORG,
         LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
       )) {
-      val setting =
-        folderConfig.settings?.get(key) ?: error("expected $key reset setting (non-scalar field)")
+      val setting = folderConfig.settings?.get(key) ?: error("expected $key reset setting")
       assertNull(setting.value)
       assertEquals(true, setting.changed)
     }
   }
 
   @Test
-  fun `getSettings consumes pending folder resets so a second call does not re-emit`() {
-    val folderPath = Paths.get("/work/reset-project-2").toAbsolutePath().toString()
+  fun `getSettings emits the authoritative value after the LS pushes it back over a reset`() {
+    // snyk-ls owns config: after the IDE sends the reset it Unsets the override, recomputes, and
+    // pushes the resolved config back via addAll (full overwrite of the stored LspFolderConfig).
+    // The transient null is replaced, so getSettings then emits the authoritative value.
+    val folderPath = Paths.get("/work/push-back-project").toAbsolutePath().toString()
     cut.configuredWorkspaceFolders.add(
       WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
     )
-    settings.addPendingFolderReset(folderPath, LsFolderSettingsKeys.SCAN_AUTOMATIC)
+    cut.updateFolderConfigRefresh(folderPath, true)
 
-    cut.getSettings()
-    val second = cut.getSettings()
-
-    val folderConfig = second.folderConfigs?.firstOrNull { it.folderPath == folderPath }
-    assertNull(
-      "pending folder reset is one-shot; the second sync must not re-emit it",
-      folderConfig?.settings?.get(LsFolderSettingsKeys.SCAN_AUTOMATIC),
-    )
-  }
-
-  @Test
-  fun `getSettings drains only owned folder resets so another window still emits its own`() {
-    // Two windows share the APP-scoped pending-folder-reset queue. Window A owns folderA, window B
-    // owns folderB; both resets are queued (as a save fan-out would). A.getSettings() must drain
-    // only folderA, leaving folderB's reset intact for B.getSettings() — the owned-folder scoping
-    // that stops the first window in the fan-out from starving the others.
-    val folderA = Paths.get("/work/window-a").toAbsolutePath().toString()
-    val folderB = Paths.get("/work/window-b").toAbsolutePath().toString()
-
-    val windowA = cut
-    windowA.configuredWorkspaceFolders.add(
-      WorkspaceFolder(Paths.get(folderA).toUri().toASCIIString(), folderA)
-    )
-    val windowB = LanguageServerWrapper(projectMock)
-    windowB.languageServer = lsMock
-    windowB.isInitialized = true
-    windowB.configuredWorkspaceFolders.add(
-      WorkspaceFolder(Paths.get(folderB).toUri().toASCIIString(), folderB)
-    )
-
-    settings.addPendingFolderReset(folderA, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
-    settings.addPendingFolderReset(folderB, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
-
-    val fromA = windowA.getSettings()
-    // A drains only its own folder.
-    assertNull(
-      "window A must not consume window B's reset",
-      fromA.folderConfigs?.firstOrNull { it.folderPath == folderB },
-    )
-    val aReset =
-      fromA.folderConfigs
-        ?.firstOrNull { it.folderPath == folderA }
-        ?.settings
-        ?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED) ?: error("window A must emit its own reset")
-    assertNull(aReset.value)
-    assertEquals(true, aReset.changed)
-
-    // B's reset survived A's drain and is still emitted by B.
-    val bReset =
-      windowB
+    // Before push-back: stored config carries the reset null.
+    every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns
+      LspFolderConfig(
+        folderPath = folderPath,
+        settings =
+          mapOf(LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = null, changed = true)),
+      )
+    val beforeSetting =
+      cut
         .getSettings()
         .folderConfigs
-        ?.firstOrNull { it.folderPath == folderB }
+        ?.firstOrNull { it.folderPath == folderPath }
         ?.settings
-        ?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
-        ?: error("window B's reset must survive window A's getSettings drain")
-    assertNull(bReset.value)
-    assertEquals(true, bReset.changed)
+        ?.get(LsFolderSettingsKeys.PREFERRED_ORG)
+        ?: error("expected reset setting before push-back")
+    assertNull(beforeSetting.value)
+
+    // After push-back: addAll overwrote the stored config with the resolved value.
+    every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns
+      LspFolderConfig(
+        folderPath = folderPath,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.PREFERRED_ORG to
+              ConfigSetting(value = "resolved-org", changed = true)
+          ),
+      )
+    val afterSetting =
+      cut
+        .getSettings()
+        .folderConfigs
+        ?.firstOrNull { it.folderPath == folderPath }
+        ?.settings
+        ?.get(LsFolderSettingsKeys.PREFERRED_ORG) ?: error("expected setting after push-back")
+    assertEquals("resolved-org", afterSetting.value)
   }
 
   @Test

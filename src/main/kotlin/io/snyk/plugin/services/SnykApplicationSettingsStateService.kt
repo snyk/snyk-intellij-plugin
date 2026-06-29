@@ -47,28 +47,20 @@ class SnykApplicationSettingsStateService :
   // testing flag
   var fileListenerEnabled: Boolean = true
 
-  // Concurrent-collection backed (not plain mutableSetOf/mutableMapOf): XmlSerializerUtil reflects
-  // over these public vars directly to serialize state and never holds [pendingResetsLock], so a
-  // save-triggered serialization can iterate them concurrently with a structural remove in
-  // clearExplicitlyChanged. ConcurrentHashMap iteration is weakly-consistent → no CME. The
-  // synchronized blocks below remain for the compound check-then-remove invariants (the lock makes
-  // those atomic; the concurrent backing makes the serializer race safe).
+  // Concurrent-collection backed (not plain mutableSetOf): XmlSerializerUtil reflects over this
+  // public var directly to serialize state and never holds [pendingResetsLock], so a save-triggered
+  // serialization can iterate it concurrently with a structural remove in clearExplicitlyChanged.
+  // ConcurrentHashMap iteration is weakly-consistent → no CME. The synchronized blocks below remain
+  // for the compound check-then-remove invariants (the lock makes those atomic; the concurrent
+  // backing makes the serializer race safe).
   var explicitChanges: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-  // folder path -> set of setting keys explicitly changed for that folder
-  var folderExplicitChanges: MutableMap<String, MutableSet<String>> = ConcurrentHashMap()
-
-  // Keys pending a reset signal ({ value: null, changed: true }) to the LS.
+  // Global keys pending a reset signal ({ value: null, changed: true }) to the LS.
   // Transient: not persisted, consumed once by getSettings().
   // APP-scoped and mutated from multiple threads (JCEF query thread enqueues; every
   // getSettings() across the multi-project fan-out consumes), so guard all access with
   // [pendingResetsLock] — the consume is a compound snapshot-then-clear that must be atomic.
   @Transient private val pendingResets: MutableSet<String> = mutableSetOf()
-
-  // Per-folder keys pending a reset signal ({ value: null, changed: true }) to the LS.
-  // folder path -> set of setting keys. Transient: consumed once by getSettings().
-  @Transient
-  private val pendingFolderResets: MutableMap<String, MutableSet<String>> = mutableMapOf()
 
   @Transient private val pendingResetsLock = Any()
 
@@ -83,85 +75,31 @@ class SnykApplicationSettingsStateService :
       snapshot
     }
 
-  fun addPendingFolderReset(folderPath: String, key: String) {
-    synchronized(pendingResetsLock) {
-      pendingFolderResets.getOrPut(folderPath) { mutableSetOf() }.add(key)
-    }
-  }
-
-  /**
-   * Snapshots and removes pending folder resets. [pendingFolderResets] is APP-scoped (shared across
-   * all open project windows), but [SaveConfigHandler] fans out a save to every open project's
-   * (PROJECT-scoped) language server. To stop the first project in that loop from draining resets
-   * for folders it does not own — starving the windows that do — [ownedFolderPaths] restricts the
-   * consume to the calling project's workspace folders. Keys must already be normalized
-   * ([FolderConfigSettings.normalizePath]) to match how resets are queued. A null set consumes all
-   * (used by tests and any single-window caller).
-   *
-   * Limitation: consume-and-remove, so if the SAME folder is open in two project windows only the
-   * first window's LS receives the {value:null,changed:true} Unset; the second keeps its own
-   * user:folder override until its next unrelated config change. The shared override is already
-   * removed from FolderConfigSettings so it won't re-assert. Upgrade path if
-   * multi-window/same-folder matters: ref-count owners per folder and drop the entry only after all
-   * owners consume.
-   */
-  fun consumePendingFolderResets(ownedFolderPaths: Set<String>? = null): Map<String, Set<String>> =
-    synchronized(pendingResetsLock) {
-      val owned =
-        if (ownedFolderPaths == null) {
-          pendingFolderResets.keys.toSet()
-        } else {
-          pendingFolderResets.keys.intersect(ownedFolderPaths)
-        }
-      val snapshot = owned.associateWith { pendingFolderResets.getValue(it).toSet() }
-      owned.forEach { pendingFolderResets.remove(it) }
-      snapshot
-    }
-
-  // [explicitChanges]/[folderExplicitChanges] are APP-scoped and touched from multiple threads:
-  // the JCEF save thread mutates them (mark/clear, including structural map removal on reset) while
-  // the multi-project getSettings() fan-out reads them via isExplicitlyChanged /
-  // applyPersistedFolderChangedFlags, and XmlSerializerUtil iterates them off-lock to serialize
-  // state. The concurrent backing (see field decls) makes those lock-less iterations CME-safe; the
-  // [pendingResetsLock] blocks below make the compound check-then-remove invariants (e.g. drop the
-  // outer entry only when the inner set empties) atomic — concurrent collections alone don't.
+  // [explicitChanges] is APP-scoped and touched from multiple threads: the JCEF save thread mutates
+  // it (mark/clear) while the multi-project getSettings() fan-out reads it via isExplicitlyChanged,
+  // and XmlSerializerUtil iterates it off-lock to serialize state. The concurrent backing (see
+  // field
+  // decl) makes those lock-less iterations CME-safe; the [pendingResetsLock] blocks below make the
+  // compound mutations atomic — concurrent collections alone don't.
+  //
+  // This tracks only GLOBAL (user:global) keys. Per-folder settings need no equivalent: every IDE
+  // writer of a stored folder config sets changed=true on the LspFolderConfig itself
+  // ([snyk.common.lsp.settings.withSetting]), which getSettings emits verbatim — there is no
+  // separate folder changed-flag map to keep in sync.
   fun markExplicitlyChanged(settingKey: String) {
     synchronized(pendingResetsLock) { explicitChanges.add(settingKey) }
-  }
-
-  fun markExplicitlyChanged(folderPath: String, settingKey: String) {
-    synchronized(pendingResetsLock) {
-      folderExplicitChanges.getOrPut(folderPath) { ConcurrentHashMap.newKeySet() }.add(settingKey)
-    }
   }
 
   fun clearExplicitlyChanged(key: String) {
     synchronized(pendingResetsLock) { explicitChanges.remove(key) }
   }
 
-  fun clearExplicitlyChanged(folderPath: String, key: String) {
-    synchronized(pendingResetsLock) {
-      folderExplicitChanges[folderPath]?.remove(key)
-      if (folderExplicitChanges[folderPath]?.isEmpty() == true) {
-        folderExplicitChanges.remove(folderPath)
-      }
-    }
-  }
-
   fun clearAllExplicitlyChanged() {
-    synchronized(pendingResetsLock) {
-      explicitChanges.clear()
-      folderExplicitChanges.clear()
-    }
+    synchronized(pendingResetsLock) { explicitChanges.clear() }
   }
 
   fun isExplicitlyChanged(settingKey: String): Boolean =
     synchronized(pendingResetsLock) { explicitChanges.contains(settingKey) }
-
-  fun isExplicitlyChanged(folderPath: String, settingKey: String): Boolean =
-    synchronized(pendingResetsLock) {
-      folderExplicitChanges[folderPath]?.contains(settingKey) == true
-    }
 
   /**
    * snyk-ls applies user:global settings from InitializationOptions / didChangeConfiguration only

@@ -1744,9 +1744,6 @@ class FolderConfigSettingsTest {
     for ((severity, key) in cases) {
       for (state in states) {
         settings.clear()
-        val ps = SnykApplicationSettingsStateService()
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { pluginSettings() } returns ps
         try {
           val projectMock = mockk<Project>(relaxed = true)
           val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
@@ -1781,10 +1778,6 @@ class FolderConfigSettingsTest {
             val setting = cfg.settings?.get(key)
             assertEquals("$path/$key value", state, setting?.value)
             assertEquals("$path/$key changed flag", true, setting?.changed)
-            assertTrue(
-              "$path/$key should be marked explicitly changed",
-              ps.isExplicitlyChanged(path, key),
-            )
           }
         } finally {
           unmockkAll()
@@ -1852,9 +1845,6 @@ class FolderConfigSettingsTest {
     for ((productType, key) in cases) {
       for (state in states) {
         settings.clear()
-        val ps = SnykApplicationSettingsStateService()
-        mockkStatic("io.snyk.plugin.UtilsKt")
-        every { pluginSettings() } returns ps
         try {
           val projectMock = mockk<Project>(relaxed = true)
           val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
@@ -1889,10 +1879,6 @@ class FolderConfigSettingsTest {
             val setting = cfg.settings?.get(key)
             assertEquals("$path/$key value", state, setting?.value)
             assertEquals("$path/$key changed flag", true, setting?.changed)
-            assertTrue(
-              "$path/$key should be marked explicitly changed",
-              ps.isExplicitlyChanged(path, key),
-            )
           }
         } finally {
           unmockkAll()

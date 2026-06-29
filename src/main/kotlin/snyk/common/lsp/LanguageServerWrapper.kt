@@ -25,7 +25,6 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
@@ -91,8 +90,6 @@ import snyk.common.lsp.settings.InitializationOptions
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
-import snyk.common.lsp.settings.LspFolderConfig
-import snyk.common.lsp.settings.withSetting
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -821,7 +818,10 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[key] = ConfigSetting(value = null, changed = true)
     }
 
-    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org)
+    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org). The
+    // stored LspFolderConfig already carries each setting's changed flag from where it was written
+    // (every writer sets changed=true via withSetting, incl. a reset's {value:null,changed:true}),
+    // so it is emitted verbatim — no changed-flag re-derivation, no separate reset queue.
     val folderConfigsList =
       configuredWorkspaceFolders
         .filter {
@@ -830,68 +830,11 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         }
         .map {
           val folderPath = it.uri.fromUriToPath().toString()
-          val config = service<FolderConfigSettings>().getFolderConfig(folderPath)
-          applyPersistedFolderChangedFlags(config, ps)
+          service<FolderConfigSettings>().getFolderConfig(folderPath)
         }
         .toList()
 
-    val folderConfigsWithResets = applyPendingFolderResets(folderConfigsList, ps)
-
-    return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsWithResets)
-  }
-
-  /**
-   * Merges one-shot per-folder reset signals into the outbound folder configs. A reset emits
-   * `{value: null, changed: true}` for the cleared key, which snyk-ls turns into an Unset of the
-   * `user:folder:` override (fallback to org/LDX/default). Resets bypass
-   * [applyPersistedFolderChangedFlags] (which derives `changed` from folderExplicitChanges and
-   * would otherwise drop a freshly-cleared key) and add an entry for a reset-only folder that has
-   * no other outbound settings.
-   */
-  private fun applyPendingFolderResets(
-    folderConfigs: List<LspFolderConfig>,
-    ps: SnykApplicationSettingsStateService,
-  ): List<LspFolderConfig> {
-    // Consume only the resets for folders this project owns. The reset queue is APP-scoped but
-    // SaveConfigHandler fans out the save to every open project's LS, so an unscoped drain would
-    // let the first project clear other windows' resets (they would then re-assert the override).
-    val fcs = service<FolderConfigSettings>()
-    // normalizePathOrNull (not normalizePath): a single malformed workspace-folder path must skip
-    // that one folder, not throw InvalidPathException out of getSettings and drop ALL settings
-    // (global + every folder) to the LS. Matches the defensive pattern on the save side.
-    val ownedFolderPaths =
-      configuredWorkspaceFolders
-        .mapNotNull { fcs.normalizePathOrNull(it.uri.fromUriToPath().toString()) }
-        .toSet()
-    val pending = ps.consumePendingFolderResets(ownedFolderPaths)
-    if (pending.isEmpty()) return folderConfigs
-
-    val byPath = folderConfigs.associateBy { it.folderPath }.toMutableMap()
-    for ((folderPath, keys) in pending) {
-      var config = byPath[folderPath] ?: LspFolderConfig(folderPath = folderPath)
-      for (key in keys) {
-        config = config.withSetting(key, value = null, changed = true)
-      }
-      byPath[folderPath] = config
-    }
-    return byPath.values.toList()
-  }
-
-  private fun applyPersistedFolderChangedFlags(
-    config: LspFolderConfig,
-    ps: SnykApplicationSettingsStateService,
-  ): LspFolderConfig {
-    val settings = config.settings ?: return config
-    val enriched =
-      settings.mapValues { (key, setting) ->
-        val isUserOverride = ps.isExplicitlyChanged(config.folderPath, key)
-        if (isUserOverride != (setting.changed == true)) {
-          setting.copy(changed = isUserOverride)
-        } else {
-          setting
-        }
-      }
-    return config.copy(settings = enriched)
+    return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
   }
 
   fun getInitializationOptions(): InitializationOptions {

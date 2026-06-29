@@ -38,15 +38,6 @@ fun LspFolderConfig.withSetting(
   return copy(settings = newSettings)
 }
 
-/** Removes a stored setting so it no longer re-asserts as a user override on later syncs. */
-fun LspFolderConfig.withoutSetting(key: String): LspFolderConfig {
-  val current = settings ?: return this
-  if (!current.containsKey(key)) return this
-  val newSettings = current.toMutableMap()
-  newSettings.remove(key)
-  return copy(settings = newSettings)
-}
-
 data class LspConfigurationParam(
   @SerializedName("settings") val settings: Map<String, ConfigSetting>? = null,
   @SerializedName("folderConfigs") val folderConfigs: List<LspFolderConfig>? = null,
