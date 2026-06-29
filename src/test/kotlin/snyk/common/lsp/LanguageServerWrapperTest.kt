@@ -81,6 +81,12 @@ class LanguageServerWrapperTest {
       {
         Paths.get(firstArg<String>()).normalize().toAbsolutePath().toString()
       }
+    // applyPendingFolderResets scopes owned folders via normalizePathOrNull; delegate to the real
+    // normalization (relaxed mock would return null and drop every owned path).
+    every { folderConfigSettingsMock.normalizePathOrNull(any()) } answers
+      {
+        Paths.get(firstArg<String>()).normalize().toAbsolutePath().toString()
+      }
     every { applicationMock.isDisposed } returns false
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
@@ -1134,6 +1140,51 @@ class LanguageServerWrapperTest {
       "pending folder reset is one-shot; the second sync must not re-emit it",
       folderConfig?.settings?.get(LsFolderSettingsKeys.SCAN_AUTOMATIC),
     )
+  }
+
+  @Test
+  fun `getSettings drains only owned folder resets so another window still emits its own`() {
+    // Two windows share the APP-scoped pending-folder-reset queue. Window A owns folderA, window B
+    // owns folderB; both resets are queued (as a save fan-out would). A.getSettings() must drain
+    // only folderA, leaving folderB's reset intact for B.getSettings() — the owned-folder scoping
+    // that stops the first window in the fan-out from starving the others.
+    val folderA = Paths.get("/work/window-a").toAbsolutePath().toString()
+    val folderB = Paths.get("/work/window-b").toAbsolutePath().toString()
+
+    val windowA = cut
+    windowA.configuredWorkspaceFolders.add(
+      WorkspaceFolder(Paths.get(folderA).toUri().toASCIIString(), folderA)
+    )
+    val windowB = LanguageServerWrapper(projectMock)
+    windowB.languageServer = lsMock
+    windowB.isInitialized = true
+    windowB.configuredWorkspaceFolders.add(
+      WorkspaceFolder(Paths.get(folderB).toUri().toASCIIString(), folderB)
+    )
+
+    settings.addPendingFolderReset(folderA, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    settings.addPendingFolderReset(folderB, LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+
+    val fromA = windowA.getSettings()
+    // A drains only its own folder.
+    assertNull(
+      "window A must not consume window B's reset",
+      fromA.folderConfigs?.firstOrNull { it.folderPath == folderB },
+    )
+    val aReset =
+      fromA.folderConfigs?.firstOrNull { it.folderPath == folderA }?.settings?.get(
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED
+      ) ?: error("window A must emit its own reset")
+    assertNull(aReset.value)
+    assertEquals(true, aReset.changed)
+
+    // B's reset survived A's drain and is still emitted by B.
+    val bReset =
+      windowB.getSettings().folderConfigs?.firstOrNull { it.folderPath == folderB }?.settings?.get(
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED
+      ) ?: error("window B's reset must survive window A's getSettings drain")
+    assertNull(bReset.value)
+    assertEquals(true, bReset.changed)
   }
 
   @Test
