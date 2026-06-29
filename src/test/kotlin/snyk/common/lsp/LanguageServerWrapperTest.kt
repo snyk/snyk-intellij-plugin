@@ -1172,17 +1172,22 @@ class LanguageServerWrapperTest {
       fromA.folderConfigs?.firstOrNull { it.folderPath == folderB },
     )
     val aReset =
-      fromA.folderConfigs?.firstOrNull { it.folderPath == folderA }?.settings?.get(
-        LsFolderSettingsKeys.SNYK_CODE_ENABLED
-      ) ?: error("window A must emit its own reset")
+      fromA.folderConfigs
+        ?.firstOrNull { it.folderPath == folderA }
+        ?.settings
+        ?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED) ?: error("window A must emit its own reset")
     assertNull(aReset.value)
     assertEquals(true, aReset.changed)
 
     // B's reset survived A's drain and is still emitted by B.
     val bReset =
-      windowB.getSettings().folderConfigs?.firstOrNull { it.folderPath == folderB }?.settings?.get(
-        LsFolderSettingsKeys.SNYK_CODE_ENABLED
-      ) ?: error("window B's reset must survive window A's getSettings drain")
+      windowB
+        .getSettings()
+        .folderConfigs
+        ?.firstOrNull { it.folderPath == folderB }
+        ?.settings
+        ?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+        ?: error("window B's reset must survive window A's getSettings drain")
     assertNull(bReset.value)
     assertEquals(true, bReset.changed)
   }
