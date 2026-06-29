@@ -856,9 +856,12 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     // SaveConfigHandler fans out the save to every open project's LS, so an unscoped drain would
     // let the first project clear other windows' resets (they would then re-assert the override).
     val fcs = service<FolderConfigSettings>()
+    // normalizePathOrNull (not normalizePath): a single malformed workspace-folder path must skip
+    // that one folder, not throw InvalidPathException out of getSettings and drop ALL settings
+    // (global + every folder) to the LS. Matches the defensive pattern on the save side.
     val ownedFolderPaths =
       configuredWorkspaceFolders
-        .map { fcs.normalizePath(it.uri.fromUriToPath().toString()) }
+        .mapNotNull { fcs.normalizePathOrNull(it.uri.fromUriToPath().toString()) }
         .toSet()
     val pending = ps.consumePendingFolderResets(ownedFolderPaths)
     if (pending.isEmpty()) return folderConfigs
