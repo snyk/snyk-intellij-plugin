@@ -91,7 +91,7 @@ class SnykApplicationSettingsStateService :
    * ([FolderConfigSettings.normalizePath]) to match how resets are queued. A null set consumes all
    * (used by tests and any single-window caller).
    *
-   * ponytail: consume-and-remove, so if the SAME folder is open in two project windows only the
+   * Limitation: consume-and-remove, so if the SAME folder is open in two project windows only the
    * first window's LS receives the {value:null,changed:true} Unset; the second keeps its own
    * user:folder override until its next unrelated config change. The shared override is already
    * removed from FolderConfigSettings so it won't re-assert. Upgrade path if
