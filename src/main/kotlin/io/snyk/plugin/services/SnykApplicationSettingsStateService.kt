@@ -17,6 +17,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
@@ -46,10 +47,16 @@ class SnykApplicationSettingsStateService :
   // testing flag
   var fileListenerEnabled: Boolean = true
 
-  var explicitChanges: MutableSet<String> = mutableSetOf()
+  // Concurrent-collection backed (not plain mutableSetOf/mutableMapOf): XmlSerializerUtil reflects
+  // over these public vars directly to serialize state and never holds [pendingResetsLock], so a
+  // save-triggered serialization can iterate them concurrently with a structural remove in
+  // clearExplicitlyChanged. ConcurrentHashMap iteration is weakly-consistent → no CME. The
+  // synchronized blocks below remain for the compound check-then-remove invariants (the lock makes
+  // those atomic; the concurrent backing makes the serializer race safe).
+  var explicitChanges: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
   // folder path -> set of setting keys explicitly changed for that folder
-  var folderExplicitChanges: MutableMap<String, MutableSet<String>> = mutableMapOf()
+  var folderExplicitChanges: MutableMap<String, MutableSet<String>> = ConcurrentHashMap()
 
   // Keys pending a reset signal ({ value: null, changed: true }) to the LS.
   // Transient: not persisted, consumed once by getSettings().
@@ -114,16 +121,17 @@ class SnykApplicationSettingsStateService :
   // [explicitChanges]/[folderExplicitChanges] are APP-scoped and touched from multiple threads:
   // the JCEF save thread mutates them (mark/clear, including structural map removal on reset) while
   // the multi-project getSettings() fan-out reads them via isExplicitlyChanged /
-  // applyPersistedFolderChangedFlags. Guard every access with [pendingResetsLock] (the same lock
-  // the
-  // pending-reset maps use) so a concurrent structural remove can't CME/corrupt/drop flags.
+  // applyPersistedFolderChangedFlags, and XmlSerializerUtil iterates them off-lock to serialize
+  // state. The concurrent backing (see field decls) makes those lock-less iterations CME-safe; the
+  // [pendingResetsLock] blocks below make the compound check-then-remove invariants (e.g. drop the
+  // outer entry only when the inner set empties) atomic — concurrent collections alone don't.
   fun markExplicitlyChanged(settingKey: String) {
     synchronized(pendingResetsLock) { explicitChanges.add(settingKey) }
   }
 
   fun markExplicitlyChanged(folderPath: String, settingKey: String) {
     synchronized(pendingResetsLock) {
-      folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
+      folderExplicitChanges.getOrPut(folderPath) { ConcurrentHashMap.newKeySet() }.add(settingKey)
     }
   }
 
