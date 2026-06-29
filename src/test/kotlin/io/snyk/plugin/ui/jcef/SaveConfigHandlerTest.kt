@@ -1340,6 +1340,59 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(before.settings, after.settings)
   }
 
+  fun `test saveConfig folderConfigs present as JSON null still applies global settings`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    // "folderConfigs": null is a legal payload (SaveConfigRequest.folderConfigs is nullable). The
+    // raw re-parse must not throw a ClassCastException on it — that would escape the parse catch
+    // and
+    // abort the whole save, dropping the global cliPath in the same payload.
+    val json =
+      """
+        {
+          "cliPath": "/usr/bin/snyk",
+          "folderConfigs": null
+        }
+      """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(json)
+
+    assertEquals("/usr/bin/snyk", realSettings.cliPath)
+  }
+
+  fun `test saveConfig malformed folderPath is skipped without sinking other folder resets`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    val goodPath =
+      Files.createTempDirectory("snyk-savecfg-good").toAbsolutePath().normalize().toString()
+    // A malformed path (NUL byte) makes Paths.get throw InvalidPathException; a number
+    // folderPath is a non-string primitive. Neither should abort the loop -- the valid
+    // folder reset must still be queued. Char(0) embeds the NUL without a raw NUL in source.
+    val nulPath = gson.toJson("bad${Char(0)}path")
+    val json =
+      """
+        {
+          "folderConfigs": [
+            { "folderPath": $nulPath, "snyk_code_enabled": null },
+            { "folderPath": 123, "snyk_code_enabled": null },
+            { "folderPath": ${gson.toJson(goodPath)}, "snyk_code_enabled": null }
+          ]
+        }
+      """
+        .trimIndent()
+
+    invokeParseAndSaveConfig(json)
+
+    val resets = realSettings.consumePendingFolderResets()
+    val keys = resets[goodPath] ?: error("expected pending resets for $goodPath")
+    assertTrue(keys.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    // The bogus number path must not leak an entry into the queue.
+    assertEquals("only the valid folder should be queued", 1, resets.size)
+  }
+
   fun `test saveConfig folder field sent as null queues a pending folder reset`() {
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings

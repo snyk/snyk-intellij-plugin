@@ -602,20 +602,34 @@ class SaveConfigHandler(
         return
       } ?: return
 
-    val folderConfigsJson = root.getAsJsonArray("folderConfigs") ?: return
+    // getAsJsonArray casts blindly; for a present-as-null "folderConfigs" (a legal payload, since
+    // SaveConfigRequest.folderConfigs is nullable) get() returns JsonNull rather than Java null, so
+    // a plain `?: return` would miss it and the cast would throw ClassCastException — which is not
+    // a
+    // JsonSyntaxException, so it would escape the catch above and abort the whole save (dropping
+    // the
+    // global settings in the same payload). Take the element only when it is actually an array.
+    val folderConfigsJson =
+      root.get("folderConfigs")?.takeIf { it.isJsonArray }?.asJsonArray ?: return
     val fcs = service<FolderConfigSettings>()
     val settings = pluginSettings()
 
     for (element in folderConfigsJson) {
       if (!element.isJsonObject) continue
       val folderObject = element.asJsonObject
+      // Require a JSON string: isJsonPrimitive alone would coerce a number/boolean
+      // ({"folderPath": 123} -> "123"), mis-keying the reset under a path no owned folder matches.
       val rawFolderPath =
-        folderObject.get("folderPath")?.takeIf { it.isJsonPrimitive }?.asString ?: continue
+        folderObject
+          .get("folderPath")
+          ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isString }
+          ?.asString ?: continue
       // Normalize once so the reset queue and explicit-change flags are keyed identically to the
       // store (FolderConfigSettings) and the outbound merge in applyPendingFolderResets, which
       // both key by the normalized path. A raw non-normalized path (trailing slash, file:// URI,
       // case variant) would otherwise miss the merge and emit a duplicate folder config.
-      val folderPath = fcs.normalizePath(rawFolderPath)
+      // normalizePathOrNull isolates one malformed path so it can't abort the whole save.
+      val folderPath = fcs.normalizePathOrNull(rawFolderPath) ?: continue
 
       var updated = fcs.getFolderConfig(folderPath)
       var changed = false
@@ -642,8 +656,9 @@ class SaveConfigHandler(
       // (FolderConfigSettings), the reset queue (applyFolderResetsFromRawJson), and the outbound
       // merge (applyPendingFolderResets) — all of which key by the normalized path. A raw,
       // non-normalized path here would store the flag under a different key and silently no-op a
-      // later reset of the same folder.
-      val folderPath = fcs.normalizePath(folderConfig.folderPath)
+      // later reset of the same folder. normalizePathOrNull isolates one malformed path so it can't
+      // abort the whole save.
+      val folderPath = fcs.normalizePathOrNull(folderConfig.folderPath) ?: continue
       val existing = fcs.getFolderConfig(folderPath)
       var updated = existing
 

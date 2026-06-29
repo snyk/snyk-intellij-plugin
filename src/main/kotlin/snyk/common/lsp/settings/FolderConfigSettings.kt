@@ -10,6 +10,7 @@ import com.intellij.util.execution.ParametersListUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.pluginSettings
+import java.nio.file.InvalidPathException
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.annotations.NotNull
@@ -40,6 +41,19 @@ class FolderConfigSettings {
     val normalizedAbsolutePath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
     return normalizedAbsolutePath
   }
+
+  /**
+   * Null-safe [normalizePath]. [Paths.get] throws [InvalidPathException] (unchecked) on a malformed
+   * path (e.g. a NUL byte), so callers iterating folder entries can skip one bad entry instead of
+   * aborting the whole loop.
+   */
+  internal fun normalizePathOrNull(folderPath: String): String? =
+    try {
+      normalizePath(folderPath)
+    } catch (e: InvalidPathException) {
+      logger.warn("Skipping malformed folder path: ${e.message}")
+      null
+    }
 
   // Pure read: returns the stored override or a transient default. The LS owns folder overrides
   // (populated via [addAll] from didChangeConfiguration); the IDE must not materialize one as a
