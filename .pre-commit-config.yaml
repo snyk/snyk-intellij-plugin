@@ -24,7 +24,14 @@ repos:
         pass_filenames: false
       - id: test
         name: test
-        entry: ./gradlew test
+        # Delegates to scripts/pre-push-test.sh, which detects the Docker Desktop
+        # LinuxKit dev-container (/.dockerenv or REMOTE_CONTAINERS/DEVCONTAINER env
+        # var) and automatically appends -PdisableKoverInstrumentation only there.
+        # Outside the container the flag is NOT set, so native Linux/macOS developers
+        # retain their local Kover coverage data. Also resolves the JAVA_HOME dangling
+        # symlink present in the dev-container. See ADR-1 and
+        # docs/plans/container-mockk-bytebuddy-agent.md.
+        entry: bash scripts/pre-push-test.sh
         language: system
         stages: [pre-push]
         pass_filenames: false

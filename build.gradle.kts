@@ -130,6 +130,20 @@ ktlint { ignoreFailures.set(false) }
 
 // Configure Kover for code coverage
 kover {
+  // Default: Kover instrumentation is ON (CI behaviour is unchanged — CI never sets this flag).
+  // In the Docker Desktop LinuxKit dev-container, the Kover coverage java-agent conflicts with
+  // MockK's ByteBuddy inline instrumentation: both agents retransform the same classes, and the
+  // Kover agent does not forward the original class bytes for some platform classes, so MockK's
+  // subsequent retransformClasses call is rejected with "class redefinition failed: attempted to
+  // delete a method" (see ADR-1, confirmed by experiment: disabling Kover took UtilsKtTest from
+  // 12/16 failing → 1/16 with no instrumentation errors). Setting -PdisableKoverInstrumentation
+  // removes the Kover agent from the test JVM in-container so MockK retransform succeeds.
+  // Trade-off: local in-container runs with the flag produce no Kover coverage data (FOLLOW-UP).
+  if (project.hasProperty("disableKoverInstrumentation")) {
+    // disabledForAll = true is project-wide: it disables Kover for every Test task, not just
+    // `test`.
+    currentProject { instrumentation { disabledForAll = true } }
+  }
   reports {
     total {
       xml {
@@ -170,6 +184,40 @@ tasks {
   withType<Test> {
     maxHeapSize = "4096m"
     testLogging { exceptionFormat = TestExceptionFormat.FULL }
+    // Preload the ByteBuddy agent at test-JVM startup so MockK never needs runtime self-attach.
+    // In the Docker Desktop LinuxKit VM, HotSpot dynamic attach is non-functional; preloading the
+    // agent (which MockK would otherwise install via self-attach) makes final-class mocking and
+    // mockkStatic work in-container. Preloading is a harmless superset of runtime attach, so CI
+    // behaviour is unchanged. Uses jvmArgumentProviders (not jvmArgs) for lazy/execution-time
+    // resolution of the classpath (the classpath FileCollection is resolved at execution time, not
+    // at configuration time, avoiding configuration-phase failures when the classpath is not yet
+    // fully resolved). Sources the jar dynamically from the resolved test classpath so the version
+    // tracks MockK bumps automatically (byte-buddy-agent is transitive via mockk-agent-jvm).
+    val testClasspath = classpath
+    jvmArgumentProviders.add(
+      CommandLineArgumentProvider {
+        val classpathFiles = testClasspath.files
+        val hasMockk = classpathFiles.any { it.name.startsWith("mockk-") }
+        // Only enforce the byte-buddy-agent requirement when MockK is on the classpath:
+        // withType<Test> applies to all Test-typed tasks (including future tasks such as
+        // testIdeUi) whose classpath may not include MockK or byte-buddy-agent at all.
+        // When MockK is absent the agent is not needed; return an empty list so such tasks
+        // are unaffected. When MockK IS present, a missing or duplicate byte-buddy-agent
+        // indicates a real dependency regression and we fail loudly.
+        if (!hasMockk) {
+          return@CommandLineArgumentProvider emptyList()
+        }
+        val agentJars = classpathFiles.filter { it.name.startsWith("byte-buddy-agent-") }
+        if (agentJars.size != 1) {
+          throw GradleException(
+            "Expected exactly one byte-buddy-agent-*.jar on the test classpath " +
+              "but found ${agentJars.size}: ${agentJars.map { it.name }}. " +
+              "Check if io.mockk:mockk-agent-jvm still pulls in net.bytebuddy:byte-buddy-agent."
+          )
+        }
+        listOf("-javaagent:${agentJars.single().absolutePath}")
+      }
+    )
   }
 
   // Configure the PatchPluginXml task

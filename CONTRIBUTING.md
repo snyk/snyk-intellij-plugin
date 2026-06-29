@@ -57,6 +57,40 @@ Should be mostly done trough [IntelliJ Platform Testing Framework](https://plugi
 
 Mocks are [not recommended](https://plugins.jetbrains.com/docs/intellij/testing-plugins.html#mocks) by Jetbrains, but we heavily (and successfully) use Mockk framework. Just be careful not to mock whole world and make sure you're testing real functionality and not mocked one.
 
+#### Running tests in the Docker Desktop dev-container
+
+The Docker Desktop LinuxKit VM has two known constraints:
+
+1. **HotSpot dynamic attach is non-functional.** MockK uses a JVM self-attach at init to obtain an
+   `Instrumentation` handle for final-class mocking and `mockkStatic`. The build pre-loads the
+   ByteBuddy agent automatically (via `jvmArgumentProviders` in `build.gradle.kts`), so no
+   self-attach is needed and no extra flag is required for this.
+
+2. **Kover coverage agent conflicts with MockK's ByteBuddy inline instrumentation.** Both agents
+   retransform the same classes; the Kover agent does not forward the original bytes for some
+   platform classes, so MockK's subsequent retransform call fails with
+   `class redefinition failed: attempted to delete a method`. Run with
+   `-PdisableKoverInstrumentation` to remove the Kover agent from the test JVM and resolve this.
+
+In-container run command (Linux dev-container only — `readlink -f` is not portable to macOS):
+
+```bash
+JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test -PdisableKoverInstrumentation
+```
+
+Outside the container, run plain `./gradlew test` (no `JAVA_HOME` prefix, no flag).
+
+The ByteBuddy agent is preloaded automatically — no additional flags are needed for that.
+The `-PdisableKoverInstrumentation` flag is required in-container to avoid the Kover-MockK
+conflict. **Trade-off:** runs with this flag produce no local Kover coverage data. Coverage is
+still produced by CI (which runs `check` without the flag). A follow-up plan will restore
+in-container coverage without reintroducing the agent conflict.
+
+The pre-push hook (`scripts/pre-push-test.sh`) detects whether it is running inside the
+container (via `/.dockerenv` or the `REMOTE_CONTAINERS`/`DEVCONTAINER` environment variables)
+and automatically appends `-PdisableKoverInstrumentation` only then. Developers running outside
+the container are not affected and retain their local Kover coverage data.
+
 ### Running the extension
 
 - From the toolbar click `Run` -> `Run`
