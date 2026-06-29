@@ -10,6 +10,7 @@ import com.intellij.util.execution.ParametersListUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.pluginSettings
+import java.io.IOError
 import java.nio.file.InvalidPathException
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
@@ -43,15 +44,20 @@ class FolderConfigSettings {
   }
 
   /**
-   * Null-safe [normalizePath]. [Paths.get] throws [InvalidPathException] (unchecked) on a malformed
-   * path (e.g. a NUL byte), so callers iterating folder entries can skip one bad entry instead of
-   * aborting the whole loop.
+   * Null-safe [normalizePath], so callers iterating folder entries can skip one bad entry instead
+   * of aborting the whole loop. [Paths.get]/[java.nio.file.Path.toAbsolutePath] can throw
+   * [InvalidPathException] (malformed path, e.g. a NUL byte) or [SecurityException] (under a
+   * security manager) — both [RuntimeException] — and [IOError] (a default-directory provider
+   * [java.io.IOException]). Catch all three so none escapes and aborts the batch this guards.
    */
   internal fun normalizePathOrNull(folderPath: String): String? =
     try {
       normalizePath(folderPath)
-    } catch (e: InvalidPathException) {
+    } catch (e: RuntimeException) {
       logger.warn("Skipping malformed folder path: ${e.message}")
+      null
+    } catch (e: IOError) {
+      logger.warn("Skipping folder path (I/O error): ${e.message}")
       null
     }
 
