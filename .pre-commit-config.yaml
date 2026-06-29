@@ -26,11 +26,13 @@ repos:
         name: test
         # Delegates to scripts/pre-push-test.sh, which detects the Docker Desktop
         # LinuxKit dev-container (/.dockerenv or REMOTE_CONTAINERS/DEVCONTAINER env
-        # var) and automatically appends -PdisableKoverInstrumentation only there.
-        # Outside the container the flag is NOT set, so native Linux/macOS developers
-        # retain their local Kover coverage data. Also resolves the JAVA_HOME dangling
-        # symlink present in the dev-container. See ADR-1 and
-        # docs/plans/container-mockk-bytebuddy-agent.md.
+        # var) and automatically appends -PkoverUseJacoco only there (switches Kover to
+        # its JaCoCo backend, which coexists with MockK's ByteBuddy agent; the native
+        # Kover agent conflicts). Outside the container the flag is NOT set, so native
+        # Linux/macOS developers retain their native Kover coverage data. Also resolves
+        # the JAVA_HOME dangling symlink present in the dev-container. See ADR-1,
+        # docs/plans/container-mockk-bytebuddy-agent.md and
+        # docs/plans/container-local-coverage-jacoco.md.
         entry: bash scripts/pre-push-test.sh
         language: system
         stages: [pre-push]

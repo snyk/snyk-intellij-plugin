@@ -130,15 +130,35 @@ ktlint { ignoreFailures.set(false) }
 
 // Configure Kover for code coverage
 kover {
-  // Default: Kover instrumentation is ON (CI behaviour is unchanged — CI never sets this flag).
-  // In the Docker Desktop LinuxKit dev-container, the Kover coverage java-agent conflicts with
+  // Default: Kover instrumentation is ON using the native Kover agent (CI behaviour is
+  // unchanged — CI never sets either of the flags below).
+  //
+  // The two flags below are mutually exclusive: -PdisableKoverInstrumentation would silently
+  // disable the JaCoCo agent that -PkoverUseJacoco just configured, yielding an empty (0%) report
+  // that vacuously passes the coverage gate. Fail fast instead (e.g. if one flag is left in
+  // ~/.gradle/gradle.properties while the other is passed on the command line / by the hook).
+  check(
+    !(project.hasProperty("koverUseJacoco") && project.hasProperty("disableKoverInstrumentation"))
+  ) {
+    "Set only one of -PkoverUseJacoco or -PdisableKoverInstrumentation, not both."
+  }
+  // FLAG 1: -PkoverUseJacoco (default OFF)
+  // In the Docker Desktop LinuxKit dev-container, the native Kover coverage agent conflicts with
   // MockK's ByteBuddy inline instrumentation: both agents retransform the same classes, and the
   // Kover agent does not forward the original class bytes for some platform classes, so MockK's
   // subsequent retransformClasses call is rejected with "class redefinition failed: attempted to
-  // delete a method" (see ADR-1, confirmed by experiment: disabling Kover took UtilsKtTest from
-  // 12/16 failing → 1/16 with no instrumentation errors). Setting -PdisableKoverInstrumentation
-  // removes the Kover agent from the test JVM in-container so MockK retransform succeeds.
-  // Trade-off: local in-container runs with the flag produce no Kover coverage data (FOLLOW-UP).
+  // delete a method" (see ADR-1). JaCoCo's coverage agent (v0.8.14) does NOT exhibit this
+  // conflict (verified by experiment: UtilsKtTest + mockkStatic tests pass with zero
+  // retransform errors under JaCoCo). Setting -PkoverUseJacoco switches the in-container
+  // coverage tool to JaCoCo so MockK tests run AND a real coverage report is produced.
+  // See plan container-local-coverage-jacoco.
+  if (project.hasProperty("koverUseJacoco")) {
+    useJacoco("0.8.14")
+  }
+  // FLAG 2: -PdisableKoverInstrumentation (default OFF, zero-agent fallback)
+  // Removes the native Kover agent from the test JVM entirely (mutually exclusive with
+  // -PkoverUseJacoco — see the guard above). Use only when no coverage data is needed
+  // (e.g. fastest possible test run). Trade-off: runs with this flag produce no coverage data.
   if (project.hasProperty("disableKoverInstrumentation")) {
     // disabledForAll = true is project-wide: it disables Kover for every Test task, not just
     // `test`.

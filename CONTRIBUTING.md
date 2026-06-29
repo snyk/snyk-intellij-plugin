@@ -69,27 +69,36 @@ The Docker Desktop LinuxKit VM has two known constraints:
 2. **Kover coverage agent conflicts with MockK's ByteBuddy inline instrumentation.** Both agents
    retransform the same classes; the Kover agent does not forward the original bytes for some
    platform classes, so MockK's subsequent retransform call fails with
-   `class redefinition failed: attempted to delete a method`. Run with
-   `-PdisableKoverInstrumentation` to remove the Kover agent from the test JVM and resolve this.
+   `class redefinition failed: attempted to delete a method`. Use `-PkoverUseJacoco` in-container
+   to switch to JaCoCo's coverage agent, which coexists with MockK's ByteBuddy instrumentation
+   (verified by experiment). This flag is the **recommended in-container flag** — it lets MockK
+   tests pass **and** produces a real coverage report.
 
-In-container run command (Linux dev-container only — `readlink -f` is not portable to macOS):
+In-container run commands (Linux dev-container only — `readlink -f` is not portable to macOS):
 
 ```bash
+# Recommended: run tests AND produce a coverage report (JaCoCo coexists with MockK)
+JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test koverXmlReport -PkoverUseJacoco
+
+# Alternative: skip coverage entirely (zero-agent fallback, no report produced)
 JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test -PdisableKoverInstrumentation
 ```
 
 Outside the container, run plain `./gradlew test` (no `JAVA_HOME` prefix, no flag).
 
 The ByteBuddy agent is preloaded automatically — no additional flags are needed for that.
-The `-PdisableKoverInstrumentation` flag is required in-container to avoid the Kover-MockK
-conflict. **Trade-off:** runs with this flag produce no local Kover coverage data. Coverage is
-still produced by CI (which runs `check` without the flag). A follow-up plan will restore
-in-container coverage without reintroducing the agent conflict.
+
+**Coverage caveat:** the local JaCoCo coverage number is *indicative*, not byte-identical to CI's
+native-Kover number. Two reasons: (1) JaCoCo and the native Kover agent count coverage slightly
+differently; (2) approximately 131 platform-dependent tests fail in-container due to an
+independent `VFS can't be initialized` obstacle (unrelated to the coverage tool) and contribute
+no local coverage. Those failures are a known, separate issue. CI coverage (native Kover, all
+three OS legs) is unaffected — CI never sets either in-container flag.
 
 The pre-push hook (`scripts/pre-push-test.sh`) detects whether it is running inside the
 container (via `/.dockerenv` or the `REMOTE_CONTAINERS`/`DEVCONTAINER` environment variables)
-and automatically appends `-PdisableKoverInstrumentation` only then. Developers running outside
-the container are not affected and retain their local Kover coverage data.
+and automatically appends `-PkoverUseJacoco` only then. Developers running outside the container
+are not affected and retain their local Kover coverage data.
 
 ### Running the extension
 

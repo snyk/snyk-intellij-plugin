@@ -51,14 +51,20 @@ alwaysApply: true
 - **Running tests** — use the command appropriate for your environment:
   - **Outside the Docker Desktop dev-container** (native Linux/macOS): `./gradlew test`
   - **Inside the Docker Desktop dev-container** (Linux only — `readlink -f` is not portable):
-    `-PdisableKoverInstrumentation` removes the Kover java-agent that conflicts with MockK's
-    ByteBuddy inline instrumentation (see ADR-1 and `docs/plans/container-mockk-bytebuddy-agent.md`):
-    `JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test -PdisableKoverInstrumentation`
+    `-PkoverUseJacoco` switches the coverage agent to JaCoCo, which coexists with MockK's
+    ByteBuddy inline instrumentation (verified; see plan `container-local-coverage-jacoco`).
+    This is the **recommended in-container flag** — MockK tests pass AND a coverage report is
+    produced. `-PdisableKoverInstrumentation` is the zero-agent fallback (no coverage).
+    `JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test -PkoverUseJacoco`
     The ByteBuddy agent is preloaded automatically; no additional flags are needed for that.
-    Trade-off: runs with this flag produce no local Kover coverage data (FOLLOW-UP).
+    Coverage caveat: the local JaCoCo number is indicative (not byte-identical to CI's native
+    Kover number) due to tool-counting differences and ~131 VFS-failing platform tests that
+    contribute no local coverage regardless of tool. CI is unaffected (no flag in CI).
   The pre-push hook (`scripts/pre-push-test.sh`) detects the container automatically and applies
   the correct flags — you do not need to configure anything for hook runs.
-- achieve 80% of test coverage. use `./gradlew koverXmlReport`
+- achieve 80% of test coverage. use `./gradlew test koverXmlReport` (outside container) or
+  `JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test koverXmlReport -PkoverUseJacoco`
+  (in-container — runs the tests and writes the JaCoCo report in one invocation)
 - if files are not used or needed anymore, delete them instead of deprecating them.
 - ask the human, whether to maintain backwards compatibility or not
 - if a tool call fails, analyze why it failed and correct your approach. don't prompt the user for help.
@@ -84,10 +90,10 @@ alwaysApply: true
 - NEVER amend commits, keep a history so we can revert atomic commits
 - NEVER NEVER NEVER skip the commit hooks
 - I REPEAT: NEVER USE --no-verify. DO NOT DO IT. NEVER. THIS IS CRITICAL, DO NOT DO IT.
-- run the full test suite before committing and fix the issues (may take >10min). Use `./gradlew test` outside the dev-container; inside the dev-container use `JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test -PdisableKoverInstrumentation` (see coding_guidelines above). Don't run targeted tests, run the full suite.
+- run the full test suite before committing and fix the issues (may take >10min). Use `./gradlew test` outside the dev-container; inside the dev-container use `JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew test -PkoverUseJacoco` (see coding_guidelines above). Don't run targeted tests, run the full suite.
 - test failures prevent committing, regardless if caused by our changes. they MUST be fixed, even if they existed before. 
 - deactivating tests is NEVER ALLOWED.
-- check with Kover (`./gradlew koverXmlReport`) that coverage of changed files is 80%+
+- check with Kover that coverage of changed files is 80%+: outside the dev-container use `./gradlew koverXmlReport`; inside the dev-container use `JAVA_HOME="$HOME/.sdkman/candidates/java/current" ./gradlew koverXmlReport -PkoverUseJacoco` (the flag must match the one used on the `test` run — it selects the JaCoCo agent that writes the `.exec` which `koverXmlReport` then reads)
 - update the documentation before committing
 - when asked to commit, always use conventional commit messages (Conventional Commit Style (Subject + Body)). be descriptive in the body. if you find a JIRA issue (XXX-XXXX) in the branch name, use it as a postfix to the subject line in the format [XXX-XXXX]
 - consider all commits in the current branch when committing, to have the context of the current changes.

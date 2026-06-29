@@ -9,10 +9,11 @@
 #
 # When IN the container:
 #   - Resolve JAVA_HOME by asking the JVM itself (immune to symlinks and wrapper scripts)
-#   - Run ./gradlew test -PdisableKoverInstrumentation (Kover↔MockK conflict, ADR-1)
+#   - Run ./gradlew test -PkoverUseJacoco (JaCoCo coexists with MockK's ByteBuddy agent;
+#     native Kover agent conflicts — see ADR-1, plan container-local-coverage-jacoco)
 #
 # When NOT in the container:
-#   - Run plain ./gradlew test (Kover instrumentation on; JAVA_HOME untouched)
+#   - Run plain ./gradlew test (native Kover instrumentation on; JAVA_HOME untouched)
 
 set -euo pipefail
 
@@ -30,8 +31,8 @@ if [ -f "/.dockerenv" ] || [ -n "${REMOTE_CONTAINERS:-}" ] || [ -n "${DEVCONTAIN
     echo "pre-push-test.sh: WARNING: java not found on PATH; using existing JAVA_HOME=${JAVA_HOME:-<unset>}" >&2
   fi
   # Gradle uses JAVA_HOME directly; no need to prepend to PATH.
-  exec ./gradlew test -PdisableKoverInstrumentation "$@"
+  exec ./gradlew test -PkoverUseJacoco "$@"
 else
-  # Outside container: run with full Kover instrumentation; leave JAVA_HOME untouched.
+  # Outside container: run with native Kover instrumentation; leave JAVA_HOME untouched.
   exec ./gradlew test "$@"
 fi
