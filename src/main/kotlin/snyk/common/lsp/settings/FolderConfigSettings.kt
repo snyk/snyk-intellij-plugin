@@ -91,6 +91,22 @@ class FolderConfigSettings {
 
   fun getAll(): Map<String, LspFolderConfig> = HashMap(configs)
 
+  /**
+   * Project-scoped readiness check: true when at least one of this project's configured workspace
+   * folders has a config actually stored (LS-pushed or user-saved), not a transient [createEmpty]
+   * default. Used to gate per-folder settings-dialog fields; [getAll] would leak other open
+   * projects' configs since this is an APP-level service.
+   */
+  fun hasStoredConfigForProject(project: Project): Boolean {
+    val wrapper = LanguageServerWrapper.getInstance(project)
+    return wrapper
+      .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+      .filter { wrapper.configuredWorkspaceFolders.contains(it) }
+      .any {
+        normalizePathOrNull(it.uri.fromUriToPath().toString())?.let(configs::containsKey) == true
+      }
+  }
+
   fun clear() = configs.clear()
 
   fun addAll(folderConfigs: List<LspFolderConfig>) =

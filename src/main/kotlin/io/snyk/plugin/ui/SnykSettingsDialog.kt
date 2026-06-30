@@ -212,12 +212,12 @@ class SnykSettingsDialog(
       manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
       cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
       cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-      val haveFolderConfigs = service<FolderConfigSettings>().getAll().isNotEmpty()
+      val haveFolderConfigs = service<FolderConfigSettings>().hasStoredConfigForProject(project)
       updateProjectSettingsFields(haveFolderConfigs)
       scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
       cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
       baseBranchInfoLabel.text =
-        service<FolderConfigSettings>().getAll().values.joinToString("\n") {
+        service<FolderConfigSettings>().getAllForProject(project).joinToString("\n") {
           val branch = it.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
           val refDir =
             it.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
@@ -274,12 +274,12 @@ class SnykSettingsDialog(
     manageBinariesAutomatically.isSelected = settings.manageBinariesAutomatically
     cliPathTextBoxWithFileBrowser.text = settings.cliPath
     cliBaseDownloadUrlTextField.text = settings.cliBaseDownloadURL
-    val haveFolderConfigs = service<FolderConfigSettings>().getAll().isNotEmpty()
+    val haveFolderConfigs = service<FolderConfigSettings>().hasStoredConfigForProject(project)
     updateProjectSettingsFields(haveFolderConfigs)
     scanOnSaveCheckbox.isSelected = settings.scanOnSave
     cliReleaseChannelDropDown.selectedItem = settings.cliReleaseChannel
     baseBranchInfoLabel.text =
-      service<FolderConfigSettings>().getAll().values.joinToString("\n") {
+      service<FolderConfigSettings>().getAllForProject(project).joinToString("\n") {
         val branch = it.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.value as? String ?: ""
         val refDir = it.settings?.get(LsFolderSettingsKeys.REFERENCE_FOLDER)?.value as? String ?: ""
         "${it.folderPath}: Reference branch: $branch, Reference directory: $refDir"
