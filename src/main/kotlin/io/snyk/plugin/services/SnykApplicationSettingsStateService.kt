@@ -47,59 +47,54 @@ class SnykApplicationSettingsStateService :
   // testing flag
   var fileListenerEnabled: Boolean = true
 
-  // Concurrent-collection backed (not plain mutableSetOf): XmlSerializerUtil reflects over this
-  // public var directly to serialize state and never holds [pendingResetsLock], so a save-triggered
-  // serialization can iterate it concurrently with a structural remove in clearExplicitlyChanged.
-  // ConcurrentHashMap iteration is weakly-consistent → no CME. The synchronized blocks below remain
-  // for the compound check-then-remove invariants (the lock makes those atomic; the concurrent
-  // backing makes the serializer race safe).
+  // Concurrent-collection backed (not plain mutableSetOf): APP-scoped, touched from multiple
+  // threads
+  // (JCEF save thread mutates via mark/clear; the multi-project getSettings() fan-out reads via
+  // isExplicitlyChanged; XmlSerializerUtil reflects over this public var off-lock to serialize
+  // state). ConcurrentHashMap.newKeySet() iteration is weakly-consistent → every access is CME-safe
+  // with no lock. Re-wrapped after loadState (copyBean assigns a plain HashSet) — see [loadState].
+  //
+  // Tracks only GLOBAL (user:global) keys. Per-folder settings need no equivalent: every IDE writer
+  // of a stored folder config sets changed=true on the LspFolderConfig itself
+  // ([snyk.common.lsp.settings.withSetting]), which getSettings emits verbatim.
   var explicitChanges: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
   // Global keys pending a reset signal ({ value: null, changed: true }) to the LS.
-  // Transient: not persisted, consumed once by getSettings().
-  // APP-scoped and mutated from multiple threads (JCEF query thread enqueues; every
-  // getSettings() across the multi-project fan-out consumes), so guard all access with
-  // [pendingResetsLock] — the consume is a compound snapshot-then-clear that must be atomic.
-  @Transient private val pendingResets: MutableSet<String> = mutableSetOf()
-
-  @Transient private val pendingResetsLock = Any()
+  // Transient (not persisted): enqueued by the JCEF query thread, consumed once by every
+  // getSettings() across the multi-project fan-out. Concurrent-set backed so all access is
+  // lock-free;
+  // consume drains by remove-while-iterate so the snapshot-then-clear can't drop a
+  // concurrently-added
+  // key (a plain toSet()+clear() would).
+  @Transient private val pendingResets: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
   fun addPendingReset(key: String) {
-    synchronized(pendingResetsLock) { pendingResets.add(key) }
+    pendingResets.add(key)
   }
 
-  fun consumePendingResets(): Set<String> =
-    synchronized(pendingResetsLock) {
-      val snapshot = pendingResets.toSet()
-      pendingResets.clear()
-      snapshot
+  fun consumePendingResets(): Set<String> {
+    val drained = mutableSetOf<String>()
+    val it = pendingResets.iterator()
+    while (it.hasNext()) {
+      drained.add(it.next())
+      it.remove()
     }
+    return drained
+  }
 
-  // [explicitChanges] is APP-scoped and touched from multiple threads: the JCEF save thread mutates
-  // it (mark/clear) while the multi-project getSettings() fan-out reads it via isExplicitlyChanged,
-  // and XmlSerializerUtil iterates it off-lock to serialize state. The concurrent backing (see
-  // field
-  // decl) makes those lock-less iterations CME-safe; the [pendingResetsLock] blocks below make the
-  // compound mutations atomic — concurrent collections alone don't.
-  //
-  // This tracks only GLOBAL (user:global) keys. Per-folder settings need no equivalent: every IDE
-  // writer of a stored folder config sets changed=true on the LspFolderConfig itself
-  // ([snyk.common.lsp.settings.withSetting]), which getSettings emits verbatim — there is no
-  // separate folder changed-flag map to keep in sync.
   fun markExplicitlyChanged(settingKey: String) {
-    synchronized(pendingResetsLock) { explicitChanges.add(settingKey) }
+    explicitChanges.add(settingKey)
   }
 
   fun clearExplicitlyChanged(key: String) {
-    synchronized(pendingResetsLock) { explicitChanges.remove(key) }
+    explicitChanges.remove(key)
   }
 
   fun clearAllExplicitlyChanged() {
-    synchronized(pendingResetsLock) { explicitChanges.clear() }
+    explicitChanges.clear()
   }
 
-  fun isExplicitlyChanged(settingKey: String): Boolean =
-    synchronized(pendingResetsLock) { explicitChanges.contains(settingKey) }
+  fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
 
   /**
    * snyk-ls applies user:global settings from InitializationOptions / didChangeConfiguration only
@@ -251,6 +246,10 @@ class SnykApplicationSettingsStateService :
 
   override fun loadState(state: SnykApplicationSettingsStateService) {
     XmlSerializerUtil.copyBean(state, this)
+    // copyBean reflects the deserialized value in as a plain HashSet, dropping the concurrent
+    // backing. Re-wrap so off-lock serializer/reader iteration stays CME-safe after every IDE
+    // start.
+    explicitChanges = ConcurrentHashMap.newKeySet<String>().apply { addAll(explicitChanges) }
   }
 
   @Suppress("DEPRECATION")

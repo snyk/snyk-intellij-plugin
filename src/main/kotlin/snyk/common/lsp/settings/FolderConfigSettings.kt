@@ -60,7 +60,8 @@ class FolderConfigSettings {
       null
     }
 
-  // Pure read: returns the stored override or a transient default. The LS owns folder overrides
+  // Non-persisting read: returns the stored override or a freshly built transient default (it does
+  // construct an instance, it just never writes to the store). The LS owns folder overrides
   // (populated via [addAll] from didChangeConfiguration); the IDE must not materialize one as a
   // side-effect of a read. Persisting the default here let a folder merely *present* in a save
   // payload (or rendered in the settings dialog) acquire a default user:folder override it never
