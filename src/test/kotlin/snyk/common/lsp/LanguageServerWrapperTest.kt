@@ -75,7 +75,7 @@ class LanguageServerWrapperTest {
       snykPluginDisposable
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
       folderConfigSettingsMock
-    // getSettings normalizes the refresh lookup key via this; the real impl is identity for the
+    // getSettings normalizes each workspace-folder path via this; the real impl is identity for the
     // already-normalized absolute paths these tests use, so pass the arg through (relaxed mock
     // would otherwise return null and drop every folder config).
     every { folderConfigSettingsMock.normalizePathOrNull(any()) } answers { firstArg() }
@@ -622,7 +622,6 @@ class LanguageServerWrapperTest {
     every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
 
     cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "folder-toggles"))
-    cut.updateFolderConfigRefresh(normalizedPath, true)
 
     val result = cut.getSettings()
 
@@ -751,26 +750,6 @@ class LanguageServerWrapperTest {
     cut.updateWorkspaceFolders(setOf(WorkspaceFolder("file:///test", "test")), emptySet())
 
     verify(exactly = 0) { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
-  }
-
-  @Test
-  fun `getFolderConfigsRefreshed returns unmodifiable map`() {
-    val result = cut.getFolderConfigsRefreshed()
-    assertTrue(result.isEmpty())
-  }
-
-  @Test
-  fun `updateFolderConfigRefresh stores normalized path`() {
-    cut.updateFolderConfigRefresh("/test/folder", true)
-
-    val refreshed = cut.getFolderConfigsRefreshed()
-    assertTrue(refreshed.values.contains(true))
-    assertEquals(1, refreshed.size)
-
-    cut.updateFolderConfigRefresh("/test/folder", false)
-
-    val refreshed2 = cut.getFolderConfigsRefreshed()
-    assertTrue(refreshed2.values.contains(false))
   }
 
   @Test
@@ -923,39 +902,49 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `getSettings folder configs only include refreshed folders`() {
-    val folderPath = "/test/refreshed-folder"
-    val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-    val folderUri = Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
+  fun `getSettings emits every configured folder including a reset never echoed by the LS`() {
+    // No IDE-side refresh gate (mirrors VS Code): every configured folder is emitted. A folder
+    // reset
+    // {value:null, changed:true} must reach the LS even though the LS never echoed this folder's
+    // config — the bug the old refresh-flag gate caused by dropping such folders.
+    val plainPath = "/test/plain-folder"
+    val plainNormalized = Paths.get(plainPath).normalize().toAbsolutePath().toString()
+    val plainUri = Paths.get(plainPath).toUri().toASCIIString().removeSuffix("/")
 
-    val unrefreshedPath = "/test/not-refreshed"
-    val unrefreshedNormalized = Paths.get(unrefreshedPath).normalize().toAbsolutePath().toString()
-    val unrefreshedUri = Paths.get(unrefreshedPath).toUri().toASCIIString().removeSuffix("/")
+    val resetPath = "/test/reset-folder"
+    val resetNormalized = Paths.get(resetPath).normalize().toAbsolutePath().toString()
+    val resetUri = Paths.get(resetPath).toUri().toASCIIString().removeSuffix("/")
 
-    val folderConfig =
+    val plainConfig =
       LspFolderConfig(
-        folderPath = normalizedPath,
+        folderPath = plainNormalized,
         settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main")),
       )
-    val unrefreshedConfig =
+    val resetConfig =
       LspFolderConfig(
-        folderPath = unrefreshedNormalized,
-        settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "develop")),
+        folderPath = resetNormalized,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = null, changed = true)
+          ),
       )
 
-    every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
-    every { folderConfigSettingsMock.getFolderConfig(unrefreshedNormalized) } returns
-      unrefreshedConfig
+    every { folderConfigSettingsMock.getFolderConfig(plainNormalized) } returns plainConfig
+    every { folderConfigSettingsMock.getFolderConfig(resetNormalized) } returns resetConfig
 
-    cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "refreshed"))
-    cut.configuredWorkspaceFolders.add(WorkspaceFolder(unrefreshedUri, "not-refreshed"))
-
-    // Only mark one as refreshed
-    cut.updateFolderConfigRefresh(normalizedPath, true)
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(plainUri, "plain"))
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(resetUri, "reset"))
 
     val result = cut.getSettings()
 
-    assertEquals("Should only include the refreshed folder", 1, result.folderConfigs?.size)
+    assertEquals("Both configured folders are emitted", 2, result.folderConfigs?.size)
+    val emittedReset = result.folderConfigs?.first { it.folderPath == resetNormalized }
+    assertEquals(
+      "Reset folder ships value=null changed=true with no refresh flag set",
+      null,
+      emittedReset?.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value,
+    )
+    assertEquals(true, emittedReset?.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.changed)
   }
 
   @Test
@@ -977,7 +966,6 @@ class LanguageServerWrapperTest {
     every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
 
     cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "changed"))
-    cut.updateFolderConfigRefresh(normalizedPath, true)
 
     val result = cut.getSettings()
 
@@ -1091,7 +1079,6 @@ class LanguageServerWrapperTest {
     cut.configuredWorkspaceFolders.add(
       WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
     )
-    cut.updateFolderConfigRefresh(folderPath, true)
 
     val actual = cut.getSettings()
 
@@ -1119,7 +1106,6 @@ class LanguageServerWrapperTest {
     cut.configuredWorkspaceFolders.add(
       WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
     )
-    cut.updateFolderConfigRefresh(folderPath, true)
 
     // Before push-back: stored config carries the reset null.
     every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns

@@ -212,8 +212,7 @@ class SnykSettingsDialog(
       manageBinariesAutomatically.isSelected = applicationSettings.manageBinariesAutomatically
       cliPathTextBoxWithFileBrowser.text = applicationSettings.cliPath
       cliBaseDownloadUrlTextField.text = applicationSettings.cliBaseDownloadURL
-      val haveFolderConfigs =
-        LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+      val haveFolderConfigs = service<FolderConfigSettings>().getAll().isNotEmpty()
       updateProjectSettingsFields(haveFolderConfigs)
       scanOnSaveCheckbox.isSelected = applicationSettings.scanOnSave
       cliReleaseChannelDropDown.selectedItem = applicationSettings.cliReleaseChannel
@@ -275,8 +274,7 @@ class SnykSettingsDialog(
     manageBinariesAutomatically.isSelected = settings.manageBinariesAutomatically
     cliPathTextBoxWithFileBrowser.text = settings.cliPath
     cliBaseDownloadUrlTextField.text = settings.cliBaseDownloadURL
-    val haveFolderConfigs =
-      LanguageServerWrapper.getInstance(project).getFolderConfigsRefreshed().isNotEmpty()
+    val haveFolderConfigs = service<FolderConfigSettings>().getAll().isNotEmpty()
     updateProjectSettingsFields(haveFolderConfigs)
     scanOnSaveCheckbox.isSelected = settings.scanOnSave
     cliReleaseChannelDropDown.selectedItem = settings.cliReleaseChannel

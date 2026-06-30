@@ -31,7 +31,6 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.io.FileNotFoundException
 import java.nio.file.Paths
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -117,7 +116,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   // internal for test set up
   internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> =
     ConcurrentHashMap.newKeySet()
-  private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
   private var disposed = false
     get() {
       return ApplicationManager.getApplication().isDisposed || field
@@ -193,7 +191,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
 
     try {
-      this.folderConfigsRefreshed.clear()
       val snykLanguageClient = SnykLanguageClient(project, progressManager)
       languageClient = snykLanguageClient
       val logLevel =
@@ -825,11 +822,12 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     val folderConfigSettings = service<FolderConfigSettings>()
     val folderConfigsList =
       configuredWorkspaceFolders
-        // Normalize the lookup key the same way updateFolderConfigRefresh stores it, else a folder
-        // whose URI→path isn't already normalized (trailing slash, "." segment) misses the refresh
-        // flag and its settings — and any reset — are silently dropped.
         .mapNotNull { folderConfigSettings.normalizePathOrNull(it.uri.fromUriToPath().toString()) }
-        .filter { folderConfigsRefreshed[it] == true }
+        // Emit every workspace folder unconditionally (mirrors VS Code). An unconfigured folder
+        // gets createEmpty defaults with changed=null, which snyk-ls ignores (it applies folder
+        // settings only when changed=true), so sending them is harmless. A reset writes
+        // {value:null, changed:true}, so it reaches the LS even before the LS has echoed this
+        // folder's config — no IDE-side refresh gate to drop it.
         .map { folderConfigSettings.getFolderConfig(it) }
         .toList()
 
@@ -1136,14 +1134,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   override fun dispose() {
     disposed = true
     shutdown()
-  }
-
-  fun getFolderConfigsRefreshed(): Map<String?, Boolean?> =
-    Collections.unmodifiableMap(this.folderConfigsRefreshed)
-
-  fun updateFolderConfigRefresh(folderPath: String, refreshed: Boolean) {
-    val path = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-    this.folderConfigsRefreshed[path] = refreshed
   }
 
   companion object {
