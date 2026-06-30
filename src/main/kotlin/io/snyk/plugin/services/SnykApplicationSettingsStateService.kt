@@ -62,23 +62,19 @@ class SnykApplicationSettingsStateService :
   // Global keys pending a reset signal ({ value: null, changed: true }) to the LS.
   // Transient (not persisted): enqueued by the JCEF query thread, consumed once by every
   // getSettings() across the multi-project fan-out. Concurrent-set backed so all access is
-  // lock-free;
-  // consume drains by remove-while-iterate so the snapshot-then-clear can't drop a
-  // concurrently-added
-  // key (a plain toSet()+clear() would).
+  // lock-free.
   @Transient private val pendingResets: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
   fun addPendingReset(key: String) {
     pendingResets.add(key)
   }
 
+  // snapshot-then-clear: a key added after toSet() snapshots but before clear() is lost, but a
+  // remove-while-iterate drain has the identical weakly-consistent window (a key added past the
+  // iterator's bucket is also missed), so it's no safer — both wait for the next consume.
   fun consumePendingResets(): Set<String> {
-    val drained = mutableSetOf<String>()
-    val it = pendingResets.iterator()
-    while (it.hasNext()) {
-      drained.add(it.next())
-      it.remove()
-    }
+    val drained = pendingResets.toSet()
+    pendingResets.clear()
     return drained
   }
 

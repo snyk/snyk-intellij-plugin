@@ -633,7 +633,7 @@ class SaveConfigHandler(
       // the opposite of a reset. Matches the VS Code path, which maps over the already-stored
       // folder configs and never creates an entry for an unknown folder. A never-stored folder
       // has no override to reset, so it needs no write.
-      val existed = fcs.getAll().containsKey(folderPath)
+      val existed = fcs.contains(folderPath)
       var updated = fcs.getFolderConfig(folderPath)
       var changed = false
       for ((key, value) in folderObject.entrySet()) {
@@ -663,13 +663,21 @@ class SaveConfigHandler(
       val folderPath = fcs.normalizePathOrNull(folderConfig.folderPath) ?: continue
       val existing = fcs.getFolderConfig(folderPath)
       var updated = existing
+      // Explicit flag instead of an `updated !== existing` identity check: the latter is correct
+      // only because withSetting always returns a fresh copy() today — a future "return this when
+      // unchanged" optimization would silently stop persisting real changes. Set true iff a field
+      // was actually present (each apply runs inside a ?.let), the same intent as the reset path.
+      var applied = false
+
+      fun apply(key: String, value: Any) {
+        updated = applyFolderSetting(updated, key, value)
+        applied = true
+      }
 
       folderConfig.additionalParameters?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, it)
+        apply(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS, it)
       }
-      folderConfig.additionalEnv?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT, it)
-      }
+      folderConfig.additionalEnv?.let { apply(LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT, it) }
       folderConfig.scanCommandConfig?.let { scanCommands ->
         val mapped =
           scanCommands.mapValues { (_, v) ->
@@ -680,64 +688,40 @@ class SaveConfigHandler(
               postScanOnlyReferenceFolder = v.postScanOnlyReferenceFolder ?: true,
             )
           }
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_COMMAND_CONFIG, mapped)
+        apply(LsFolderSettingsKeys.SCAN_COMMAND_CONFIG, mapped)
       }
-      folderConfig.preferredOrg?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.PREFERRED_ORG, it)
-      }
-      folderConfig.autoDeterminedOrg?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.AUTO_DETERMINED_ORG, it)
-      }
-      folderConfig.orgSetByUser?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ORG_SET_BY_USER, it)
-      }
-      folderConfig.scanAutomatic?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_AUTOMATIC, it)
-      }
-      folderConfig.scanNetNew?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SCAN_NET_NEW, it)
-      }
+      folderConfig.preferredOrg?.let { apply(LsFolderSettingsKeys.PREFERRED_ORG, it) }
+      folderConfig.autoDeterminedOrg?.let { apply(LsFolderSettingsKeys.AUTO_DETERMINED_ORG, it) }
+      folderConfig.orgSetByUser?.let { apply(LsFolderSettingsKeys.ORG_SET_BY_USER, it) }
+      folderConfig.scanAutomatic?.let { apply(LsFolderSettingsKeys.SCAN_AUTOMATIC, it) }
+      folderConfig.scanNetNew?.let { apply(LsFolderSettingsKeys.SCAN_NET_NEW, it) }
       folderConfig.severityFilterCritical?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL, it)
+        apply(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL, it)
       }
-      folderConfig.severityFilterHigh?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, it)
-      }
+      folderConfig.severityFilterHigh?.let { apply(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH, it) }
       folderConfig.severityFilterMedium?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM, it)
+        apply(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM, it)
       }
-      folderConfig.severityFilterLow?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SEVERITY_FILTER_LOW, it)
-      }
-      folderConfig.snykOssEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_OSS_ENABLED, it)
-      }
-      folderConfig.snykCodeEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_CODE_ENABLED, it)
-      }
-      folderConfig.snykIacEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_IAC_ENABLED, it)
-      }
-      folderConfig.snykSecretsEnabled?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, it)
-      }
+      folderConfig.severityFilterLow?.let { apply(LsFolderSettingsKeys.SEVERITY_FILTER_LOW, it) }
+      folderConfig.snykOssEnabled?.let { apply(LsFolderSettingsKeys.SNYK_OSS_ENABLED, it) }
+      folderConfig.snykCodeEnabled?.let { apply(LsFolderSettingsKeys.SNYK_CODE_ENABLED, it) }
+      folderConfig.snykIacEnabled?.let { apply(LsFolderSettingsKeys.SNYK_IAC_ENABLED, it) }
+      folderConfig.snykSecretsEnabled?.let { apply(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED, it) }
       folderConfig.issueViewOpenIssues?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it)
+        apply(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES, it)
       }
       folderConfig.issueViewIgnoredIssues?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it)
+        apply(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES, it)
       }
-      folderConfig.riskScoreThreshold?.let {
-        updated = applyFolderSetting(updated, LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, it)
-      }
+      folderConfig.riskScoreThreshold?.let { apply(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD, it) }
 
-      // Persist only when a setting was actually applied: each applyFolderSetting returns a fresh
-      // copy, so updated differs from `existing` by identity iff at least one `?.let` ran. An
-      // all-null reset payload reaches here too (applyFolderConfigs runs before the raw reset
-      // re-parse) and applies nothing, so without this guard it would persist getFolderConfig's
-      // synthetic default for a never-configured folder — the persist-on-read footgun b09b2a16
-      // removed. Re-persisting an unchanged stored config would be a pointless identical write.
-      if (updated !== existing) {
+      // Persist only when a setting was actually applied. An all-null reset payload reaches here
+      // too
+      // (applyFolderConfigs runs before the raw reset re-parse) and applies nothing, so without
+      // this
+      // guard it would persist getFolderConfig's synthetic default for a never-configured folder —
+      // the persist-on-read footgun b09b2a16 removed.
+      if (applied) {
         fcs.addFolderConfig(updated)
       }
     }

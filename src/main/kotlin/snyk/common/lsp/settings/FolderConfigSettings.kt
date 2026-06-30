@@ -92,6 +92,11 @@ class FolderConfigSettings {
   fun getAll(): Map<String, LspFolderConfig> = HashMap(configs)
 
   /**
+   * O(1) membership check on the normalized path, without copying the backing map (see [getAll]).
+   */
+  fun contains(folderPath: String): Boolean = configs.containsKey(folderPath)
+
+  /**
    * Project-scoped readiness check: true when at least one of this project's configured workspace
    * folders has a config actually stored (LS-pushed or user-saved), not a transient [createEmpty]
    * default. Used to gate per-folder settings-dialog fields; [getAll] would leak other open
