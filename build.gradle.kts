@@ -130,6 +130,7 @@ ktlint { ignoreFailures.set(false) }
 
 // Configure Kover for code coverage
 kover {
+  useJacoco("0.8.14")
   reports {
     total {
       xml {
