@@ -53,6 +53,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -204,7 +205,7 @@ class SnykLanguageClientTest {
     justRun { publishAsync<Any>(any(), any(), any()) }
 
     val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
-    HTMLSettingsPanel.instance = panelMock
+    HTMLSettingsPanel.registerForProject(projectMock, panelMock)
 
     try {
       val token = "test-token-123"
@@ -213,7 +214,7 @@ class SnykLanguageClientTest {
 
       verify { panelMock.setAuthToken(token, apiUrl) }
     } finally {
-      HTMLSettingsPanel.instance = null
+      HTMLSettingsPanel.unregisterForProject(projectMock, panelMock)
     }
   }
 
@@ -1750,6 +1751,93 @@ class SnykLanguageClientTest {
 
     Thread.sleep(500)
     verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), match { it.size == 1 }) }
+  }
+
+  @Test
+  fun `snykConfiguration reloads HTMLSettingsPanel when panel is open`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.registerForProject(projectMock, panelMock)
+
+    try {
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param)
+
+      verify(timeout = 5000, exactly = 1) { panelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.unregisterForProject(projectMock, panelMock)
+    }
+  }
+
+  @Test
+  fun `snykConfiguration does not crash when settings panel is closed`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    // Guarantee the registry has no entry for projectMock — remove whatever is there (if anything)
+    HTMLSettingsPanel.getForProject(projectMock)?.let {
+      HTMLSettingsPanel.unregisterForProject(projectMock, it)
+    }
+    assertNull(HTMLSettingsPanel.getForProject(projectMock))
+
+    val param = LspConfigurationParam()
+    // Should not throw
+    cut.snykConfiguration(param)
+
+    // Give async time to complete; no exception means the test passes
+    Thread.sleep(500)
+  }
+
+  @Test
+  fun `snykConfiguration does not call reloadFromLanguageServer when SnykLanguageClient is disposed`() {
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.registerForProject(projectMock, panelMock)
+
+    try {
+      cut.dispose()
+
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param)
+
+      Thread.sleep(500)
+      verify(exactly = 0) { panelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.unregisterForProject(projectMock, panelMock)
+    }
+  }
+
+  @Test
+  fun `snykConfiguration does not reload panel registered for a different project`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val otherProject = mockk<Project>(relaxed = true)
+    val otherPanelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.registerForProject(otherProject, otherPanelMock)
+
+    try {
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param) // cut uses projectMock, not otherProject
+
+      // Use a short timeout to give the async dispatch time to settle while still detecting
+      // any spurious call to the wrong project's panel.
+      verify(timeout = 1000, exactly = 0) { otherPanelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.unregisterForProject(otherProject, otherPanelMock)
+    }
   }
 
   @Test

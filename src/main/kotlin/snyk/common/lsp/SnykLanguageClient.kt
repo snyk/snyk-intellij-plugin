@@ -362,6 +362,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
           enablementChanged()
         }
+        HTMLSettingsPanel.getForProject(project)?.reloadFromLanguageServer()
       } catch (e: Exception) {
         logger.error("Error processing snyk configuration", e)
       }
@@ -547,7 +548,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}")
 
     // Always inject into both settings UIs so the settings page shows the token immediately.
-    HTMLSettingsPanel.instance?.setAuthToken(param.token ?: "", param.apiUrl)
+    HTMLSettingsPanel.getForProject(project)?.setAuthToken(param.token ?: "", param.apiUrl)
     SnykSettingsDialog.instance?.updateAuthFields(param.token ?: "", param.apiUrl)
 
     if (!param.apiUrl.isNullOrBlank()) {
