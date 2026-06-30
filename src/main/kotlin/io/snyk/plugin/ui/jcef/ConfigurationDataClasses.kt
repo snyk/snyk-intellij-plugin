@@ -62,8 +62,7 @@ data class SaveConfigRequest(
   val activateSnykIac: Boolean? = null,
   @SerializedName(value = "snyk_secrets_enabled", alternate = ["activateSnykSecrets"])
   val activateSnykSecrets: Boolean? = null,
-  @SerializedName(value = "scan_automatic", alternate = ["scanningMode"])
-  val scanningMode: String? = null,
+  @SerializedName("scan_automatic") val scanningMode: Boolean? = null,
 
   // Connection Settings
   @SerializedName("organization") val organization: String? = null,
@@ -99,6 +98,14 @@ data class SaveConfigRequest(
   val cliBaseDownloadURL: String? = null,
   @SerializedName(value = "cli_release_channel", alternate = ["cliReleaseChannel"])
   val cliReleaseChannel: String? = null,
+
+  // Global (Project Defaults) advanced settings — top-level fields, distinct from per-folder
+  // FolderConfigData fields
+  @SerializedName(value = "additional_parameters", alternate = ["additionalParameters"])
+  @com.google.gson.annotations.JsonAdapter(StringOrListTypeAdapter::class)
+  val additionalParameters: List<String>? = null,
+  @SerializedName(value = "additional_environment", alternate = ["additionalEnv"])
+  val additionalEnv: String? = null,
 
   // Trusted Folders
   @SerializedName(value = "trusted_folders", alternate = ["trustedFolders"])

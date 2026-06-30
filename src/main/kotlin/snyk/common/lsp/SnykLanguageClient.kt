@@ -286,6 +286,31 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
               }
             }
           }
+          // Global (Project Defaults) advanced settings — top-level settings map only.
+          // Do NOT mirror these from folderConfigs (that would conflate global and folder scope).
+          settings[LsSettingsKeys.ADDITIONAL_PARAMETERS]?.value?.let {
+            // LS may send additional_parameters as a String or a JSON array (List).
+            val strVal =
+              when (it) {
+                is String -> it
+                is List<*> -> it.filterIsInstance<String>().joinToString(" ")
+                else -> null
+              }
+            strVal?.let { v ->
+              if (ps.globalAdditionalParameters != v) {
+                ps.globalAdditionalParameters = v
+                settingsChanged = true
+              }
+            }
+          }
+          settings[LsSettingsKeys.ADDITIONAL_ENVIRONMENT]?.value?.let {
+            (it as? String)?.let { strVal ->
+              if (ps.globalAdditionalEnvironment != strVal) {
+                ps.globalAdditionalEnvironment = strVal
+                settingsChanged = true
+              }
+            }
+          }
         }
 
         // Process folder-scope settings from folderConfigs: only when exactly one folder is
@@ -337,6 +362,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
           enablementChanged()
         }
+        HTMLSettingsPanel.getForProject(project)?.reloadFromLanguageServer()
       } catch (e: Exception) {
         logger.error("Error processing snyk configuration", e)
       }
@@ -522,7 +548,7 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
     logger.debug("old-token-hash: ${oldToken.sha256()}, new-token-hash: ${param.token?.sha256()}")
 
     // Always inject into both settings UIs so the settings page shows the token immediately.
-    HTMLSettingsPanel.instance?.setAuthToken(param.token ?: "", param.apiUrl)
+    HTMLSettingsPanel.getForProject(project)?.setAuthToken(param.token ?: "", param.apiUrl)
     SnykSettingsDialog.instance?.updateAuthFields(param.token ?: "", param.apiUrl)
 
     if (!param.apiUrl.isNullOrBlank()) {
