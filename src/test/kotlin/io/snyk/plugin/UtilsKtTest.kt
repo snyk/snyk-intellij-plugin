@@ -13,6 +13,8 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import junit.framework.TestCase.assertEquals
@@ -394,6 +396,76 @@ class UtilsKtTest {
 
     assertTrue("Navigation should complete within timeout", latch.await(2, TimeUnit.SECONDS))
     verify { navigatable.navigate(false) }
+  }
+
+  @Test
+  fun `isCliInstalled returns false when getPosixFilePermissions throws IOException`() {
+    unmockkAll()
+    val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns appMock
+    every { appMock.isUnitTestMode } returns false
+
+    val tempFile = File.createTempFile("snyk-cli-iotest", "")
+    try {
+      tempFile.setExecutable(true)
+      mockkStatic(::getCliFile)
+      every { getCliFile() } returns tempFile
+
+      mockkStatic(Files::class)
+      every { Files.getPosixFilePermissions(any()) } throws NoSuchFileException("gone")
+
+      assertFalse(isCliInstalled())
+    } finally {
+      tempFile.delete()
+    }
+  }
+
+  @Test
+  fun `isCliInstalled returns true when getPosixFilePermissions throws SecurityException`() {
+    unmockkAll()
+    val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns appMock
+    every { appMock.isUnitTestMode } returns false
+
+    val tempFile = File.createTempFile("snyk-cli-sectest", "")
+    try {
+      tempFile.setExecutable(true)
+      mockkStatic(::getCliFile)
+      every { getCliFile() } returns tempFile
+
+      mockkStatic(Files::class)
+      every { Files.getPosixFilePermissions(any()) } throws SecurityException("denied")
+
+      assertTrue(isCliInstalled())
+    } finally {
+      tempFile.delete()
+    }
+  }
+
+  @Test
+  fun `isCliInstalled returns true when getPosixFilePermissions throws UnsupportedOperationException`() {
+    unmockkAll()
+    val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
+    mockkStatic(ApplicationManager::class)
+    every { ApplicationManager.getApplication() } returns appMock
+    every { appMock.isUnitTestMode } returns false
+
+    val tempFile = File.createTempFile("snyk-cli-nonposix", "")
+    try {
+      tempFile.setExecutable(true)
+      mockkStatic(::getCliFile)
+      every { getCliFile() } returns tempFile
+
+      mockkStatic(Files::class)
+      every { Files.getPosixFilePermissions(any()) } throws
+        UnsupportedOperationException("non-posix")
+
+      assertTrue(isCliInstalled())
+    } finally {
+      tempFile.delete()
+    }
   }
 
   interface TestListener {

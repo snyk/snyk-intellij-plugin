@@ -57,6 +57,31 @@ Should be mostly done trough [IntelliJ Platform Testing Framework](https://plugi
 
 Mocks are [not recommended](https://plugins.jetbrains.com/docs/intellij/testing-plugins.html#mocks) by Jetbrains, but we heavily (and successfully) use Mockk framework. Just be careful not to mock whole world and make sure you're testing real functionality and not mocked one.
 
+#### Running tests in the Docker Desktop dev-container
+
+The Docker Desktop LinuxKit VM has one known constraint: **HotSpot dynamic attach is
+non-functional.** MockK uses a JVM self-attach at init to obtain an `Instrumentation` handle for
+final-class mocking and `mockkStatic`. The build pre-loads the ByteBuddy agent automatically
+(via `jvmArgumentProviders` in `build.gradle.kts`), so no self-attach is needed and no extra
+flag is required.
+
+**JaCoCo is used as the coverage backend unconditionally** (CI and in-container). JaCoCo
+coexists with MockK's ByteBuddy instrumentation without conflict; no flag is needed to disable
+it. Coverage is available locally via `./gradlew koverXmlReport` after `./gradlew test`.
+
+In-container run (set `JAVA_HOME` to your JDK — the exact path varies by installation):
+
+```bash
+JAVA_HOME=/path/to/your/jdk ./gradlew test
+```
+
+Outside the container, run plain `./gradlew test` (set `JAVA_HOME` if your shell's `JAVA_HOME`
+points to a dangling symlink).
+
+The ByteBuddy agent is preloaded automatically — no additional flags are needed.
+The pre-push hook (`scripts/pre-push-test.sh`) resolves `JAVA_HOME` robustly from the running
+JVM and runs `./gradlew test` — no flags, no container detection needed.
+
 ### Running the extension
 
 - From the toolbar click `Run` -> `Run`
