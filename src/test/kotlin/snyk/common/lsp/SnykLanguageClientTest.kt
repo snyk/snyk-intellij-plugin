@@ -1752,6 +1752,65 @@ class SnykLanguageClientTest {
     verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), match { it.size == 1 }) }
   }
 
+  @Test
+  fun `snykConfiguration applies global additional_parameters from top-level settings map`() {
+    val param =
+      LspConfigurationParam(
+        settings =
+          mapOf(
+            LsSettingsKeys.ADDITIONAL_PARAMETERS to ConfigSetting(value = "--debug", changed = true)
+          )
+      )
+
+    cut.snykConfiguration(param)
+    Thread.sleep(200)
+
+    assertEquals("--debug", settings.globalAdditionalParameters)
+  }
+
+  @Test
+  fun `snykConfiguration applies global additional_environment from top-level settings map`() {
+    val param =
+      LspConfigurationParam(
+        settings =
+          mapOf(
+            LsSettingsKeys.ADDITIONAL_ENVIRONMENT to
+              ConfigSetting(value = "VAR1=a;VAR2=b", changed = true)
+          )
+      )
+
+    cut.snykConfiguration(param)
+    Thread.sleep(200)
+
+    assertEquals("VAR1=a;VAR2=b", settings.globalAdditionalEnvironment)
+  }
+
+  @Test
+  fun `snykConfiguration does not apply folder additional_environment to global state`() {
+    settings.globalAdditionalEnvironment = "ORIGINAL=value"
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/folder",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT to
+                    ConfigSetting(value = "FOLDER_VAR=x")
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+    Thread.sleep(200)
+
+    // folder-scoped env must NOT overwrite global env
+    assertEquals("ORIGINAL=value", settings.globalAdditionalEnvironment)
+  }
+
   private fun createMockDiagnostic(range: Range, id: String, filePath: String): Diagnostic {
     val rangeString = Gson().toJson(range)
     val jsonString =
