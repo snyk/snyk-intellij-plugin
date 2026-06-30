@@ -17,6 +17,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import snyk.common.lsp.settings.FolderConfigSettings
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
@@ -46,53 +47,50 @@ class SnykApplicationSettingsStateService :
   // testing flag
   var fileListenerEnabled: Boolean = true
 
-  var explicitChanges: MutableSet<String> = mutableSetOf()
+  // Concurrent-collection backed (not plain mutableSetOf): APP-scoped, touched from multiple
+  // threads
+  // (JCEF save thread mutates via mark/clear; the multi-project getSettings() fan-out reads via
+  // isExplicitlyChanged; XmlSerializerUtil reflects over this public var off-lock to serialize
+  // state). ConcurrentHashMap.newKeySet() iteration is weakly-consistent → every access is CME-safe
+  // with no lock. Re-wrapped after loadState (copyBean assigns a plain HashSet) — see [loadState].
+  //
+  // Tracks only GLOBAL (user:global) keys. Per-folder settings need no equivalent: every IDE writer
+  // of a stored folder config sets changed=true on the LspFolderConfig itself
+  // ([snyk.common.lsp.settings.withSetting]), which getSettings emits verbatim.
+  var explicitChanges: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-  // folder path -> set of setting keys explicitly changed for that folder
-  var folderExplicitChanges: MutableMap<String, MutableSet<String>> = mutableMapOf()
-
-  // Keys pending a reset signal ({ value: null, changed: true }) to the LS.
-  // Transient: not persisted, consumed once by getSettings().
-  @Transient private val pendingResets: MutableSet<String> = mutableSetOf()
+  // Global keys pending a reset signal ({ value: null, changed: true }) to the LS.
+  // Transient (not persisted): enqueued by the JCEF query thread, consumed once by every
+  // getSettings() across the multi-project fan-out. Concurrent-set backed so all access is
+  // lock-free.
+  @Transient private val pendingResets: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
   fun addPendingReset(key: String) {
     pendingResets.add(key)
   }
 
+  // snapshot-then-clear: a key added after toSet() snapshots but before clear() is lost, but a
+  // remove-while-iterate drain has the identical weakly-consistent window (a key added past the
+  // iterator's bucket is also missed), so it's no safer — both wait for the next consume.
   fun consumePendingResets(): Set<String> {
-    val snapshot = pendingResets.toSet()
+    val drained = pendingResets.toSet()
     pendingResets.clear()
-    return snapshot
+    return drained
   }
 
   fun markExplicitlyChanged(settingKey: String) {
     explicitChanges.add(settingKey)
   }
 
-  fun markExplicitlyChanged(folderPath: String, settingKey: String) {
-    folderExplicitChanges.getOrPut(folderPath) { mutableSetOf() }.add(settingKey)
-  }
-
   fun clearExplicitlyChanged(key: String) {
     explicitChanges.remove(key)
   }
 
-  fun clearExplicitlyChanged(folderPath: String, key: String) {
-    folderExplicitChanges[folderPath]?.remove(key)
-    if (folderExplicitChanges[folderPath]?.isEmpty() == true) {
-      folderExplicitChanges.remove(folderPath)
-    }
-  }
-
   fun clearAllExplicitlyChanged() {
     explicitChanges.clear()
-    folderExplicitChanges.clear()
   }
 
   fun isExplicitlyChanged(settingKey: String): Boolean = explicitChanges.contains(settingKey)
-
-  fun isExplicitlyChanged(folderPath: String, settingKey: String): Boolean =
-    folderExplicitChanges[folderPath]?.contains(settingKey) == true
 
   /**
    * snyk-ls applies user:global settings from InitializationOptions / didChangeConfiguration only
@@ -244,6 +242,10 @@ class SnykApplicationSettingsStateService :
 
   override fun loadState(state: SnykApplicationSettingsStateService) {
     XmlSerializerUtil.copyBean(state, this)
+    // copyBean reflects the deserialized value in as a plain HashSet, dropping the concurrent
+    // backing. Re-wrap so off-lock serializer/reader iteration stays CME-safe after every IDE
+    // start.
+    explicitChanges = ConcurrentHashMap.newKeySet<String>().apply { addAll(explicitChanges) }
   }
 
   @Suppress("DEPRECATION")

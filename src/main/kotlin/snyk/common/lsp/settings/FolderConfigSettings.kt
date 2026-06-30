@@ -9,7 +9,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.execution.ParametersListUtil
 import io.snyk.plugin.Severity
 import io.snyk.plugin.fromUriToPath
-import io.snyk.plugin.pluginSettings
+import java.io.IOError
+import java.nio.file.InvalidPathException
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.annotations.NotNull
@@ -36,41 +37,80 @@ class FolderConfigSettings {
     configs[normalizedAbsolutePath] = folderConfig.copy(folderPath = normalizedAbsolutePath)
   }
 
-  private fun normalizePath(folderPath: String): String {
+  internal fun normalizePath(folderPath: String): String {
     val normalizedAbsolutePath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
     return normalizedAbsolutePath
   }
 
+  /**
+   * Null-safe [normalizePath], so callers iterating folder entries can skip one bad entry instead
+   * of aborting the whole loop. [Paths.get]/[java.nio.file.Path.toAbsolutePath] can throw
+   * [InvalidPathException] (malformed path, e.g. a NUL byte) or [SecurityException] (under a
+   * security manager) — both [RuntimeException] — and [IOError] (a default-directory provider
+   * [java.io.IOException]). Catch all three so none escapes and aborts the batch this guards.
+   */
+  internal fun normalizePathOrNull(folderPath: String): String? =
+    try {
+      normalizePath(folderPath)
+    } catch (e: RuntimeException) {
+      logger.warn("Skipping malformed folder path: ${e.message}")
+      null
+    } catch (e: IOError) {
+      logger.warn("Skipping folder path (I/O error): ${e.message}")
+      null
+    }
+
+  // Non-persisting read: returns the stored override or a freshly built transient default (it does
+  // construct an instance, it just never writes to the store). The LS owns folder overrides
+  // (populated via [addAll] from didChangeConfiguration); the IDE must not materialize one as a
+  // side-effect of a read. Persisting the default here let a folder merely *present* in a save
+  // payload (or rendered in the settings dialog) acquire a default user:folder override it never
+  // had — emitted to the LS as if user-chosen, the opposite of a reset. Writes go through
+  // [addFolderConfig] only.
   internal fun getFolderConfig(folderPath: String): LspFolderConfig {
     val normalizedPath = normalizePath(folderPath)
-    val folderConfig = configs[normalizedPath] ?: createEmpty(normalizedPath)
-    return folderConfig
+    return configs[normalizedPath] ?: createEmpty(normalizedPath)
   }
 
-  private fun createEmpty(normalizedAbsolutePath: String): LspFolderConfig {
-    val newConfig =
-      LspFolderConfig(
-        folderPath = normalizedAbsolutePath,
-        settings =
-          mapOf(
-            LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main"),
-            LsFolderSettingsKeys.LOCAL_BRANCHES to ConfigSetting(value = emptyList<String>()),
-            LsFolderSettingsKeys.ADDITIONAL_PARAMETERS to
-              ConfigSetting(value = emptyList<String>()),
-            LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.REFERENCE_FOLDER to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.AUTO_DETERMINED_ORG to ConfigSetting(value = ""),
-            LsFolderSettingsKeys.ORG_SET_BY_USER to ConfigSetting(value = false),
-            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to
-              ConfigSetting(value = emptyMap<String, Any>()),
-          ),
-      )
-    configs[normalizedAbsolutePath] = newConfig
-    return newConfig
-  }
+  private fun createEmpty(normalizedAbsolutePath: String): LspFolderConfig =
+    LspFolderConfig(
+      folderPath = normalizedAbsolutePath,
+      settings =
+        mapOf(
+          LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main"),
+          LsFolderSettingsKeys.LOCAL_BRANCHES to ConfigSetting(value = emptyList<String>()),
+          LsFolderSettingsKeys.ADDITIONAL_PARAMETERS to ConfigSetting(value = emptyList<String>()),
+          LsFolderSettingsKeys.ADDITIONAL_ENVIRONMENT to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.REFERENCE_FOLDER to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.AUTO_DETERMINED_ORG to ConfigSetting(value = ""),
+          LsFolderSettingsKeys.ORG_SET_BY_USER to ConfigSetting(value = false),
+          LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to ConfigSetting(value = emptyMap<String, Any>()),
+        ),
+    )
 
   fun getAll(): Map<String, LspFolderConfig> = HashMap(configs)
+
+  /**
+   * O(1) membership check on the normalized path, without copying the backing map (see [getAll]).
+   */
+  fun contains(folderPath: String): Boolean = configs.containsKey(folderPath)
+
+  /**
+   * Project-scoped readiness check: true when at least one of this project's configured workspace
+   * folders has a config actually stored (LS-pushed or user-saved), not a transient [createEmpty]
+   * default. Used to gate per-folder settings-dialog fields; [getAll] would leak other open
+   * projects' configs since this is an APP-level service.
+   */
+  fun hasStoredConfigForProject(project: Project): Boolean {
+    val wrapper = LanguageServerWrapper.getInstance(project)
+    return wrapper
+      .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+      .filter { wrapper.configuredWorkspaceFolders.contains(it) }
+      .any {
+        normalizePathOrNull(it.uri.fromUriToPath().toString())?.let(configs::containsKey) == true
+      }
+  }
 
   fun clear() = configs.clear()
 
@@ -498,12 +538,11 @@ class FolderConfigSettings {
   }
 
   /**
-   * Sets the per-folder severity filter on every workspace folder of [project]. Marks each folder's
-   * `severity_filter_*` key as explicitly changed so [LanguageServerWrapper.getSettings] forwards
-   * `changed = true` to snyk-ls.
+   * Sets the per-folder severity filter on every workspace folder of [project]. The `changed =
+   * true` flag on the stored config is forwarded verbatim by [LanguageServerWrapper.getSettings].
    *
    * @return true if at least one workspace folder config was updated, false when [project] has no
-   *   folder configs (the caller should silently no-op rather than mutate global flags).
+   *   folder configs (the caller should silently no-op).
    */
   fun setSeverityEnabledForProject(
     project: Project,
@@ -520,11 +559,7 @@ class FolderConfigSettings {
       }
     val folderConfigs = getFolderConfigs(project)
     if (folderConfigs.isEmpty()) return false
-    val ps = pluginSettings()
-    folderConfigs.forEach { fc ->
-      addFolderConfig(fc.withSetting(key, enabled, changed = true))
-      ps.markExplicitlyChanged(fc.folderPath, key)
-    }
+    folderConfigs.forEach { fc -> addFolderConfig(fc.withSetting(key, enabled, changed = true)) }
     return true
   }
 
@@ -555,12 +590,11 @@ class FolderConfigSettings {
   }
 
   /**
-   * Sets the per-folder product enablement on every workspace folder of [project]. Marks each
-   * folder's `snyk_*_enabled` key as explicitly changed so [LanguageServerWrapper.getSettings]
-   * forwards `changed = true` to snyk-ls.
+   * Sets the per-folder product enablement on every workspace folder of [project]. The `changed =
+   * true` flag on the stored config is forwarded verbatim by [LanguageServerWrapper.getSettings].
    *
    * @return true if at least one workspace folder config was updated, false when [project] has no
-   *   folder configs (the caller should silently no-op rather than mutate global flags).
+   *   folder configs (the caller should silently no-op).
    */
   fun setProductEnabledForProject(
     project: Project,
@@ -570,11 +604,7 @@ class FolderConfigSettings {
     val key = productEnablementKey(productType) ?: return false
     val folderConfigs = getFolderConfigs(project)
     if (folderConfigs.isEmpty()) return false
-    val ps = pluginSettings()
-    folderConfigs.forEach { fc ->
-      addFolderConfig(fc.withSetting(key, enabled, changed = true))
-      ps.markExplicitlyChanged(fc.folderPath, key)
-    }
+    folderConfigs.forEach { fc -> addFolderConfig(fc.withSetting(key, enabled, changed = true)) }
     return true
   }
 

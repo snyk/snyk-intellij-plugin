@@ -218,42 +218,6 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun markAndCheckExplicitlyChanged_folder() {
-    val target = SnykApplicationSettingsStateService()
-    assertFalse(target.isExplicitlyChanged("/folder", "key"))
-
-    target.markExplicitlyChanged("/folder", "key")
-    assertTrue(target.isExplicitlyChanged("/folder", "key"))
-    assertFalse(target.isExplicitlyChanged("/folder", "other"))
-    assertFalse(target.isExplicitlyChanged("/other", "key"))
-  }
-
-  @Test
-  fun clearExplicitlyChanged_withFolderPath_removesKeyFromFolderSet() {
-    val target = SnykApplicationSettingsStateService()
-    target.markExplicitlyChanged("/folder", "key_a")
-    target.markExplicitlyChanged("/folder", "key_b")
-    assertTrue(target.isExplicitlyChanged("/folder", "key_a"))
-
-    target.clearExplicitlyChanged("/folder", "key_a")
-
-    assertFalse(target.isExplicitlyChanged("/folder", "key_a"))
-    assertTrue(target.isExplicitlyChanged("/folder", "key_b"))
-  }
-
-  @Test
-  fun clearExplicitlyChanged_withFolderPath_removesFolderEntryWhenLastKeyRemoved() {
-    val target = SnykApplicationSettingsStateService()
-    target.markExplicitlyChanged("/folder", "only_key")
-    assertTrue(target.isExplicitlyChanged("/folder", "only_key"))
-
-    target.clearExplicitlyChanged("/folder", "only_key")
-
-    assertFalse(target.isExplicitlyChanged("/folder", "only_key"))
-    assertTrue(target.folderExplicitChanges.isEmpty())
-  }
-
-  @Test
   fun addPendingReset_addsKeyToPendingSet() {
     val target = SnykApplicationSettingsStateService()
     target.addPendingReset("some_key")
@@ -302,20 +266,16 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun clearAllExplicitlyChanged_clearsBothGlobalAndFolderChanges() {
+  fun clearAllExplicitlyChanged_clearsGlobalChanges() {
     val target = SnykApplicationSettingsStateService()
-    target.markExplicitlyChanged("global_key")
-    target.markExplicitlyChanged("/folder_a", "folder_key")
-    target.markExplicitlyChanged("/folder_b", "another_key")
-    assertTrue(target.isExplicitlyChanged("global_key"))
-    assertTrue(target.isExplicitlyChanged("/folder_a", "folder_key"))
-    assertTrue(target.isExplicitlyChanged("/folder_b", "another_key"))
+    target.markExplicitlyChanged("global_key_a")
+    target.markExplicitlyChanged("global_key_b")
+    assertTrue(target.isExplicitlyChanged("global_key_a"))
+    assertTrue(target.isExplicitlyChanged("global_key_b"))
 
     target.clearAllExplicitlyChanged()
 
-    assertFalse(target.isExplicitlyChanged("global_key"))
-    assertFalse(target.isExplicitlyChanged("/folder_a", "folder_key"))
-    assertFalse(target.isExplicitlyChanged("/folder_b", "another_key"))
-    assertTrue(target.folderExplicitChanges.isEmpty())
+    assertFalse(target.isExplicitlyChanged("global_key_a"))
+    assertFalse(target.isExplicitlyChanged("global_key_b"))
   }
 }

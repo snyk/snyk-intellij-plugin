@@ -25,14 +25,12 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.io.FileNotFoundException
 import java.nio.file.Paths
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -91,7 +89,6 @@ import snyk.common.lsp.settings.InitializationOptions
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
-import snyk.common.lsp.settings.LspFolderConfig
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
@@ -119,7 +116,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   // internal for test set up
   internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> =
     ConcurrentHashMap.newKeySet()
-  private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
   private var disposed = false
     get() {
       return ApplicationManager.getApplication().isDisposed || field
@@ -195,7 +191,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
 
     try {
-      this.folderConfigsRefreshed.clear()
       val snykLanguageClient = SnykLanguageClient(project, progressManager)
       languageClient = snykLanguageClient
       val logLevel =
@@ -820,38 +815,23 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[key] = ConfigSetting(value = null, changed = true)
     }
 
-    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org)
+    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org). The
+    // stored LspFolderConfig already carries each setting's changed flag from where it was written
+    // (every writer sets changed=true via withSetting, incl. a reset's {value:null,changed:true}),
+    // so it is emitted verbatim — no changed-flag re-derivation, no separate reset queue.
+    val folderConfigSettings = service<FolderConfigSettings>()
     val folderConfigsList =
       configuredWorkspaceFolders
-        .filter {
-          val folderPath = it.uri.fromUriToPath().toString()
-          folderConfigsRefreshed[folderPath] == true
-        }
-        .map {
-          val folderPath = it.uri.fromUriToPath().toString()
-          val config = service<FolderConfigSettings>().getFolderConfig(folderPath)
-          applyPersistedFolderChangedFlags(config, ps)
-        }
+        .mapNotNull { folderConfigSettings.normalizePathOrNull(it.uri.fromUriToPath().toString()) }
+        // Emit every workspace folder unconditionally (mirrors VS Code). An unconfigured folder
+        // gets createEmpty defaults with changed=null, which snyk-ls ignores (it applies folder
+        // settings only when changed=true), so sending them is harmless. A reset writes
+        // {value:null, changed:true}, so it reaches the LS even before the LS has echoed this
+        // folder's config — no IDE-side refresh gate to drop it.
+        .map { folderConfigSettings.getFolderConfig(it) }
         .toList()
 
     return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
-  }
-
-  private fun applyPersistedFolderChangedFlags(
-    config: LspFolderConfig,
-    ps: SnykApplicationSettingsStateService,
-  ): LspFolderConfig {
-    val settings = config.settings ?: return config
-    val enriched =
-      settings.mapValues { (key, setting) ->
-        val isUserOverride = ps.isExplicitlyChanged(config.folderPath, key)
-        if (isUserOverride != (setting.changed == true)) {
-          setting.copy(changed = isUserOverride)
-        } else {
-          setting
-        }
-      }
-    return config.copy(settings = enriched)
   }
 
   fun getInitializationOptions(): InitializationOptions {
@@ -1154,14 +1134,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   override fun dispose() {
     disposed = true
     shutdown()
-  }
-
-  fun getFolderConfigsRefreshed(): Map<String?, Boolean?> =
-    Collections.unmodifiableMap(this.folderConfigsRefreshed)
-
-  fun updateFolderConfigRefresh(folderPath: String, refreshed: Boolean) {
-    val path = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-    this.folderConfigsRefreshed[path] = refreshed
   }
 
   companion object {
