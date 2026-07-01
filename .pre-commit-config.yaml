@@ -24,7 +24,11 @@ repos:
         pass_filenames: false
       - id: test
         name: test
-        entry: ./gradlew test
+        # Delegates to scripts/pre-push-test.sh, which resolves JAVA_HOME robustly
+        # (immune to dangling symlinks in the dev-container) and runs
+        # ./gradlew test. JaCoCo is the coverage backend unconditionally — no flags
+        # are needed. See ADR-2 in docs/requirements/architecture.md.
+        entry: bash scripts/pre-push-test.sh
         language: system
         stages: [pre-push]
         pass_filenames: false

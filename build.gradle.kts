@@ -130,6 +130,14 @@ ktlint { ignoreFailures.set(false) }
 
 // Configure Kover for code coverage
 kover {
+  // Use JaCoCo as the coverage backend everywhere (CI and in-container dev).
+  // The native Kover agent conflicts with MockK's ByteBuddy inline instrumentation: both agents
+  // retransform the same classes, causing "class redefinition failed: attempted to delete a
+  // method" (UnsupportedOperationException). JaCoCo does not retransform at instrumentation time
+  // and coexists with ByteBuddy without conflict. Validated: JaCoCo overall coverage = 52.03%
+  // (vs native Kover 54.26%), well above the 40% gate; CI Test job passes. Using the same backend
+  // in CI and in-container makes coverage numbers consistent — no flags, no env-conditional logic.
+  useJacoco("0.8.14")
   reports {
     total {
       xml {
@@ -170,6 +178,41 @@ tasks {
   withType<Test> {
     maxHeapSize = "4096m"
     testLogging { exceptionFormat = TestExceptionFormat.FULL }
+    // Preload the ByteBuddy agent at test-JVM startup so MockK never needs runtime self-attach.
+    // This is unconditional and harmless under the JaCoCo backend (JaCoCo uses class-file
+    // transformation at load time, not retransformation, so it does not conflict with ByteBuddy).
+    // In the Docker Desktop LinuxKit VM, HotSpot dynamic attach is non-functional; preloading the
+    // agent (which MockK would otherwise install via self-attach) makes final-class mocking and
+    // mockkStatic work in-container without any flag. Uses jvmArgumentProviders (not jvmArgs) for
+    // lazy/execution-time resolution of the classpath (resolved at execution time, not at
+    // configuration time, avoiding configuration-phase failures). Sources the jar dynamically from
+    // the resolved test classpath so the version tracks MockK bumps automatically
+    // (byte-buddy-agent is transitive via mockk-agent-jvm).
+    val testClasspath = classpath
+    jvmArgumentProviders.add(
+      CommandLineArgumentProvider {
+        val classpathFiles = testClasspath.files
+        val hasMockk = classpathFiles.any { it.name.startsWith("mockk-") }
+        // Only enforce the byte-buddy-agent requirement when MockK is on the classpath:
+        // withType<Test> applies to all Test-typed tasks (including future tasks such as
+        // testIdeUi) whose classpath may not include MockK or byte-buddy-agent at all.
+        // When MockK is absent the agent is not needed; return an empty list so such tasks
+        // are unaffected. When MockK IS present, a missing or duplicate byte-buddy-agent
+        // indicates a real dependency regression and we fail loudly.
+        if (!hasMockk) {
+          return@CommandLineArgumentProvider emptyList()
+        }
+        val agentJars = classpathFiles.filter { it.name.startsWith("byte-buddy-agent-") }
+        if (agentJars.size != 1) {
+          throw GradleException(
+            "Expected exactly one byte-buddy-agent-*.jar on the test classpath " +
+              "but found ${agentJars.size}: ${agentJars.map { it.name }}. " +
+              "Check if io.mockk:mockk-agent-jvm still pulls in net.bytebuddy:byte-buddy-agent."
+          )
+        }
+        listOf("-javaagent:${agentJars.single().absolutePath}")
+      }
+    )
   }
 
   // Configure the PatchPluginXml task
