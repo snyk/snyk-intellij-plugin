@@ -2105,6 +2105,27 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     }
   }
 
+  // ── Regression: absent vs explicit-null contract for organization ────────────
+  // Absent field → "no change"; explicit JSON null → reset. Pins the contract the org-wipe
+  // behavior depends on: a diff-based payload that simply omits organization must not clear it.
+  fun `test parseAndSaveConfig absent organization field leaves pre-configured org untouched`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.organization = "pre-configured-org"
+    realSettings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+    every { pluginSettings() } returns realSettings
+
+    // Empty payload — organization key is absent (not null, just missing).
+    invokeParseAndSaveConfig("{}")
+
+    // Value and explicit flag preserved — absence is not a reset.
+    assertEquals("pre-configured-org", realSettings.organization)
+    assertTrue(realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION))
+    assertFalse(
+      "absent organization must not be queued as a pending reset",
+      realSettings.consumePendingResets().contains(LsSettingsKeys.ORGANIZATION),
+    )
+  }
+
   private fun invokeParseAndSaveConfig(jsonString: String) {
     val method = SaveConfigHandler::class.java.getDeclaredMethod("saveConfig", String::class.java)
     method.isAccessible = true
