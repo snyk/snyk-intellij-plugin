@@ -289,14 +289,34 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun initializeComponent_marksAllProductKeysExplicitWhenAnyProductDeviates() {
+  fun initializeComponent_marksOnlyDeviatingProductKeyExplicit() {
+    // Fix 2 (IDE-2149 PR review): per-product independent checks — only the deviating key is
+    // marked.
+    // Previously, the OR+markAll block marked all four keys when any one deviated, which would
+    // re-assert a reset OSS override if Secrets (or any other product) still deviates on startup.
     val target = SnykApplicationSettingsStateService()
-    target.iacScanEnabled = false
+    target.iacScanEnabled = false // only IaC deviates from its default (true)
 
     target.initializeComponent()
 
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
+  }
+
+  @Test
+  fun initializeComponent_marksAllDeviatingProductKeysExplicit() {
+    // When multiple products deviate, all of their keys are marked — but not the non-deviating
+    // ones.
+    val target = SnykApplicationSettingsStateService()
+    target.iacScanEnabled = false
+    target.secretsEnabled = true // secrets default is false, so this deviates
+
+    target.initializeComponent()
+
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
   }

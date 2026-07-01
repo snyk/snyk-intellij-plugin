@@ -221,13 +221,18 @@ class SnykApplicationSettingsStateService :
   }
 
   private fun reconcileProductExplicitKeysIfDeviatingFromDefaults() {
-    if (
-      ossScanEnable != PLUGIN_DEFAULT_OSS_SCAN_ENABLE ||
-        snykCodeSecurityIssuesScanEnable != PLUGIN_DEFAULT_CODE_SCAN_ENABLE ||
-        iacScanEnabled != PLUGIN_DEFAULT_IAC_SCAN_ENABLE ||
-        secretsEnabled != PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE
-    ) {
-      markAllProductEnablementKeysExplicit()
+    // Mark each product key independently: a reset on one product must not re-assert the others.
+    if (ossScanEnable != PLUGIN_DEFAULT_OSS_SCAN_ENABLE) {
+      markExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED)
+    }
+    if (snykCodeSecurityIssuesScanEnable != PLUGIN_DEFAULT_CODE_SCAN_ENABLE) {
+      markExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    }
+    if (iacScanEnabled != PLUGIN_DEFAULT_IAC_SCAN_ENABLE) {
+      markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    }
+    if (secretsEnabled != PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE) {
+      markExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)
     }
   }
 
