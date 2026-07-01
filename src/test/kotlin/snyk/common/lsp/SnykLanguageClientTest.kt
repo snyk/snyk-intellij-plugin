@@ -53,6 +53,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -204,7 +205,7 @@ class SnykLanguageClientTest {
     justRun { publishAsync<Any>(any(), any(), any()) }
 
     val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
-    HTMLSettingsPanel.instance = panelMock
+    HTMLSettingsPanel.registerForProject(projectMock, panelMock)
 
     try {
       val token = "test-token-123"
@@ -213,7 +214,7 @@ class SnykLanguageClientTest {
 
       verify { panelMock.setAuthToken(token, apiUrl) }
     } finally {
-      HTMLSettingsPanel.instance = null
+      HTMLSettingsPanel.unregisterForProject(projectMock, panelMock)
     }
   }
 
@@ -641,7 +642,7 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `snykConfiguration should update plugin settings when received`() {
+  fun `snykConfiguration folderConfig does not update global plugin settings`() {
     // initial state
     settings.snykCodeSecurityIssuesScanEnable = false
     settings.ossScanEnable = false
@@ -666,8 +667,9 @@ class SnykLanguageClientTest {
     // Give it a small amount of time to process async task
     Thread.sleep(200)
 
-    assertTrue(settings.snykCodeSecurityIssuesScanEnable)
-    assertTrue(settings.ossScanEnable)
+    // folderConfigs are stored only in FolderConfigSettings — global state stays unchanged.
+    assertFalse(settings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(settings.ossScanEnable)
   }
 
   @Test
@@ -730,7 +732,9 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `snykConfiguration with single folder config maps toggles to global state`() {
+  fun `snykConfiguration with single folder config does NOT mutate global state`() {
+    // Pre-set global (project-default) state. A single folderConfig must NEVER overwrite it,
+    // regardless of source — folder-scope values live only in FolderConfigSettings.
     settings.snykCodeSecurityIssuesScanEnable = false
     settings.ossScanEnable = false
     settings.iacScanEnabled = false
@@ -739,6 +743,7 @@ class SnykLanguageClientTest {
     settings.highSeverityEnabled = false
     settings.mediumSeverityEnabled = false
     settings.lowSeverityEnabled = false
+    settings.riskScoreThreshold = 100
 
     val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
@@ -767,10 +772,16 @@ class SnykLanguageClientTest {
               folderPath = "/test/project",
               settings =
                 mapOf(
-                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = true),
-                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
-                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = true),
-                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to
+                    ConfigSetting(value = true, source = "user-override"),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to
+                    ConfigSetting(value = true, source = "user-override"),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to
+                    ConfigSetting(value = true, source = "user-override"),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to
+                    ConfigSetting(value = true, source = "user-override"),
+                  LsFolderSettingsKeys.RISK_SCORE_THRESHOLD to
+                    ConfigSetting(value = 700.0, source = "user-override"),
                   LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL to ConfigSetting(value = true),
                   LsFolderSettingsKeys.SEVERITY_FILTER_HIGH to ConfigSetting(value = true),
                   LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM to ConfigSetting(value = true),
@@ -784,15 +795,97 @@ class SnykLanguageClientTest {
 
     Thread.sleep(500)
 
-    assertTrue("Code should be enabled", settings.snykCodeSecurityIssuesScanEnable)
-    assertTrue("OSS should be enabled", settings.ossScanEnable)
-    assertTrue("IaC should be enabled", settings.iacScanEnabled)
-    assertTrue("Secrets should be enabled", settings.secretsEnabled)
-    // Severity filters are NOT mirrored to global state — they live exclusively in folder configs
+    // Global product toggles must remain at their pre-set values.
+    assertFalse("Code global toggle must not change", settings.snykCodeSecurityIssuesScanEnable)
+    assertFalse("OSS global toggle must not change", settings.ossScanEnable)
+    assertFalse("IaC global toggle must not change", settings.iacScanEnabled)
+    assertFalse("Secrets global toggle must not change", settings.secretsEnabled)
+    assertEquals("Risk score threshold must not change", 100, settings.riskScoreThreshold)
+    // Severity filters live exclusively in folder configs.
     assertFalse("Critical severity should remain unchanged", settings.criticalSeverityEnabled)
     assertFalse("High severity should remain unchanged", settings.highSeverityEnabled)
     assertFalse("Medium severity should remain unchanged", settings.mediumSeverityEnabled)
     assertFalse("Low severity should remain unchanged", settings.lowSeverityEnabled)
+
+    // The override is stored in FolderConfigSettings, not global state.
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(any()) }
+  }
+
+  @Test
+  fun `snykConfiguration single folder config with source global does NOT mutate global state`() {
+    settings.snykCodeSecurityIssuesScanEnable = false
+    settings.ossScanEnable = false
+    settings.iacScanEnabled = false
+    settings.secretsEnabled = false
+    settings.riskScoreThreshold = 100
+    settings.openIssuesEnabled = true
+    settings.ignoredIssuesEnabled = false
+    settings.scanOnSave = true
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { pluginSettings() } returns settings
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to
+                    ConfigSetting(value = true, source = "global"),
+                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to
+                    ConfigSetting(value = true, source = "global"),
+                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to
+                    ConfigSetting(value = true, source = "global"),
+                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to
+                    ConfigSetting(value = true, source = "global"),
+                  LsFolderSettingsKeys.RISK_SCORE_THRESHOLD to
+                    ConfigSetting(value = 700.0, source = "global"),
+                  LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES to
+                    ConfigSetting(value = false, source = "global"),
+                  LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES to
+                    ConfigSetting(value = true, source = "global"),
+                  LsFolderSettingsKeys.SCAN_AUTOMATIC to
+                    ConfigSetting(value = false, source = "global"),
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    // Structural invariant: folderConfigs never write global state for the dual-scope keys,
+    // even when the folder value originated from global scope.
+    assertFalse(settings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(settings.ossScanEnable)
+    assertFalse(settings.iacScanEnabled)
+    assertFalse(settings.secretsEnabled)
+    assertEquals(100, settings.riskScoreThreshold)
+    assertTrue(settings.openIssuesEnabled)
+    assertFalse(settings.ignoredIssuesEnabled)
+    assertTrue(settings.scanOnSave)
+
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(any()) }
   }
 
   @Test
@@ -1043,62 +1136,6 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `applyFolderScopeSettingsToPluginState maps asymmetric toggles to global state`() {
-    settings.snykCodeSecurityIssuesScanEnable = true
-    settings.ossScanEnable = false
-    settings.iacScanEnabled = true
-    settings.secretsEnabled = false
-
-    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
-    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
-      folderConfigSettingsMock
-
-    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-    mockkObject(LanguageServerWrapper.Companion)
-    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-
-    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
-    every {
-      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
-    } returns folderConfigListener
-
-    mockkStatic(StoreUtil::class)
-    justRun { StoreUtil.saveSettings(any(), any()) }
-    mockkStatic("io.snyk.plugin.UtilsKt")
-    every { pluginSettings() } returns settings
-    justRun { publishAsync<Any>(any(), any(), any()) }
-
-    val param =
-      LspConfigurationParam(
-        folderConfigs =
-          listOf(
-            LspFolderConfig(
-              folderPath = "/test/project",
-              settings =
-                mapOf(
-                  LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = false),
-                  LsFolderSettingsKeys.SNYK_OSS_ENABLED to ConfigSetting(value = true),
-                  LsFolderSettingsKeys.SNYK_IAC_ENABLED to ConfigSetting(value = false),
-                  LsFolderSettingsKeys.SNYK_SECRETS_ENABLED to ConfigSetting(value = true),
-                ),
-            )
-          )
-      )
-
-    cut.snykConfiguration(param)
-
-    Thread.sleep(500)
-
-    assertFalse(
-      "Code should be disabled (from folder config)",
-      settings.snykCodeSecurityIssuesScanEnable,
-    )
-    assertTrue("OSS should be enabled (from folder config)", settings.ossScanEnable)
-    assertFalse("IaC should be disabled (from folder config)", settings.iacScanEnabled)
-    assertTrue("Secrets should be enabled (from folder config)", settings.secretsEnabled)
-  }
-
-  @Test
   fun `product toggle round-trip preserves values through full cycle`() {
     settings.snykCodeSecurityIssuesScanEnable = false
     settings.ossScanEnable = false
@@ -1178,27 +1215,11 @@ class SnykLanguageClientTest {
       storedConfig.settings?.get(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED)?.value,
     )
 
-    // Verify global state mapping (from first folder)
-    assertEquals(
-      "Global code setting should match first folder",
-      inputCodeEnabled,
-      settings.snykCodeSecurityIssuesScanEnable,
-    )
-    assertEquals(
-      "Global oss setting should match first folder",
-      inputOssEnabled,
-      settings.ossScanEnable,
-    )
-    assertEquals(
-      "Global iac setting should match first folder",
-      inputIacEnabled,
-      settings.iacScanEnabled,
-    )
-    assertEquals(
-      "Global secrets setting should match first folder",
-      inputSecretsEnabled,
-      settings.secretsEnabled,
-    )
+    // Global state must NOT be mutated by folderConfigs — it stays at its pre-set values.
+    assertFalse("Global code toggle must not change", settings.snykCodeSecurityIssuesScanEnable)
+    assertFalse("Global oss toggle must not change", settings.ossScanEnable)
+    assertFalse("Global iac toggle must not change", settings.iacScanEnabled)
+    assertFalse("Global secrets toggle must not change", settings.secretsEnabled)
   }
 
   @Test
@@ -1491,49 +1512,8 @@ class SnykLanguageClientTest {
   }
 
   @Test
-  fun `snykConfiguration reads risk score threshold from folder config`() {
-    settings.riskScoreThreshold = null
-
-    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
-    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
-
-    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
-      folderConfigSettingsMock
-    mockkObject(LanguageServerWrapper.Companion)
-    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
-
-    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
-    every {
-      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
-    } returns folderConfigListener
-
-    mockkStatic(StoreUtil::class)
-    justRun { StoreUtil.saveSettings(any(), any()) }
-    justRun { publishAsync<Any>(any(), any(), any()) }
-
-    val param =
-      LspConfigurationParam(
-        folderConfigs =
-          listOf(
-            LspFolderConfig(
-              folderPath = "/test/project",
-              settings =
-                mapOf(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD to ConfigSetting(value = 700.0)),
-            )
-          )
-      )
-
-    cut.snykConfiguration(param)
-
-    Thread.sleep(500)
-
-    assertEquals(700, settings.riskScoreThreshold)
-  }
-
-  @Test
-  fun `snykConfiguration reads issue view options from folder config`() {
-    settings.openIssuesEnabled = true
-    settings.ignoredIssuesEnabled = false
+  fun `snykConfiguration does NOT read risk score threshold from folder config into global state`() {
+    settings.riskScoreThreshold = 100
 
     val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
     val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
@@ -1560,10 +1540,8 @@ class SnykLanguageClientTest {
               folderPath = "/test/project",
               settings =
                 mapOf(
-                  LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES to ConfigSetting(value = false),
-                  LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES to ConfigSetting(value = true),
-                  LsFolderSettingsKeys.SCAN_AUTOMATIC to ConfigSetting(value = false),
-                  LsFolderSettingsKeys.SCAN_NET_NEW to ConfigSetting(value = true),
+                  LsFolderSettingsKeys.RISK_SCORE_THRESHOLD to
+                    ConfigSetting(value = 700.0, source = "user-override")
                 ),
             )
           )
@@ -1573,10 +1551,76 @@ class SnykLanguageClientTest {
 
     Thread.sleep(500)
 
-    assertFalse(settings.openIssuesEnabled)
-    assertTrue(settings.ignoredIssuesEnabled)
-    assertFalse(settings.scanOnSave)
-    assertTrue(settings.isDeltaFindingsEnabled())
+    // Global threshold stays at its pre-set value; the folder override lands in
+    // FolderConfigSettings.
+    assertEquals(100, settings.riskScoreThreshold)
+    val capturedConfigs = slot<List<LspFolderConfig>>()
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(capture(capturedConfigs)) }
+    assertEquals(
+      700.0,
+      capturedConfigs.captured
+        .first()
+        .settings
+        ?.get(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+        ?.value,
+    )
+  }
+
+  @Test
+  fun `snykConfiguration does NOT read issue view or scan options from folder config into global state`() {
+    settings.openIssuesEnabled = true
+    settings.ignoredIssuesEnabled = false
+    settings.scanOnSave = true
+    settings.setDeltaEnabled(false)
+
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val folderConfigListener = mockk<SnykFolderConfigListener>(relaxed = true)
+    every {
+      messageBusMock.syncPublisher(SnykFolderConfigListener.SNYK_FOLDER_CONFIG_TOPIC)
+    } returns folderConfigListener
+
+    mockkStatic(StoreUtil::class)
+    justRun { StoreUtil.saveSettings(any(), any()) }
+    justRun { publishAsync<Any>(any(), any(), any()) }
+
+    val param =
+      LspConfigurationParam(
+        folderConfigs =
+          listOf(
+            LspFolderConfig(
+              folderPath = "/test/project",
+              settings =
+                mapOf(
+                  LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES to
+                    ConfigSetting(value = false, source = "user-override"),
+                  LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES to
+                    ConfigSetting(value = true, source = "user-override"),
+                  LsFolderSettingsKeys.SCAN_AUTOMATIC to
+                    ConfigSetting(value = false, source = "user-override"),
+                  LsFolderSettingsKeys.SCAN_NET_NEW to
+                    ConfigSetting(value = true, source = "user-override"),
+                ),
+            )
+          )
+      )
+
+    cut.snykConfiguration(param)
+
+    Thread.sleep(500)
+
+    // Global state stays at its pre-set values — folder overrides do not leak in.
+    assertTrue(settings.openIssuesEnabled)
+    assertFalse(settings.ignoredIssuesEnabled)
+    assertTrue(settings.scanOnSave)
+    assertFalse(settings.isDeltaFindingsEnabled())
+    verify(timeout = 5000) { folderConfigSettingsMock.addAll(any()) }
   }
 
   @Test
@@ -1750,6 +1794,93 @@ class SnykLanguageClientTest {
 
     Thread.sleep(500)
     verify { mockListener.onPublishDiagnostics(LsProduct.Code, any(), match { it.size == 1 }) }
+  }
+
+  @Test
+  fun `snykConfiguration reloads HTMLSettingsPanel when panel is open`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.registerForProject(projectMock, panelMock)
+
+    try {
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param)
+
+      verify(timeout = 5000, exactly = 1) { panelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.unregisterForProject(projectMock, panelMock)
+    }
+  }
+
+  @Test
+  fun `snykConfiguration does not crash when settings panel is closed`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    // Guarantee the registry has no entry for projectMock — remove whatever is there (if anything)
+    HTMLSettingsPanel.getForProject(projectMock)?.let {
+      HTMLSettingsPanel.unregisterForProject(projectMock, it)
+    }
+    assertNull(HTMLSettingsPanel.getForProject(projectMock))
+
+    val param = LspConfigurationParam()
+    // Should not throw
+    cut.snykConfiguration(param)
+
+    // Give async time to complete; no exception means the test passes
+    Thread.sleep(500)
+  }
+
+  @Test
+  fun `snykConfiguration does not call reloadFromLanguageServer when SnykLanguageClient is disposed`() {
+    val panelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.registerForProject(projectMock, panelMock)
+
+    try {
+      cut.dispose()
+
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param)
+
+      Thread.sleep(500)
+      verify(exactly = 0) { panelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.unregisterForProject(projectMock, panelMock)
+    }
+  }
+
+  @Test
+  fun `snykConfiguration does not reload panel registered for a different project`() {
+    val folderConfigSettingsMock = mockk<FolderConfigSettings>(relaxed = true)
+    every { applicationMock.getService(FolderConfigSettings::class.java) } returns
+      folderConfigSettingsMock
+
+    val lsWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+    mockkObject(LanguageServerWrapper.Companion)
+    every { LanguageServerWrapper.getInstance(projectMock) } returns lsWrapperMock
+
+    val otherProject = mockk<Project>(relaxed = true)
+    val otherPanelMock = mockk<HTMLSettingsPanel>(relaxed = true)
+    HTMLSettingsPanel.registerForProject(otherProject, otherPanelMock)
+
+    try {
+      val param = LspConfigurationParam()
+      cut.snykConfiguration(param) // cut uses projectMock, not otherProject
+
+      // Use a short timeout to give the async dispatch time to settle while still detecting
+      // any spurious call to the wrong project's panel.
+      verify(timeout = 1000, exactly = 0) { otherPanelMock.reloadFromLanguageServer() }
+    } finally {
+      HTMLSettingsPanel.unregisterForProject(otherProject, otherPanelMock)
+    }
   }
 
   @Test

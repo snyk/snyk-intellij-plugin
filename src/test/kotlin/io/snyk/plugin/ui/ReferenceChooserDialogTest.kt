@@ -61,7 +61,6 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
       // Create workspace folder and add to configured folders
       workspaceFolder = WorkspaceFolder(absolutePathString.fromPathToUriString(), "test")
       languageServerWrapper.configuredWorkspaceFolders.add(workspaceFolder)
-      languageServerWrapper.updateFolderConfigRefresh(absolutePathString, true)
     }
 
     // Mock getInstance to return our spyk wrapper
