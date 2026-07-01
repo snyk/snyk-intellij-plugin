@@ -183,14 +183,19 @@ class SaveConfigHandler(
       applyFolderResetsFromRawJson(jsonString)
     }
 
-    // Drain resets once so every project's LS receives the same set (APP-scoped pendingResets
-    // would be consumed by the first project's updateConfiguration, starving the rest).
-    val resets = pluginSettings().consumePendingResets()
-
     // Notify all open projects' language servers so global settings propagate everywhere.
     // Without this, only the current project's LS/HTML page would reflect global changes.
-    for (openProject in ProjectUtil.getOpenProjects()) {
-      if (!openProject.isDisposed && !SnykPluginDisposable.getInstance(openProject).isDisposed()) {
+    // Drain resets once so every project's LS receives the same set (APP-scoped pendingResets
+    // would be consumed by the first project's updateConfiguration, starving the rest).
+    // Only drain if there is at least one live project to send to — if none are ready the
+    // pending resets remain queued and will be picked up on the next LS reconnect/init.
+    val liveProjects =
+      ProjectUtil.getOpenProjects().filter {
+        !it.isDisposed && !SnykPluginDisposable.getInstance(it).isDisposed()
+      }
+    if (liveProjects.isNotEmpty()) {
+      val resets = pluginSettings().consumePendingResets()
+      for (openProject in liveProjects) {
         LanguageServerWrapper.getInstance(openProject).updateConfiguration(resets = resets)
       }
     }
