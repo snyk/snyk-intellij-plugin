@@ -276,6 +276,42 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun markExplicitlyChanged_cancelsPendingResetForSameKey() {
+    // Race fix (IDE-2149, mirrors vscode ExplicitLspConfigurationChangeTracker): a reset queues a
+    // pending null, then the user sets a concrete value -> markExplicitlyChanged must cancel the
+    // pending reset so consumePendingResets() no longer returns it (the concrete value wins).
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("some_key")
+
+    target.markExplicitlyChanged("some_key")
+
+    assertTrue(target.isExplicitlyChanged("some_key"))
+    assertFalse(target.consumePendingResets().contains("some_key"))
+  }
+
+  @Test
+  fun markExplicitlyChanged_forDifferentKey_doesNotCancelPendingReset() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("reset_key")
+
+    target.markExplicitlyChanged("other_key")
+
+    assertTrue(target.consumePendingResets().contains("reset_key"))
+  }
+
+  @Test
+  fun clearExplicitlyChanged_doesNotCancelPendingReset() {
+    // Only markExplicitlyChanged (a concrete user assertion) cancels a pending reset.
+    // clearExplicitlyChanged is part of the reset itself and must leave the pending reset intact.
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("reset_key")
+
+    target.clearExplicitlyChanged("reset_key")
+
+    assertTrue(target.consumePendingResets().contains("reset_key"))
+  }
+
+  @Test
   fun lsUserAssertedChangeForLsConfigurationKey_trueWhenProductDiffersFromDefaults() {
     val target = SnykApplicationSettingsStateService()
     target.iacScanEnabled = false

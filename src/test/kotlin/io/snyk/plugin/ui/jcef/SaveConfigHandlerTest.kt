@@ -548,7 +548,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     }
   }
 
-  fun `test applyGlobalSettings marks explicit only for fields whose values differ from previous state`() {
+  fun `test applyGlobalSettings marks every present non-null field as explicitly changed`() {
+    // Diff-based wire contract (IDE-2149 / ADR-1): a field PRESENT with a non-null value means the
+    // user genuinely asserted it, so it is ALWAYS marked explicitly changed — even when the value
+    // equals the store default. (Previously, values equal to the default were auto-cleared, which
+    // made it impossible to set a Project Default equal to the store default after a reset.)
     val realSettings = SnykApplicationSettingsStateService()
     every { pluginSettings() } returns realSettings
 
@@ -574,24 +578,49 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(jsonConfig)
 
+    // Every field above is present and non-null, so every one is marked explicitly changed
+    // regardless of whether its value equals the store default.
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
 
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
 
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
 
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES))
 
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW))
 
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD))
+  }
+
+  fun `test re-enabling a field to its default value after reset re-asserts the override (ADR-1)`() {
+    // Regression for IDE-2149 / ADR-1: after a Project Defaults reset restores snyk_code_enabled to
+    // its plugin default (true), a later save re-enabling it to that SAME default value must still
+    // mark it explicitly changed so getSettings() emits changed:true and the LS relearns the
+    // override. Previously the value-equals-default shortcut auto-cleared it (changed:false).
+    val realSettings = SnykApplicationSettingsStateService()
+    every { pluginSettings() } returns realSettings
+
+    // 1) User resets snyk_code_enabled to Project Defaults (explicit JSON null).
+    invokeParseAndSaveConfig("""{"snyk_code_enabled": null}""")
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    // reset restores the plugin default (true) and queues a one-shot reset
+    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
+    assertTrue(realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+
+    // 2) User re-enables snyk_code_enabled to the SAME value as the store default.
+    invokeParseAndSaveConfig("""{"snyk_code_enabled": true}""")
+
+    // The re-assertion is tracked as an explicit change, so getSettings() will emit changed:true.
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
   }
 
   fun `test applyGlobalSettings marks machine-scoped keys as explicitly changed`() {
@@ -637,7 +666,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     }
   }
 
-  fun `test applyGlobalSettings with identical values does not mark any key as changed`() {
+  fun `test applyGlobalSettings marks present keys even when values are identical to stored ones`() {
+    // IDE-2149 / ADR-1: a field present in the payload is a genuine user assertion, so it is marked
+    // explicitly changed even when its value already equals the stored one. (No value-equals-store
+    // auto-clear — that shortcut prevented re-asserting a Project Default equal to the store
+    // value.)
     val realSettings = SnykApplicationSettingsStateService()
     // Pre-set values that match what the config will send
     realSettings.manageBinariesAutomatically = false
@@ -680,14 +713,16 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       )
 
     for (key in allMachineKeys) {
-      assertFalse(
-        "Key '$key' should NOT be marked as changed when value is identical",
+      assertTrue(
+        "Key '$key' should be marked as changed when present, even if value is identical",
         realSettings.isExplicitlyChanged(key),
       )
     }
   }
 
-  fun `test applyGlobalSettings with changed manageBinariesAutomatically marks only AUTOMATIC_DOWNLOAD`() {
+  fun `test applyGlobalSettings marks only present keys, leaving absent keys untouched`() {
+    // Present keys are marked (even when unchanged, per IDE-2149 / ADR-1); absent keys are
+    // untouched.
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.manageBinariesAutomatically = true
     realSettings.ignoreUnknownCA = false
@@ -705,17 +740,23 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     invokeParseAndSaveConfig(jsonConfig)
 
     assertTrue(
-      "AUTOMATIC_DOWNLOAD should be marked as changed",
+      "AUTOMATIC_DOWNLOAD should be marked as changed (present, value changed)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
     )
-    assertFalse(
-      "PROXY_INSECURE should NOT be marked (value unchanged)",
+    assertTrue(
+      "PROXY_INSECURE should be marked as changed (present, even though value is unchanged)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE),
+    )
+    // A key absent from the payload stays untouched.
+    assertFalse(
+      "TOKEN should NOT be marked (absent from payload)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.TOKEN),
     )
     assertFalse(realSettings.manageBinariesAutomatically)
   }
 
-  fun `test applyGlobalSettings with changed token marks only TOKEN`() {
+  fun `test applyGlobalSettings marks token and unchanged organization when both present`() {
+    // Both keys are present, so both are marked, including organization whose value is unchanged.
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.token = "old-token"
     realSettings.organization = "my-org"
@@ -736,15 +777,16 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       "TOKEN should be marked as changed",
       realSettings.isExplicitlyChanged(LsSettingsKeys.TOKEN),
     )
-    assertFalse(
-      "ORGANIZATION should NOT be marked (value unchanged)",
+    assertTrue(
+      "ORGANIZATION should be marked (present, even though value is unchanged)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION),
     )
     assertEquals("new-token", realSettings.token)
     assertEquals("my-org", realSettings.organization)
   }
 
-  fun `test applyGlobalSettings with mix of changed and unchanged marks only changed keys`() {
+  fun `test applyGlobalSettings marks present keys and leaves absent keys untouched`() {
+    // IDE-2149 / ADR-1: present keys are marked (changed or not); absent keys are untouched.
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.manageBinariesAutomatically = true
     realSettings.cliPath = "/original/path"
@@ -756,17 +798,14 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     realSettings.authenticationType = AuthenticationType.OAUTH2
     every { pluginSettings() } returns realSettings
 
-    // Change manageBinariesAutomatically, endpoint, and authenticationMethod; keep the rest
+    // Present: manageBinariesAutomatically (changed), organization (unchanged), endpoint (changed),
+    // authenticationMethod (changed). Absent: cliPath, cliBaseDownloadURL, insecure, token.
     val jsonConfig =
       """
         {
             "manageBinariesAutomatically": false,
-            "cliPath": "/original/path",
-            "cliBaseDownloadURL": "https://downloads.snyk.io",
-            "insecure": false,
             "organization": "keep-org",
             "endpoint": "https://new-api.snyk.io",
-            "token": "keep-token",
             "authenticationMethod": "token"
         }
         """
@@ -774,39 +813,39 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(jsonConfig)
 
-    // Changed keys
+    // Present keys are all marked, regardless of whether the value changed.
     assertTrue(
-      "AUTOMATIC_DOWNLOAD should be marked (value changed)",
+      "AUTOMATIC_DOWNLOAD should be marked (present, value changed)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.AUTOMATIC_DOWNLOAD),
     )
     assertTrue(
-      "API_ENDPOINT should be marked (value changed)",
+      "ORGANIZATION should be marked (present, value unchanged)",
+      realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION),
+    )
+    assertTrue(
+      "API_ENDPOINT should be marked (present, value changed)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.API_ENDPOINT),
     )
     assertTrue(
-      "AUTHENTICATION_METHOD should be marked (value changed)",
+      "AUTHENTICATION_METHOD should be marked (present, value changed)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.AUTHENTICATION_METHOD),
     )
 
-    // Unchanged keys
+    // Absent keys are untouched.
     assertFalse(
-      "CLI_PATH should NOT be marked (value unchanged)",
+      "CLI_PATH should NOT be marked (absent from payload)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.CLI_PATH),
     )
     assertFalse(
-      "BINARY_BASE_URL should NOT be marked (value unchanged)",
+      "BINARY_BASE_URL should NOT be marked (absent from payload)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.BINARY_BASE_URL),
     )
     assertFalse(
-      "PROXY_INSECURE should NOT be marked (value unchanged)",
+      "PROXY_INSECURE should NOT be marked (absent from payload)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.PROXY_INSECURE),
     )
     assertFalse(
-      "ORGANIZATION should NOT be marked (value unchanged)",
-      realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION),
-    )
-    assertFalse(
-      "TOKEN should NOT be marked (value unchanged)",
+      "TOKEN should NOT be marked (absent from payload)",
       realSettings.isExplicitlyChanged(LsSettingsKeys.TOKEN),
     )
 
@@ -1241,7 +1280,8 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC))
   }
 
-  fun `test parseAndSaveConfig severity filters matching previous does not mark changed`() {
+  fun `test parseAndSaveConfig severity filters matching previous still mark changed when present`() {
+    // IDE-2149 / ADR-1: present fields are marked even when they match the stored value.
     val realSettings = SnykApplicationSettingsStateService()
     realSettings.criticalSeverityEnabled = true
     realSettings.highSeverityEnabled = true
@@ -1262,10 +1302,10 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     invokeParseAndSaveConfig(jsonConfig)
 
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
-    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
   }
 
   fun `test parseAndSaveConfig issue view change marks ISSUE_VIEW_OPEN_ISSUES`() {
@@ -1423,6 +1463,263 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertFalse(realSettings.iacScanEnabled)
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(realSettings.consumePendingResets().isEmpty())
+  }
+
+  // ── Scenario 5: markExplicitlyChanged cancels a pending reset (end-to-end) ──
+  fun `test parseAndSaveConfig reset then concrete re-assert of same key cancels the pending reset`() {
+    // Reproduces the user-facing failure the race fix closes: save #1 resets snyk_iac_enabled
+    // (queues a pending null); save #2 re-asserts a concrete value BEFORE the reset was consumed
+    // (e.g. LS was down so getSettings never ran). markExplicitlyChanged must cancel the pending
+    // reset so the next getSettings emits the concrete value with changed:true, not {null,true}.
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.iacScanEnabled = false
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    every { pluginSettings() } returns realSettings
+
+    // Save #1: reset to Project Defaults (queues a pending reset, restores default true).
+    invokeParseAndSaveConfig("""{"snyk_iac_enabled": null}""")
+    // Save #2: user re-asserts a concrete value for the same key before the reset was consumed.
+    invokeParseAndSaveConfig("""{"snyk_iac_enabled": false}""")
+
+    // Concrete value applied and marked explicitly changed.
+    assertFalse(realSettings.iacScanEnabled)
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    // The pending reset was cancelled by the concrete re-assert -> not returned.
+    assertFalse(
+      "concrete re-assert must cancel the stale pending reset",
+      realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED),
+    )
+  }
+
+  // ── Scenario 1: FULL KEY COVERAGE ──────────────────────────────────────────
+  // Every resettable key in globalResetSpecs, when sent as JSON null, must: queue a pending reset,
+  // restore its documented plugin default, and clear its explicit-change flag. vscode tests every
+  // key (configurationPersistenceService.test.ts); IntelliJ previously tested only a handful.
+
+  /**
+   * Source of truth mirroring [SaveConfigHandler.globalResetSpecs]: the top-level JSON field name,
+   * the canonical LS key, and a check that the persisted plugin default was restored.
+   */
+  private data class ResetKeySpec(
+    val jsonField: String,
+    val lsKey: String,
+    val assertDefaultRestored: (SnykApplicationSettingsStateService) -> Unit,
+  )
+
+  private fun allResettableKeySpecs(): List<ResetKeySpec> =
+    listOf(
+      ResetKeySpec("snyk_oss_enabled", LsFolderSettingsKeys.SNYK_OSS_ENABLED) {
+        assertTrue("snyk_oss_enabled default is true", it.ossScanEnable)
+      },
+      ResetKeySpec("snyk_code_enabled", LsFolderSettingsKeys.SNYK_CODE_ENABLED) {
+        assertTrue("snyk_code_enabled default is true", it.snykCodeSecurityIssuesScanEnable)
+      },
+      ResetKeySpec("snyk_iac_enabled", LsFolderSettingsKeys.SNYK_IAC_ENABLED) {
+        assertTrue("snyk_iac_enabled default is true", it.iacScanEnabled)
+      },
+      ResetKeySpec("snyk_secrets_enabled", LsFolderSettingsKeys.SNYK_SECRETS_ENABLED) {
+        assertFalse("snyk_secrets_enabled default is false", it.secretsEnabled)
+      },
+      ResetKeySpec("scan_automatic", LsFolderSettingsKeys.SCAN_AUTOMATIC) {
+        assertTrue("scan_automatic default is true", it.scanOnSave)
+      },
+      ResetKeySpec("scan_net_new", LsFolderSettingsKeys.SCAN_NET_NEW) {
+        assertFalse("scan_net_new default is false", it.isDeltaFindingsEnabled())
+      },
+      ResetKeySpec("severity_filter_critical", LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL) {
+        assertTrue("severity_filter_critical default is true", it.criticalSeverityEnabled)
+      },
+      ResetKeySpec("severity_filter_high", LsFolderSettingsKeys.SEVERITY_FILTER_HIGH) {
+        assertTrue("severity_filter_high default is true", it.highSeverityEnabled)
+      },
+      ResetKeySpec("severity_filter_medium", LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM) {
+        assertTrue("severity_filter_medium default is true", it.mediumSeverityEnabled)
+      },
+      ResetKeySpec("severity_filter_low", LsFolderSettingsKeys.SEVERITY_FILTER_LOW) {
+        assertTrue("severity_filter_low default is true", it.lowSeverityEnabled)
+      },
+      ResetKeySpec("issue_view_open_issues", LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES) {
+        assertTrue("issue_view_open_issues default is true", it.openIssuesEnabled)
+      },
+      ResetKeySpec("issue_view_ignored_issues", LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES) {
+        assertFalse("issue_view_ignored_issues default is false", it.ignoredIssuesEnabled)
+      },
+      ResetKeySpec("risk_score_threshold", LsFolderSettingsKeys.RISK_SCORE_THRESHOLD) {
+        assertNull("risk_score_threshold default is null", it.riskScoreThreshold)
+      },
+      ResetKeySpec("organization", LsSettingsKeys.ORGANIZATION) {
+        assertNull("organization default is null", it.organization)
+      },
+    )
+
+  fun `test parseAndSaveConfig every resettable key null queues reset restores default and clears flag`() {
+    // Loop over ALL 14 resettable keys. Each is tested in isolation with a fresh settings state
+    // pre-seeded to a non-default, explicitly-changed value so the reset is observable.
+    for (spec in allResettableKeySpecs()) {
+      val realSettings = SnykApplicationSettingsStateService()
+      // Drive the value away from its default and mark it changed so the reset has something to
+      // undo.
+      when (spec.jsonField) {
+        "snyk_oss_enabled" -> realSettings.ossScanEnable = false
+        "snyk_code_enabled" -> realSettings.snykCodeSecurityIssuesScanEnable = false
+        "snyk_iac_enabled" -> realSettings.iacScanEnabled = false
+        "snyk_secrets_enabled" -> realSettings.secretsEnabled = true
+        "scan_automatic" -> realSettings.scanOnSave = false
+        "scan_net_new" -> realSettings.setDeltaEnabled(true)
+        "severity_filter_critical" -> realSettings.criticalSeverityEnabled = false
+        "severity_filter_high" -> realSettings.highSeverityEnabled = false
+        "severity_filter_medium" -> realSettings.mediumSeverityEnabled = false
+        "severity_filter_low" -> realSettings.lowSeverityEnabled = false
+        "issue_view_open_issues" -> realSettings.openIssuesEnabled = false
+        "issue_view_ignored_issues" -> realSettings.ignoredIssuesEnabled = true
+        "risk_score_threshold" -> realSettings.riskScoreThreshold = 500
+        "organization" -> realSettings.organization = "some-org"
+      }
+      realSettings.markExplicitlyChanged(spec.lsKey)
+      every { pluginSettings() } returns realSettings
+
+      invokeParseAndSaveConfig("""{"${spec.jsonField}": null}""")
+
+      spec.assertDefaultRestored(realSettings)
+      assertFalse(
+        "${spec.jsonField}: explicit-change flag must be cleared on reset",
+        realSettings.isExplicitlyChanged(spec.lsKey),
+      )
+      assertTrue(
+        "${spec.jsonField}: a one-shot reset must be queued for ${spec.lsKey}",
+        realSettings.consumePendingResets().contains(spec.lsKey),
+      )
+    }
+  }
+
+  fun `test parseAndSaveConfig alias field names also trigger global reset`() {
+    // Several keys accept an alias field name (e.g. activateSnykOpenSource, filterSeverityHigh).
+    // Sending the alias as JSON null must reset exactly like the canonical snake_case name.
+    val aliases =
+      listOf(
+        "activateSnykOpenSource" to LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+        "activateSnykCode" to LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        "activateSnykIac" to LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+        "activateSnykSecrets" to LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+        "enableDeltaFindings" to LsFolderSettingsKeys.SCAN_NET_NEW,
+        "filterSeverityCritical" to LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+        "filterSeverityHigh" to LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+        "filterSeverityMedium" to LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+        "filterSeverityLow" to LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+        "riskScoreThreshold" to LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+      )
+    for ((aliasField, lsKey) in aliases) {
+      val realSettings = SnykApplicationSettingsStateService()
+      realSettings.markExplicitlyChanged(lsKey)
+      every { pluginSettings() } returns realSettings
+
+      invokeParseAndSaveConfig("""{"$aliasField": null}""")
+
+      assertFalse(
+        "$aliasField: explicit-change flag must be cleared on reset via alias",
+        realSettings.isExplicitlyChanged(lsKey),
+      )
+      assertTrue(
+        "$aliasField: a one-shot reset must be queued for $lsKey via alias",
+        realSettings.consumePendingResets().contains(lsKey),
+      )
+    }
+  }
+
+  // ── Scenario 3: DEDUP / all-severity-together (save side) ───────────────────
+  fun `test parseAndSaveConfig resetting all four severity filters in one payload queues all four`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.criticalSeverityEnabled = false
+    realSettings.highSeverityEnabled = false
+    realSettings.mediumSeverityEnabled = false
+    realSettings.lowSeverityEnabled = false
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH)
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)
+    every { pluginSettings() } returns realSettings
+
+    invokeParseAndSaveConfig(
+      """
+        {
+            "severity_filter_critical": null,
+            "severity_filter_high": null,
+            "severity_filter_medium": null,
+            "severity_filter_low": null
+        }
+        """
+        .trimIndent()
+    )
+
+    // All four defaults restored (all severities default to true).
+    assertTrue(realSettings.criticalSeverityEnabled)
+    assertTrue(realSettings.highSeverityEnabled)
+    assertTrue(realSettings.mediumSeverityEnabled)
+    assertTrue(realSettings.lowSeverityEnabled)
+    // All four flags cleared.
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
+    // All four resets queued in one save.
+    val resets = realSettings.consumePendingResets()
+    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
+    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
+    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
+  }
+
+  // ── Scenario 4: MIXED batch (save side) ─────────────────────────────────────
+  fun `test parseAndSaveConfig mixed payload resets some keys and concretely sets others`() {
+    val realSettings = SnykApplicationSettingsStateService()
+    realSettings.organization = "old-org"
+    realSettings.riskScoreThreshold = 500
+    realSettings.iacScanEnabled = true
+    realSettings.criticalSeverityEnabled = false
+    realSettings.markExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+    realSettings.markExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+    every { pluginSettings() } returns realSettings
+
+    // organization + risk_score_threshold are reset (null); snyk_iac_enabled + severity_critical
+    // are concrete assertions in the same payload.
+    invokeParseAndSaveConfig(
+      """
+        {
+            "organization": null,
+            "risk_score_threshold": null,
+            "snyk_iac_enabled": false,
+            "severity_filter_critical": true
+        }
+        """
+        .trimIndent()
+    )
+
+    // Reset keys: default restored, flag cleared, reset queued.
+    assertNull(realSettings.organization)
+    assertNull(realSettings.riskScoreThreshold)
+    assertFalse(realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION))
+    assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD))
+
+    // Concrete keys: value applied and marked explicitly changed (ADR-1), NOT queued for reset.
+    assertFalse(realSettings.iacScanEnabled)
+    assertTrue(realSettings.criticalSeverityEnabled)
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
+
+    val resets = realSettings.consumePendingResets()
+    assertTrue("organization reset queued", resets.contains(LsSettingsKeys.ORGANIZATION))
+    assertTrue(
+      "risk_score_threshold reset queued",
+      resets.contains(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD),
+    )
+    assertFalse(
+      "concretely-set snyk_iac_enabled must NOT be queued for reset",
+      resets.contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED),
+    )
+    assertFalse(
+      "concretely-set severity_filter_critical must NOT be queued for reset",
+      resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL),
+    )
   }
 
   private fun invokeParseAndSaveConfig(jsonString: String) {

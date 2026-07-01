@@ -539,6 +539,27 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `getSettings emits changed true when field re-asserted to its default value after reset (ADR-1)`() {
+    // Regression for IDE-2149 / ADR-1: after a reset restored the field to its plugin default and
+    // the pending reset was consumed, the user re-enables the field to that SAME default value.
+    // SaveConfigHandler marks it explicitly changed, so getSettings must emit changed:true (with
+    // the
+    // real value, NOT value=null) even though the value equals the default. Previously the
+    // value-equals-default auto-clear made getSettings emit changed:false and the LS never
+    // relearned
+    // the override.
+    settings.iacScanEnabled =
+      true // equals the plugin default; deviation check alone would be false
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+    val actual = cut.getSettings()
+    val setting = actual.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+    assertEquals("re-asserted value must be published", true, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
   fun `getWorkspaceFoldersFromRoots should return URIs without trailing slashes`() {
     // Create a real temporary directory to test with
     val tempDir = java.nio.file.Files.createTempDirectory("snyk-test-workspace")
@@ -1137,6 +1158,177 @@ class LanguageServerWrapperTest {
 
     assertEquals("", actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value)
     assertEquals(false, actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.changed)
+  }
+
+  // ── Scenario 2: ADR-1 re-assert for MULTIPLE key kinds ──────────────────────
+  // After a reset restored a field to its plugin default and the pending reset was consumed, the
+  // user re-asserts that SAME default value. SaveConfigHandler marks it explicitly changed, so
+  // getSettings must emit changed:true (with the real value, not null) even though the value equals
+  // the default. The single existing case covers snyk_code_enabled; this extends to a severity key,
+  // a scan-mode key, and risk_score_threshold. Mirrors vscode "does not skip when value equals
+  // schema default but differs from effective value".
+  @Test
+  fun `getSettings emits changed true when severity re-asserted to default after reset (ADR-1)`() {
+    settings.criticalSeverityEnabled = true // equals plugin default; deviation alone would be false
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    assertEquals("re-asserted value must be published", true, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
+  fun `getSettings emits changed true when scan_automatic re-asserted to default after reset (ADR-1)`() {
+    settings.scanOnSave = true // equals plugin default
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_AUTOMATIC)
+
+    assertEquals("re-asserted value must be published", true, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
+  fun `getSettings emits changed true when scan_net_new re-asserted to default after reset (ADR-1)`() {
+    settings.setDeltaEnabled(false) // equals plugin default (false)
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)
+
+    assertEquals("re-asserted value must be published", false, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
+  fun `getSettings emits changed true when risk_score_threshold re-asserted after reset (ADR-1)`() {
+    // risk_score_threshold has no non-null default; any concrete re-assert must be changed:true.
+    settings.riskScoreThreshold = 700
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+
+    assertEquals("re-asserted value must be published", 700, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  // ── Scenario 3: DEDUP / all-severity-together (emission side) ────────────────
+  @Test
+  fun `getSettings emits null reset for all four severity filters at once then default on reconnect`() {
+    // All four severity_filter_* reset together: restored to default (true), override cleared, all
+    // four pending resets queued (mirrors save-side dedup). getSettings emits {null,true} for each
+    // once, then {default,false} on the second call. Mirrors vscode "persists non-reset entries
+    // while resetting reset entries" applied to the four siblings sharing a reset.
+    val severityKeys =
+      listOf(
+        LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+        LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+        LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+        LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+      )
+    // Post-reset state: defaults restored, overrides cleared, resets queued.
+    settings.criticalSeverityEnabled = true
+    settings.highSeverityEnabled = true
+    settings.mediumSeverityEnabled = true
+    settings.lowSeverityEnabled = true
+    for (key in severityKeys) {
+      settings.clearExplicitlyChanged(key)
+      settings.addPendingReset(key)
+    }
+
+    val first = cut.getSettings().settings!!
+    for (key in severityKeys) {
+      assertNull("$key: first emit must carry value=null", first[key]?.value)
+      assertEquals("$key: first emit must carry changed=true", true, first[key]?.changed)
+    }
+
+    val second = cut.getSettings().settings!!
+    for (key in severityKeys) {
+      assertEquals("$key: second emit re-publishes default value", true, second[key]?.value)
+      assertEquals("$key: second emit must be changed=false", false, second[key]?.changed)
+    }
+  }
+
+  // ── Scenario 4: MIXED batch (emission side) ─────────────────────────────────
+  @Test
+  fun `getSettings emits null for reset keys and concrete changed values for non-reset keys`() {
+    // Mixed post-save state: organization + risk_score_threshold were reset (default restored,
+    // override cleared, reset queued); snyk_iac_enabled + severity_filter_critical were concretely
+    // asserted (marked explicitly changed). One getSettings must emit {null,true} for the reset
+    // keys
+    // AND the concrete value with changed:true for the others; a second call clears the resets to
+    // changed:false. Mirrors vscode "persists non-reset entries while resetting reset entries".
+    settings.organization = null
+    settings.clearExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+    settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
+    settings.riskScoreThreshold = null
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+    settings.addPendingReset(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+
+    settings.iacScanEnabled = false
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    settings.criticalSeverityEnabled = true
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    val first = cut.getSettings().settings!!
+
+    // Reset keys emit {null, true}.
+    assertNull(first[LsSettingsKeys.ORGANIZATION]?.value)
+    assertEquals(true, first[LsSettingsKeys.ORGANIZATION]?.changed)
+    // risk_score_threshold only appears in the map because a reset was queued (value would be
+    // omitted when null otherwise).
+    assertNull(first[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
+    assertEquals(true, first[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.changed)
+
+    // Concrete keys emit their value with changed:true.
+    assertEquals(false, first[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.value)
+    assertEquals(true, first[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.changed)
+    assertEquals(true, first[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.value)
+    assertEquals(true, first[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.changed)
+
+    // Second getSettings: reset for organization is consumed, so it now re-publishes the default
+    // (null organization is omitted from the map entirely) and no longer carries a null reset.
+    val second = cut.getSettings().settings!!
+    assertFalse(
+      "organization reset is one-shot; null org must be omitted on the second call",
+      second.containsKey(LsSettingsKeys.ORGANIZATION),
+    )
+    // Concrete keys remain changed:true across calls.
+    assertEquals(true, second[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.changed)
+    assertEquals(true, second[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.changed)
+  }
+
+  // ── Scenario 6: one-shot exactly-once for additional key types ───────────────
+  // The existing exactly-once cases cover ORGANIZATION and SNYK_IAC_ENABLED. Extend to a severity
+  // filter and a scan-mode key to guard the re-push/reconnect path for those types too.
+  @Test
+  fun `getSettings emits severity reset exactly once then default with changed false on reconnect`() {
+    settings.criticalSeverityEnabled = true // restored default; deviation check must be false
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    settings.addPendingReset(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    val first = cut.getSettings().settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    assertNull("first emit must carry value=null", first?.value)
+    assertEquals("first emit must carry changed=true", true, first?.changed)
+
+    val second = cut.getSettings().settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    assertEquals("reconnect re-publishes default value", true, second?.value)
+    assertEquals("reconnect must not re-assert override", false, second?.changed)
+  }
+
+  @Test
+  fun `getSettings emits scan_net_new reset exactly once then default with changed false on reconnect`() {
+    settings.setDeltaEnabled(false) // restored default (false); deviation check must be false
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
+    settings.addPendingReset(LsFolderSettingsKeys.SCAN_NET_NEW)
+
+    val first = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)
+    assertNull("first emit must carry value=null", first?.value)
+    assertEquals("first emit must carry changed=true", true, first?.changed)
+
+    val second = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)
+    assertEquals("reconnect re-publishes default value", false, second?.value)
+    assertEquals("reconnect must not re-assert override", false, second?.changed)
   }
 
   private data class VerifyProtocolScenario(

@@ -66,6 +66,10 @@ class SnykApplicationSettingsStateService :
   }
 
   fun markExplicitlyChanged(settingKey: String) {
+    // Cancel any pending reset for this key: the user has set a concrete value, so emitting
+    // {value:null, changed:true} on the next getSettings() would discard it. Closes the
+    // re-edit-after-reset race — mirrors vscode's ExplicitLspConfigurationChangeTracker.
+    pendingResets.remove(settingKey)
     explicitChanges.add(settingKey)
   }
 

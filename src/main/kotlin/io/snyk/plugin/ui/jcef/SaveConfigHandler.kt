@@ -196,7 +196,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.AUTOMATIC_DOWNLOAD,
       isPresent = (config.manageBinariesAutomatically != null),
       newValue = config.manageBinariesAutomatically,
-      currentValue = { settings.manageBinariesAutomatically },
     ) {
       settings.manageBinariesAutomatically = it
     }
@@ -208,7 +207,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.CLI_PATH,
       isPresent = cliPathProvided,
       newValue = resolvedCliPath,
-      currentValue = { settings.cliPath },
     ) {
       settings.cliPath = it
     }
@@ -218,7 +216,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.BINARY_BASE_URL,
       isPresent = (config.cliBaseDownloadURL != null),
       newValue = config.cliBaseDownloadURL,
-      currentValue = { settings.cliBaseDownloadURL },
     ) {
       settings.cliBaseDownloadURL = it
     }
@@ -228,7 +225,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.CLI_RELEASE_CHANNEL,
       isPresent = (config.cliReleaseChannel != null),
       newValue = config.cliReleaseChannel,
-      currentValue = { settings.cliReleaseChannel },
     ) {
       settings.cliReleaseChannel = it
     }
@@ -238,7 +234,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.PROXY_INSECURE,
       isPresent = (config.insecure != null),
       newValue = config.insecure,
-      currentValue = { settings.ignoreUnknownCA },
     ) {
       settings.ignoreUnknownCA = it
     }
@@ -251,7 +246,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_OSS_ENABLED,
         isPresent = (config.activateSnykOpenSource != null),
         newValue = config.activateSnykOpenSource,
-        currentValue = { settings.ossScanEnable },
       ) {
         settings.ossScanEnable = it
       }
@@ -261,7 +255,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_CODE_ENABLED,
         isPresent = (config.activateSnykCode != null),
         newValue = config.activateSnykCode,
-        currentValue = { settings.snykCodeSecurityIssuesScanEnable },
       ) {
         settings.snykCodeSecurityIssuesScanEnable = it
       }
@@ -271,7 +264,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_IAC_ENABLED,
         isPresent = (config.activateSnykIac != null),
         newValue = config.activateSnykIac,
-        currentValue = { settings.iacScanEnabled },
       ) {
         settings.iacScanEnabled = it
       }
@@ -281,7 +273,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
         isPresent = (config.activateSnykSecrets != null),
         newValue = config.activateSnykSecrets,
-        currentValue = { settings.secretsEnabled },
       ) {
         settings.secretsEnabled = it
       }
@@ -292,7 +283,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SCAN_AUTOMATIC,
         isPresent = (config.scanningMode != null),
         newValue = config.scanningMode,
-        currentValue = { settings.scanOnSave },
       ) {
         settings.scanOnSave = it
       }
@@ -303,7 +293,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.ORGANIZATION,
         isPresent = (config.organization != null),
         newValue = config.organization,
-        currentValue = { settings.organization },
       ) {
         settings.organization = it
       }
@@ -313,7 +302,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.API_ENDPOINT,
         isPresent = (config.endpoint != null),
         newValue = config.endpoint,
-        currentValue = { settings.customEndpointUrl },
       ) {
         settings.customEndpointUrl = it
       }
@@ -323,7 +311,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.TOKEN,
         isPresent = (config.token != null),
         newValue = config.token,
-        currentValue = { settings.token },
       ) {
         settings.token = it
       }
@@ -344,7 +331,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.AUTHENTICATION_METHOD,
         isPresent = authMethodProvided,
         newValue = resolvedAuthMethod,
-        currentValue = { settings.authenticationType },
       ) {
         settings.authenticationType = it
       }
@@ -355,7 +341,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
         isPresent = (config.severityFilterCritical != null),
         newValue = config.severityFilterCritical,
-        currentValue = { settings.criticalSeverityEnabled },
       ) {
         settings.criticalSeverityEnabled = it
       }
@@ -365,7 +350,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
         isPresent = (config.severityFilterHigh != null),
         newValue = config.severityFilterHigh,
-        currentValue = { settings.highSeverityEnabled },
       ) {
         settings.highSeverityEnabled = it
       }
@@ -375,7 +359,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
         isPresent = (config.severityFilterMedium != null),
         newValue = config.severityFilterMedium,
-        currentValue = { settings.mediumSeverityEnabled },
       ) {
         settings.mediumSeverityEnabled = it
       }
@@ -385,7 +368,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
         isPresent = (config.severityFilterLow != null),
         newValue = config.severityFilterLow,
-        currentValue = { settings.lowSeverityEnabled },
       ) {
         settings.lowSeverityEnabled = it
       }
@@ -396,7 +378,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
         isPresent = (config.issueViewOpenIssues != null),
         newValue = config.issueViewOpenIssues,
-        currentValue = { settings.openIssuesEnabled },
       ) {
         settings.openIssuesEnabled = it
       }
@@ -406,7 +387,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
         isPresent = (config.issueViewIgnoredIssues != null),
         newValue = config.issueViewIgnoredIssues,
-        currentValue = { settings.ignoredIssuesEnabled },
       ) {
         settings.ignoredIssuesEnabled = it
       }
@@ -418,7 +398,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SCAN_NET_NEW,
         isPresent = hasDeltaFindings,
         newValue = config.enableDeltaFindings,
-        currentValue = { settings.isDeltaFindingsEnabled() },
       ) {
         settings.setDeltaEnabled(it)
       }
@@ -429,7 +408,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
         isPresent = (config.riskScoreThreshold != null),
         newValue = config.riskScoreThreshold,
-        currentValue = { settings.riskScoreThreshold },
       ) {
         settings.riskScoreThreshold = it
       }
@@ -442,7 +420,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.ADDITIONAL_PARAMETERS,
         isPresent = (config.additionalParameters != null),
         newValue = joinedAdditionalParameters,
-        currentValue = { settings.globalAdditionalParameters },
       ) {
         settings.globalAdditionalParameters = it ?: ""
       }
@@ -451,7 +428,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.ADDITIONAL_ENVIRONMENT,
         isPresent = (config.additionalEnv != null),
         newValue = config.additionalEnv,
-        currentValue = { settings.globalAdditionalEnvironment },
       ) {
         settings.globalAdditionalEnvironment = it ?: ""
       }
@@ -628,7 +604,6 @@ class SaveConfigHandler(
     key: String,
     isPresent: Boolean,
     newValue: T?,
-    currentValue: () -> Any?,
     assign: (T) -> Unit,
   ) {
     // Diff-based wire contract: the LS settings UI sends only fields that changed. An absent or
@@ -640,25 +615,15 @@ class SaveConfigHandler(
       return
     }
 
-    if (valuesEquivalent(currentValue(), newValue)) {
-      settings.clearExplicitlyChanged(key)
-    } else {
-      settings.markExplicitlyChanged(key)
-    }
+    // A field PRESENT with a non-null value means the user genuinely asserted it, so ALWAYS mark it
+    // explicitly changed. We must NOT auto-clear when the value merely equals the store default:
+    // after a "Project Defaults" reset restores a field to its default, re-enabling that field to
+    // the same default value is still a real user assertion. Auto-clearing here would make the next
+    // getSettings() emit changed:false, so the LS would never learn the user re-asserted it and the
+    // user could not set a Project Default equal to the store default (the ADR-1 bug).
+    settings.markExplicitlyChanged(key)
 
     assign(newValue)
-  }
-
-  private fun valuesEquivalent(current: Any?, next: Any?): Boolean {
-    if (current == null || next == null) {
-      return current == next
-    }
-
-    if (current is Number && next is Number) {
-      return current.toDouble() == next.toDouble()
-    }
-
-    return current == next
   }
 
   private fun applyFolderSetting(
