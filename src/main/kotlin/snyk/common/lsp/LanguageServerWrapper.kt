@@ -607,9 +607,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun getSettings(
-    resets: Set<String> = pluginSettings().consumePendingResets()
-  ): LspConfigurationParam {
+  fun getSettings(resets: Set<String> = emptySet()): LspConfigurationParam {
     val ps = pluginSettings()
 
     // Machine-scope settings (top-level settings map → user:global)
@@ -840,7 +838,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     val trustService = service<WorkspaceTrustService>()
     val trustedFolders = trustService.settings.getTrustedPaths()
 
-    val param = getSettings()
+    val param = getSettings(pluginSettings().consumePendingResets())
 
     return InitializationOptions(
       settings = param.settings,
@@ -860,10 +858,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     )
   }
 
-  fun updateConfiguration(
-    runScan: Boolean = false,
-    resets: Set<String> = pluginSettings().consumePendingResets(),
-  ) {
+  fun updateConfiguration(runScan: Boolean = false, resets: Set<String> = emptySet()) {
     if (!ensureLanguageServerInitialized()) return
     val params = DidChangeConfigurationParams(getSettings(resets))
     languageServer.workspaceService.didChangeConfiguration(params)
