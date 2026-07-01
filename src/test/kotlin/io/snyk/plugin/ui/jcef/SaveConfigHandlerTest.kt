@@ -404,7 +404,9 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     // Organization override is cleared, value restored to default, and a one-shot reset is queued.
     assertNull(realSettings.organization)
     assertFalse(realSettings.isExplicitlyChanged(LsSettingsKeys.ORGANIZATION))
-    assertTrue(realSettings.consumePendingResets().contains(LsSettingsKeys.ORGANIZATION))
+    verify {
+      lsWrapperMock.updateConfiguration(resets = match { it.contains(LsSettingsKeys.ORGANIZATION) })
+    }
     assertTrue(realSettings.ossScanEnable)
   }
 
@@ -613,7 +615,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
     // reset restores the plugin default (true) and queues a one-shot reset
     assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
-    assertTrue(realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    verify {
+      lsWrapperMock.updateConfiguration(
+        resets = match { it.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED) }
+      )
+    }
 
     // 2) User re-enables snyk_code_enabled to the SAME value as the store default.
     invokeParseAndSaveConfig("""{"snyk_code_enabled": true}""")
@@ -1384,7 +1390,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     // Default restored, explicit flag cleared, one-shot reset queued.
     assertTrue(realSettings.iacScanEnabled)
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
-    assertTrue(realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    verify {
+      lsWrapperMock.updateConfiguration(
+        resets = match { it.contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED) }
+      )
+    }
   }
 
   fun `test parseAndSaveConfig global reset for severity filter queues reset`() {
@@ -1397,9 +1407,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     assertTrue(realSettings.mediumSeverityEnabled)
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
-    assertTrue(
-      realSettings.consumePendingResets().contains(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM)
-    )
+    verify {
+      lsWrapperMock.updateConfiguration(
+        resets = match { it.contains(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM) }
+      )
+    }
   }
 
   fun `test parseAndSaveConfig global reset for risk score threshold clears value`() {
@@ -1412,9 +1424,11 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
     assertNull(realSettings.riskScoreThreshold)
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD))
-    assertTrue(
-      realSettings.consumePendingResets().contains(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
-    )
+    verify {
+      lsWrapperMock.updateConfiguration(
+        resets = match { it.contains(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD) }
+      )
+    }
   }
 
   fun `test parseAndSaveConfig present global field is not treated as reset`() {
@@ -1575,10 +1589,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         "${spec.jsonField}: explicit-change flag must be cleared on reset",
         realSettings.isExplicitlyChanged(spec.lsKey),
       )
-      assertTrue(
-        "${spec.jsonField}: a one-shot reset must be queued for ${spec.lsKey}",
-        realSettings.consumePendingResets().contains(spec.lsKey),
-      )
+      verify { lsWrapperMock.updateConfiguration(resets = match { it.contains(spec.lsKey) }) }
     }
   }
 
@@ -1609,10 +1620,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         "$aliasField: explicit-change flag must be cleared on reset via alias",
         realSettings.isExplicitlyChanged(lsKey),
       )
-      assertTrue(
-        "$aliasField: a one-shot reset must be queued for $lsKey via alias",
-        realSettings.consumePendingResets().contains(lsKey),
-      )
+      verify { lsWrapperMock.updateConfiguration(resets = match { it.contains(lsKey) }) }
     }
   }
 
@@ -1651,12 +1659,18 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
-    // All four resets queued in one save.
-    val resets = realSettings.consumePendingResets()
-    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
-    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH))
-    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM))
-    assertTrue(resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_LOW))
+    // All four resets delivered to the LS wrapper in one save.
+    verify {
+      lsWrapperMock.updateConfiguration(
+        resets =
+          match {
+            it.contains(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL) &&
+              it.contains(LsFolderSettingsKeys.SEVERITY_FILTER_HIGH) &&
+              it.contains(LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM) &&
+              it.contains(LsFolderSettingsKeys.SEVERITY_FILTER_LOW)
+          }
+      )
+    }
   }
 
   // ── Scenario 4: MIXED batch (save side) ─────────────────────────────────────
