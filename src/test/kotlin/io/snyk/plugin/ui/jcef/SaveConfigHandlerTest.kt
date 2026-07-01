@@ -1710,20 +1710,17 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL))
 
-    val resets = realSettings.consumePendingResets()
-    assertTrue("organization reset queued", resets.contains(LsSettingsKeys.ORGANIZATION))
-    assertTrue(
-      "risk_score_threshold reset queued",
-      resets.contains(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD),
-    )
-    assertFalse(
-      "concretely-set snyk_iac_enabled must NOT be queued for reset",
-      resets.contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED),
-    )
-    assertFalse(
-      "concretely-set severity_filter_critical must NOT be queued for reset",
-      resets.contains(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL),
-    )
+    verify {
+      lsWrapperMock.updateConfiguration(
+        resets =
+          match {
+            it.contains(LsSettingsKeys.ORGANIZATION) &&
+              it.contains(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD) &&
+              !it.contains(LsFolderSettingsKeys.SNYK_IAC_ENABLED) &&
+              !it.contains(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+          }
+      )
+    }
   }
 
   fun `test saveConfig folderConfigs present as JSON null still applies global settings`() {

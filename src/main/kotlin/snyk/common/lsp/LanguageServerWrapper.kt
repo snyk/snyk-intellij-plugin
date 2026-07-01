@@ -607,7 +607,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun getSettings(resets: Set<String> = emptySet()): LspConfigurationParam {
+  fun getSettings(
+    resets: Set<String> = pluginSettings().consumePendingResets()
+  ): LspConfigurationParam {
     val ps = pluginSettings()
 
     // Machine-scope settings (top-level settings map → user:global)
