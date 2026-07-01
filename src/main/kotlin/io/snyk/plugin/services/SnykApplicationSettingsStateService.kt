@@ -151,10 +151,14 @@ class SnykApplicationSettingsStateService :
       LsFolderSettingsKeys.SNYK_IAC_ENABLED -> iacScanEnabled != PLUGIN_DEFAULT_IAC_SCAN_ENABLE
       LsFolderSettingsKeys.SNYK_SECRETS_ENABLED ->
         secretsEnabled != PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE
-      LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL -> !criticalSeverityEnabled
-      LsFolderSettingsKeys.SEVERITY_FILTER_HIGH -> !highSeverityEnabled
-      LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM -> !mediumSeverityEnabled
-      LsFolderSettingsKeys.SEVERITY_FILTER_LOW -> !lowSeverityEnabled
+      LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL ->
+        criticalSeverityEnabled != PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.SEVERITY_FILTER_HIGH ->
+        highSeverityEnabled != PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM ->
+        mediumSeverityEnabled != PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.SEVERITY_FILTER_LOW ->
+        lowSeverityEnabled != PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
       LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES ->
         openIssuesEnabled != PLUGIN_DEFAULT_OPEN_ISSUES_ENABLED
       LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES ->
@@ -162,9 +166,47 @@ class SnykApplicationSettingsStateService :
       LsFolderSettingsKeys.SCAN_AUTOMATIC -> scanOnSave != PLUGIN_DEFAULT_SCAN_ON_SAVE
       LsFolderSettingsKeys.SCAN_NET_NEW ->
         isDeltaFindingsEnabled() != PLUGIN_DEFAULT_DELTA_FINDINGS_ENABLED
-      LsFolderSettingsKeys.RISK_SCORE_THRESHOLD -> riskScoreThreshold != null
+      LsFolderSettingsKeys.RISK_SCORE_THRESHOLD ->
+        riskScoreThreshold != PLUGIN_DEFAULT_RISK_SCORE_THRESHOLD
       else -> false
     }
+
+  /**
+   * Single source of truth for per-key "Project Defaults" values. Restores the global setting
+   * behind [key] to the SAME plugin default the deviation checks
+   * ([folderScopedGlobalValueDeviatesFromPluginDefaults] /
+   * [machineScopedValueDeviatesFromPluginDefaults]) recognize, so a reset can never drift from what
+   * the deviation check considers "at default". Callers own the explicit-change / pending-reset
+   * bookkeeping (see [io.snyk.plugin.ui.jcef.SaveConfigHandler]); this only writes the field.
+   */
+  fun resetGlobalKeyToDefault(key: String) {
+    when (key) {
+      LsFolderSettingsKeys.SNYK_OSS_ENABLED -> ossScanEnable = PLUGIN_DEFAULT_OSS_SCAN_ENABLE
+      LsFolderSettingsKeys.SNYK_CODE_ENABLED ->
+        snykCodeSecurityIssuesScanEnable = PLUGIN_DEFAULT_CODE_SCAN_ENABLE
+      LsFolderSettingsKeys.SNYK_IAC_ENABLED -> iacScanEnabled = PLUGIN_DEFAULT_IAC_SCAN_ENABLE
+      LsFolderSettingsKeys.SNYK_SECRETS_ENABLED ->
+        secretsEnabled = PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE
+      LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL ->
+        criticalSeverityEnabled = PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.SEVERITY_FILTER_HIGH ->
+        highSeverityEnabled = PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM ->
+        mediumSeverityEnabled = PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.SEVERITY_FILTER_LOW ->
+        lowSeverityEnabled = PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED
+      LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES ->
+        openIssuesEnabled = PLUGIN_DEFAULT_OPEN_ISSUES_ENABLED
+      LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES ->
+        ignoredIssuesEnabled = PLUGIN_DEFAULT_IGNORED_ISSUES_ENABLED
+      LsFolderSettingsKeys.SCAN_AUTOMATIC -> scanOnSave = PLUGIN_DEFAULT_SCAN_ON_SAVE
+      LsFolderSettingsKeys.SCAN_NET_NEW -> setDeltaEnabled(PLUGIN_DEFAULT_DELTA_FINDINGS_ENABLED)
+      LsFolderSettingsKeys.RISK_SCORE_THRESHOLD ->
+        riskScoreThreshold = PLUGIN_DEFAULT_RISK_SCORE_THRESHOLD
+      LsSettingsKeys.ORGANIZATION -> organization = PLUGIN_DEFAULT_ORGANIZATION
+      else -> error("No plugin default known for reset key: $key")
+    }
+  }
 
   /**
    * Call when the user saves scan types (classic settings) or product toggles from the LS HTML
@@ -360,6 +402,9 @@ class SnykApplicationSettingsStateService :
     private const val PLUGIN_DEFAULT_IGNORED_ISSUES_ENABLED = false
     private const val PLUGIN_DEFAULT_SCAN_ON_SAVE = true
     private const val PLUGIN_DEFAULT_DELTA_FINDINGS_ENABLED = false
+    private const val PLUGIN_DEFAULT_SEVERITY_FILTER_ENABLED = true
+    private val PLUGIN_DEFAULT_RISK_SCORE_THRESHOLD: Int? = null
+    private val PLUGIN_DEFAULT_ORGANIZATION: String? = null
 
     private const val PLUGIN_DEFAULT_API_ENDPOINT = "https://api.snyk.io"
     private const val PLUGIN_DEFAULT_BINARY_BASE_URL = "https://downloads.snyk.io"

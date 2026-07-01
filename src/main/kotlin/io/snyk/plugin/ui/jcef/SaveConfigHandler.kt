@@ -497,82 +497,38 @@ class SaveConfigHandler(
 
   /**
    * Org-scope global settings the user can reset to "Project Defaults" from the LS HTML dialog.
-   * Each entry maps the JSON field name(s) the HTML/JS may emit to the canonical LS setting key and
-   * the action that restores the persisted plugin default so the value is not re-pushed after the
-   * one-shot reset signal is consumed.
+   * Each entry maps the JSON field name(s) the HTML/JS may emit to the canonical LS setting key.
+   * Restoring the plugin default for a key is delegated to
+   * [SnykApplicationSettingsStateService.resetGlobalKeyToDefault], the single source of truth
+   * shared with the deviation checks — this list carries only the reset-specific field-name
+   * aliasing.
    *
    * Detection of a reset is by explicit JSON null at the top level (a present field with a non-null
    * value is a normal change, an absent field is "no change"). Gson collapses absent and null into
    * Kotlin null on [SaveConfigRequest], so reset detection must read the raw JSON.
    */
-  private fun globalResetSpecs(
-    settings: SnykApplicationSettingsStateService
-  ): List<Triple<List<String>, String, () -> Unit>> =
+  private fun globalResetSpecs(): List<Pair<List<String>, String>> =
     listOf(
-      Triple(
-        listOf("snyk_oss_enabled", "activateSnykOpenSource"),
-        LsFolderSettingsKeys.SNYK_OSS_ENABLED,
-      ) {
-        settings.ossScanEnable = true
-      },
-      Triple(
-        listOf("snyk_code_enabled", "activateSnykCode"),
-        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
-      ) {
-        settings.snykCodeSecurityIssuesScanEnable = true
-      },
-      Triple(listOf("snyk_iac_enabled", "activateSnykIac"), LsFolderSettingsKeys.SNYK_IAC_ENABLED) {
-        settings.iacScanEnabled = true
-      },
-      Triple(
-        listOf("snyk_secrets_enabled", "activateSnykSecrets"),
+      listOf("snyk_oss_enabled", "activateSnykOpenSource") to LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+      listOf("snyk_code_enabled", "activateSnykCode") to LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+      listOf("snyk_iac_enabled", "activateSnykIac") to LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+      listOf("snyk_secrets_enabled", "activateSnykSecrets") to
         LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
-      ) {
-        settings.secretsEnabled = false
-      },
-      Triple(listOf("scan_automatic"), LsFolderSettingsKeys.SCAN_AUTOMATIC) {
-        settings.scanOnSave = true
-      },
-      Triple(listOf("scan_net_new", "enableDeltaFindings"), LsFolderSettingsKeys.SCAN_NET_NEW) {
-        settings.setDeltaEnabled(false)
-      },
-      Triple(
-        listOf("severity_filter_critical", "filterSeverityCritical"),
+      listOf("scan_automatic") to LsFolderSettingsKeys.SCAN_AUTOMATIC,
+      listOf("scan_net_new", "enableDeltaFindings") to LsFolderSettingsKeys.SCAN_NET_NEW,
+      listOf("severity_filter_critical", "filterSeverityCritical") to
         LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
-      ) {
-        settings.criticalSeverityEnabled = true
-      },
-      Triple(
-        listOf("severity_filter_high", "filterSeverityHigh"),
+      listOf("severity_filter_high", "filterSeverityHigh") to
         LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
-      ) {
-        settings.highSeverityEnabled = true
-      },
-      Triple(
-        listOf("severity_filter_medium", "filterSeverityMedium"),
+      listOf("severity_filter_medium", "filterSeverityMedium") to
         LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
-      ) {
-        settings.mediumSeverityEnabled = true
-      },
-      Triple(
-        listOf("severity_filter_low", "filterSeverityLow"),
+      listOf("severity_filter_low", "filterSeverityLow") to
         LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
-      ) {
-        settings.lowSeverityEnabled = true
-      },
-      Triple(listOf("issue_view_open_issues"), LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES) {
-        settings.openIssuesEnabled = true
-      },
-      Triple(listOf("issue_view_ignored_issues"), LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES) {
-        settings.ignoredIssuesEnabled = false
-      },
-      Triple(
-        listOf("risk_score_threshold", "riskScoreThreshold"),
+      listOf("issue_view_open_issues") to LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+      listOf("issue_view_ignored_issues") to LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+      listOf("risk_score_threshold", "riskScoreThreshold") to
         LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
-      ) {
-        settings.riskScoreThreshold = null
-      },
-      Triple(listOf("organization"), LsSettingsKeys.ORGANIZATION) { settings.organization = null },
+      listOf("organization") to LsSettingsKeys.ORGANIZATION,
     )
 
   /**
@@ -596,11 +552,11 @@ class SaveConfigHandler(
     if (!root.isJsonObject) return
     val obj = root.asJsonObject
 
-    for ((fieldNames, key, restoreDefault) in globalResetSpecs(settings)) {
+    for ((fieldNames, key) in globalResetSpecs()) {
       val isReset = fieldNames.any { obj.has(it) && obj.get(it).isJsonNull }
       if (isReset) {
         settings.clearExplicitlyChanged(key)
-        restoreDefault()
+        settings.resetGlobalKeyToDefault(key)
         settings.addPendingReset(key)
       }
     }

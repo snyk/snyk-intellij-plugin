@@ -2064,6 +2064,47 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     assertEquals(true, stored.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.changed)
   }
 
+  /**
+   * Drift guard for IDE-2149: the reset path and the deviation check must share one plugin default
+   * per key. For every resettable global key, driving the reset (explicit JSON null) must leave the
+   * field at a value the deviation check no longer flags as user-asserted. If a reset default and a
+   * deviation default ever drift apart, this fails.
+   */
+  fun `test every global reset restores a value the deviation check treats as default`() {
+    @Suppress("UNCHECKED_CAST")
+    val specs =
+      SaveConfigHandler::class
+        .java
+        .getDeclaredMethod("globalResetSpecs")
+        .apply { isAccessible = true }
+        .invoke(cut) as List<Pair<List<String>, String>>
+
+    assertFalse("Expected at least one resettable key", specs.isEmpty())
+
+    for ((fieldNames, key) in specs) {
+      val realSettings = SnykApplicationSettingsStateService()
+      every { pluginSettings() } returns realSettings
+
+      // Mark the key user-asserted so we prove the reset genuinely clears the deviation.
+      realSettings.markExplicitlyChanged(key)
+
+      invokeParseAndSaveConfig("""{"${fieldNames.first()}": null}""")
+
+      // Reset consumed the explicit flag + queued the one-shot signal; drain it so the public check
+      // reflects pure deviation-from-default, not the transient reset bookkeeping.
+      realSettings.consumePendingResets()
+      assertFalse(
+        "Reset of $key must clear the explicit-change flag",
+        realSettings.isExplicitlyChanged(key),
+      )
+      assertFalse(
+        "Reset of $key restored a value the deviation check still flags as user-asserted — " +
+          "reset default and deviation default have drifted for this key",
+        realSettings.lsUserAssertedChangeForLsConfigurationKey(key),
+      )
+    }
+  }
+
   private fun invokeParseAndSaveConfig(jsonString: String) {
     val method = SaveConfigHandler::class.java.getDeclaredMethod("saveConfig", String::class.java)
     method.isAccessible = true
