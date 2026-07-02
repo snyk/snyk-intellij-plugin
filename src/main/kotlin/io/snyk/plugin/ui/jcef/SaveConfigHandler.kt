@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.jcef
 
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.invokeLater
@@ -171,6 +172,10 @@ class SaveConfigHandler(
     // Only apply folder configs if not fallback form
     val isFallback = config.isFallbackForm == true
     if (!isFallback) {
+      // Detect top-level fields the user explicitly reset to "Project Defaults" (JSON null) and
+      // queue a one-shot reset signal to the LS. Gson collapses absent and null into Kotlin null,
+      // so this must be done from the raw JSON, not the parsed SaveConfigRequest.
+      applyGlobalResetsFromRawJson(jsonString, settings)
       config.folderConfigs?.let { applyFolderConfigs(it) }
       // A folder field present as JSON null is a reset. Gson maps it to a Kotlin null on
       // FolderConfigData (indistinguishable from absent), so applyFolderConfigs() skips it.
@@ -180,9 +185,18 @@ class SaveConfigHandler(
 
     // Notify all open projects' language servers so global settings propagate everywhere.
     // Without this, only the current project's LS/HTML page would reflect global changes.
-    for (openProject in ProjectUtil.getOpenProjects()) {
-      if (!openProject.isDisposed && !SnykPluginDisposable.getInstance(openProject).isDisposed()) {
-        LanguageServerWrapper.getInstance(openProject).updateConfiguration()
+    // Drain resets once so every project's LS receives the same set (APP-scoped pendingResets
+    // would be consumed by the first project's updateConfiguration, starving the rest).
+    // Only drain if there is at least one live project to send to — if none are ready the
+    // pending resets remain queued and will be picked up on the next LS reconnect/init.
+    val liveProjects =
+      ProjectUtil.getOpenProjects().filter {
+        !it.isDisposed && !SnykPluginDisposable.getInstance(it).isDisposed()
+      }
+    if (liveProjects.isNotEmpty()) {
+      val resets = pluginSettings().consumePendingResets()
+      for (openProject in liveProjects) {
+        LanguageServerWrapper.getInstance(openProject).updateConfiguration(resets = resets)
       }
     }
   }
@@ -198,7 +212,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.AUTOMATIC_DOWNLOAD,
       isPresent = (config.manageBinariesAutomatically != null),
       newValue = config.manageBinariesAutomatically,
-      currentValue = { settings.manageBinariesAutomatically },
     ) {
       settings.manageBinariesAutomatically = it
     }
@@ -210,7 +223,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.CLI_PATH,
       isPresent = cliPathProvided,
       newValue = resolvedCliPath,
-      currentValue = { settings.cliPath },
     ) {
       settings.cliPath = it
     }
@@ -220,7 +232,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.BINARY_BASE_URL,
       isPresent = (config.cliBaseDownloadURL != null),
       newValue = config.cliBaseDownloadURL,
-      currentValue = { settings.cliBaseDownloadURL },
     ) {
       settings.cliBaseDownloadURL = it
     }
@@ -230,7 +241,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.CLI_RELEASE_CHANNEL,
       isPresent = (config.cliReleaseChannel != null),
       newValue = config.cliReleaseChannel,
-      currentValue = { settings.cliReleaseChannel },
     ) {
       settings.cliReleaseChannel = it
     }
@@ -240,7 +250,6 @@ class SaveConfigHandler(
       key = LsSettingsKeys.PROXY_INSECURE,
       isPresent = (config.insecure != null),
       newValue = config.insecure,
-      currentValue = { settings.ignoreUnknownCA },
     ) {
       settings.ignoreUnknownCA = it
     }
@@ -253,7 +262,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_OSS_ENABLED,
         isPresent = (config.activateSnykOpenSource != null),
         newValue = config.activateSnykOpenSource,
-        currentValue = { settings.ossScanEnable },
       ) {
         settings.ossScanEnable = it
       }
@@ -263,7 +271,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_CODE_ENABLED,
         isPresent = (config.activateSnykCode != null),
         newValue = config.activateSnykCode,
-        currentValue = { settings.snykCodeSecurityIssuesScanEnable },
       ) {
         settings.snykCodeSecurityIssuesScanEnable = it
       }
@@ -273,7 +280,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_IAC_ENABLED,
         isPresent = (config.activateSnykIac != null),
         newValue = config.activateSnykIac,
-        currentValue = { settings.iacScanEnabled },
       ) {
         settings.iacScanEnabled = it
       }
@@ -283,7 +289,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
         isPresent = (config.activateSnykSecrets != null),
         newValue = config.activateSnykSecrets,
-        currentValue = { settings.secretsEnabled },
       ) {
         settings.secretsEnabled = it
       }
@@ -294,7 +299,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SCAN_AUTOMATIC,
         isPresent = (config.scanningMode != null),
         newValue = config.scanningMode,
-        currentValue = { settings.scanOnSave },
       ) {
         settings.scanOnSave = it
       }
@@ -305,7 +309,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.ORGANIZATION,
         isPresent = (config.organization != null),
         newValue = config.organization,
-        currentValue = { settings.organization },
       ) {
         settings.organization = it
       }
@@ -315,7 +318,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.API_ENDPOINT,
         isPresent = (config.endpoint != null),
         newValue = config.endpoint,
-        currentValue = { settings.customEndpointUrl },
       ) {
         settings.customEndpointUrl = it
       }
@@ -325,7 +327,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.TOKEN,
         isPresent = (config.token != null),
         newValue = config.token,
-        currentValue = { settings.token },
       ) {
         settings.token = it
       }
@@ -346,7 +347,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.AUTHENTICATION_METHOD,
         isPresent = authMethodProvided,
         newValue = resolvedAuthMethod,
-        currentValue = { settings.authenticationType },
       ) {
         settings.authenticationType = it
       }
@@ -357,7 +357,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
         isPresent = (config.severityFilterCritical != null),
         newValue = config.severityFilterCritical,
-        currentValue = { settings.criticalSeverityEnabled },
       ) {
         settings.criticalSeverityEnabled = it
       }
@@ -367,7 +366,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
         isPresent = (config.severityFilterHigh != null),
         newValue = config.severityFilterHigh,
-        currentValue = { settings.highSeverityEnabled },
       ) {
         settings.highSeverityEnabled = it
       }
@@ -377,7 +375,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
         isPresent = (config.severityFilterMedium != null),
         newValue = config.severityFilterMedium,
-        currentValue = { settings.mediumSeverityEnabled },
       ) {
         settings.mediumSeverityEnabled = it
       }
@@ -387,7 +384,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
         isPresent = (config.severityFilterLow != null),
         newValue = config.severityFilterLow,
-        currentValue = { settings.lowSeverityEnabled },
       ) {
         settings.lowSeverityEnabled = it
       }
@@ -398,7 +394,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
         isPresent = (config.issueViewOpenIssues != null),
         newValue = config.issueViewOpenIssues,
-        currentValue = { settings.openIssuesEnabled },
       ) {
         settings.openIssuesEnabled = it
       }
@@ -408,7 +403,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
         isPresent = (config.issueViewIgnoredIssues != null),
         newValue = config.issueViewIgnoredIssues,
-        currentValue = { settings.ignoredIssuesEnabled },
       ) {
         settings.ignoredIssuesEnabled = it
       }
@@ -420,7 +414,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.SCAN_NET_NEW,
         isPresent = hasDeltaFindings,
         newValue = config.enableDeltaFindings,
-        currentValue = { settings.isDeltaFindingsEnabled() },
       ) {
         settings.setDeltaEnabled(it)
       }
@@ -431,7 +424,6 @@ class SaveConfigHandler(
         key = LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
         isPresent = (config.riskScoreThreshold != null),
         newValue = config.riskScoreThreshold,
-        currentValue = { settings.riskScoreThreshold },
       ) {
         settings.riskScoreThreshold = it
       }
@@ -444,7 +436,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.ADDITIONAL_PARAMETERS,
         isPresent = (config.additionalParameters != null),
         newValue = joinedAdditionalParameters,
-        currentValue = { settings.globalAdditionalParameters },
       ) {
         settings.globalAdditionalParameters = it ?: ""
       }
@@ -453,7 +444,6 @@ class SaveConfigHandler(
         key = LsSettingsKeys.ADDITIONAL_ENVIRONMENT,
         isPresent = (config.additionalEnv != null),
         newValue = config.additionalEnv,
-        currentValue = { settings.globalAdditionalEnvironment },
       ) {
         settings.globalAdditionalEnvironment = it ?: ""
       }
@@ -514,12 +504,78 @@ class SaveConfigHandler(
     }
   }
 
+  /**
+   * Org-scope global settings the user can reset to "Project Defaults" from the LS HTML dialog.
+   * Each entry maps the JSON field name(s) the HTML/JS may emit to the canonical LS setting key.
+   * Restoring the plugin default for a key is delegated to
+   * [SnykApplicationSettingsStateService.resetGlobalKeyToDefault], the single source of truth
+   * shared with the deviation checks — this list carries only the reset-specific field-name
+   * aliasing.
+   *
+   * Detection of a reset is by explicit JSON null at the top level (a present field with a non-null
+   * value is a normal change, an absent field is "no change"). Gson collapses absent and null into
+   * Kotlin null on [SaveConfigRequest], so reset detection must read the raw JSON.
+   */
+  private fun globalResetSpecs(): List<Pair<List<String>, String>> =
+    listOf(
+      listOf("snyk_oss_enabled", "activateSnykOpenSource") to LsFolderSettingsKeys.SNYK_OSS_ENABLED,
+      listOf("snyk_code_enabled", "activateSnykCode") to LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+      listOf("snyk_iac_enabled", "activateSnykIac") to LsFolderSettingsKeys.SNYK_IAC_ENABLED,
+      listOf("snyk_secrets_enabled", "activateSnykSecrets") to
+        LsFolderSettingsKeys.SNYK_SECRETS_ENABLED,
+      listOf("scan_automatic") to LsFolderSettingsKeys.SCAN_AUTOMATIC,
+      listOf("scan_net_new", "enableDeltaFindings") to LsFolderSettingsKeys.SCAN_NET_NEW,
+      listOf("severity_filter_critical", "filterSeverityCritical") to
+        LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+      listOf("severity_filter_high", "filterSeverityHigh") to
+        LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+      listOf("severity_filter_medium", "filterSeverityMedium") to
+        LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+      listOf("severity_filter_low", "filterSeverityLow") to
+        LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+      listOf("issue_view_open_issues") to LsFolderSettingsKeys.ISSUE_VIEW_OPEN_ISSUES,
+      listOf("issue_view_ignored_issues") to LsFolderSettingsKeys.ISSUE_VIEW_IGNORED_ISSUES,
+      listOf("risk_score_threshold", "riskScoreThreshold") to
+        LsFolderSettingsKeys.RISK_SCORE_THRESHOLD,
+      listOf("organization") to LsSettingsKeys.ORGANIZATION,
+    )
+
+  /**
+   * For each org-scope global key sent as an explicit JSON null at the top level, clear the
+   * explicit-change tracking, restore the persisted plugin default, and queue a one-shot `{ value:
+   * null, changed: true }` reset signal so the LS Unsets its user:global override exactly once.
+   * After the pending reset is consumed by [LanguageServerWrapper.getSettings] the restored default
+   * value must NOT re-assert the override on reconnect.
+   */
+  private fun applyGlobalResetsFromRawJson(
+    jsonString: String,
+    settings: SnykApplicationSettingsStateService,
+  ) {
+    val root =
+      try {
+        JsonParser.parseString(jsonString)
+      } catch (e: Exception) {
+        logger.warn("Could not parse config JSON for global reset detection", e)
+        return
+      }
+    if (!root.isJsonObject) return
+    val obj = root.asJsonObject
+
+    for ((fieldNames, key) in globalResetSpecs()) {
+      val isReset = fieldNames.any { obj.has(it) && obj.get(it).isJsonNull }
+      if (isReset) {
+        settings.clearExplicitlyChanged(key)
+        settings.resetGlobalKeyToDefault(key)
+        settings.addPendingReset(key)
+      }
+    }
+  }
+
   private fun <T> applyGlobalSetting(
     settings: SnykApplicationSettingsStateService,
     key: String,
     isPresent: Boolean,
     newValue: T?,
-    currentValue: () -> Any?,
     assign: (T) -> Unit,
   ) {
     // Diff-based wire contract: the LS settings UI sends only fields that changed. An absent or
@@ -531,25 +587,15 @@ class SaveConfigHandler(
       return
     }
 
-    if (valuesEquivalent(currentValue(), newValue)) {
-      settings.clearExplicitlyChanged(key)
-    } else {
-      settings.markExplicitlyChanged(key)
-    }
+    // A field PRESENT with a non-null value means the user genuinely asserted it, so ALWAYS mark it
+    // explicitly changed. We must NOT auto-clear when the value merely equals the store default:
+    // after a "Project Defaults" reset restores a field to its default, re-enabling that field to
+    // the same default value is still a real user assertion. Auto-clearing here would make the next
+    // getSettings() emit changed:false, so the LS would never learn the user re-asserted it and the
+    // user could not set a Project Default equal to the store default (the ADR-1 bug).
+    settings.markExplicitlyChanged(key)
 
     assign(newValue)
-  }
-
-  private fun valuesEquivalent(current: Any?, next: Any?): Boolean {
-    if (current == null || next == null) {
-      return current == next
-    }
-
-    if (current is Number && next is Number) {
-      return current.toDouble() == next.toDouble()
-    }
-
-    return current == next
   }
 
   private fun applyFolderSetting(

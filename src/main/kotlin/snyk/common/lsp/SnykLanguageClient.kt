@@ -227,6 +227,13 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         val ps = pluginSettings()
         var settingsChanged = false
 
+        // Inbound global-reset ({ value: null, changed: true } for org-scope resettable keys) is
+        // intentionally NOT handled here. This is a push-based plugin: the outbound reset path
+        // (SaveConfigHandler.applyGlobalResetsFromRawJson) plus the pending-reset queue fully cover
+        // the single-client case. This handler only mirrors machine-scope keys (proxy/endpoint/org/
+        // cli) and single-folder settings back into plugin state; do not add inbound reset
+        // handling.
+
         // Process machine-scope settings from top-level settings map
         configurationParam.settings?.let { settings ->
           settings[LsSettingsKeys.PROXY_INSECURE]?.value?.let {

@@ -607,7 +607,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun getSettings(): LspConfigurationParam {
+  fun getSettings(
+    resets: Set<String> = pluginSettings().consumePendingResets()
+  ): LspConfigurationParam {
     val ps = pluginSettings()
 
     // Machine-scope settings (top-level settings map → user:global)
@@ -810,7 +812,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       )
 
     // Emit one-shot reset signals for keys the user cleared
-    val resets = ps.consumePendingResets()
     for (key in resets) {
       settingsMap[key] = ConfigSetting(value = null, changed = true)
     }
@@ -839,7 +840,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     val trustService = service<WorkspaceTrustService>()
     val trustedFolders = trustService.settings.getTrustedPaths()
 
-    val param = getSettings()
+    val param = getSettings(pluginSettings().consumePendingResets())
 
     return InitializationOptions(
       settings = param.settings,
@@ -859,9 +860,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     )
   }
 
-  fun updateConfiguration(runScan: Boolean = false) {
+  fun updateConfiguration(runScan: Boolean = false, resets: Set<String> = emptySet()) {
     if (!ensureLanguageServerInitialized()) return
-    val params = DidChangeConfigurationParams(getSettings())
+    val params = DidChangeConfigurationParams(getSettings(resets))
     languageServer.workspaceService.didChangeConfiguration(params)
 
     // Notify listeners locally so the tool window tree, severity toolbar, and editor annotators

@@ -240,6 +240,42 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun markExplicitlyChanged_cancelsPendingResetForSameKey() {
+    // Race fix (IDE-2149, mirrors vscode ExplicitLspConfigurationChangeTracker): a reset queues a
+    // pending null, then the user sets a concrete value -> markExplicitlyChanged must cancel the
+    // pending reset so consumePendingResets() no longer returns it (the concrete value wins).
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("some_key")
+
+    target.markExplicitlyChanged("some_key")
+
+    assertTrue(target.isExplicitlyChanged("some_key"))
+    assertFalse(target.consumePendingResets().contains("some_key"))
+  }
+
+  @Test
+  fun markExplicitlyChanged_forDifferentKey_doesNotCancelPendingReset() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("reset_key")
+
+    target.markExplicitlyChanged("other_key")
+
+    assertTrue(target.consumePendingResets().contains("reset_key"))
+  }
+
+  @Test
+  fun clearExplicitlyChanged_doesNotCancelPendingReset() {
+    // Only markExplicitlyChanged (a concrete user assertion) cancels a pending reset.
+    // clearExplicitlyChanged is part of the reset itself and must leave the pending reset intact.
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("reset_key")
+
+    target.clearExplicitlyChanged("reset_key")
+
+    assertTrue(target.consumePendingResets().contains("reset_key"))
+  }
+
+  @Test
   fun lsUserAssertedChangeForLsConfigurationKey_trueWhenProductDiffersFromDefaults() {
     val target = SnykApplicationSettingsStateService()
     target.iacScanEnabled = false
@@ -253,14 +289,34 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun initializeComponent_marksAllProductKeysExplicitWhenAnyProductDeviates() {
+  fun initializeComponent_marksOnlyDeviatingProductKeyExplicit() {
+    // Fix 2 (IDE-2149 PR review): per-product independent checks — only the deviating key is
+    // marked.
+    // Previously, the OR+markAll block marked all four keys when any one deviated, which would
+    // re-assert a reset OSS override if Secrets (or any other product) still deviates on startup.
     val target = SnykApplicationSettingsStateService()
-    target.iacScanEnabled = false
+    target.iacScanEnabled = false // only IaC deviates from its default (true)
 
     target.initializeComponent()
 
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
+  }
+
+  @Test
+  fun initializeComponent_marksAllDeviatingProductKeysExplicit() {
+    // When multiple products deviate, all of their keys are marked — but not the non-deviating
+    // ones.
+    val target = SnykApplicationSettingsStateService()
+    target.iacScanEnabled = false
+    target.secretsEnabled = true // secrets default is false, so this deviates
+
+    target.initializeComponent()
+
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
   }
