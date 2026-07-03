@@ -355,6 +355,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     val normalizedRoots = mutableSetOf<VirtualFile>()
 
     for (root in contentRoots) {
+      if (!root.isInLocalFileSystem) continue
       var add = true
       for (normalizedRoot in normalizedRoots) {
         if (!root.path.startsWith(normalizedRoot.path)) continue
@@ -488,10 +489,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   fun sendScanCommand() {
     if (notAuthenticated()) return
     DumbService.getInstance(project).runWhenSmart {
-      getContentRoots(project).forEach {
-        addContentRoots(project)
-        sendFolderScanCommand(it.path, project)
-      }
+      val roots = getContentRoots(project)
+      if (roots.isNotEmpty()) addContentRoots(project)
+      roots.forEach { sendFolderScanCommand(it.path, project) }
     }
   }
 

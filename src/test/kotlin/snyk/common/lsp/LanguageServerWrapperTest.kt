@@ -466,6 +466,7 @@ class LanguageServerWrapperTest {
     assertEquals(settings.organization, actual.settings?.get("organization")?.value)
     assertEquals(settings.isDeltaFindingsEnabled(), actual.settings?.get("scan_net_new")?.value)
     assertEquals(expectedTrustedFolders, actual.trustedFolders)
+    assertEquals(true, actual.settings?.get("trust_enabled")?.value)
   }
 
   @Test
