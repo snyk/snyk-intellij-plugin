@@ -574,6 +574,7 @@ class LanguageServerWrapperTest {
       every { virtualFile.path } returns pathString
       every { virtualFile.name } returns "snyk-test-workspace"
       every { virtualFile.isValid } returns true
+      every { virtualFile.isInLocalFileSystem } returns true
       every { virtualFile.toNioPath() } returns tempDir
 
       // Mock UtilsKt extension and project methods
