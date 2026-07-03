@@ -14,7 +14,6 @@ import java.util.concurrent.CompletableFuture
 import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.trust.WorkspaceTrustService
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
 
@@ -25,9 +24,7 @@ class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
   override fun setUp() {
     super.setUp()
     unmockkAll()
-    mockkStatic("snyk.trust.TrustedProjectsKt")
     mockkStatic("io.snyk.plugin.UtilsKt")
-    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     every { getCliFile() } returns
       mockk(relaxed = true) {
         every { exists() } returns true

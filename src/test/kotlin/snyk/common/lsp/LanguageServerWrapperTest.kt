@@ -578,9 +578,8 @@ class LanguageServerWrapperTest {
       // Mock UtilsKt extension and project methods
       every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
       every { projectMock.basePath } returns pathString
-      every { trustServiceMock.isPathTrusted(tempDir) } returns true
 
-      val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+      val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock)
 
       assertEquals(1, workspaceFolders.size)
       val uri = workspaceFolders.first().uri

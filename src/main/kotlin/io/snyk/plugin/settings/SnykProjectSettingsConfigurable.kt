@@ -151,7 +151,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
     val folderConfigs =
       languageServerWrapper
-        .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+        .getWorkspaceFoldersFromRoots(project)
         .asSequence()
         .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
         .map { it.uri.fromUriToPath().toString() }

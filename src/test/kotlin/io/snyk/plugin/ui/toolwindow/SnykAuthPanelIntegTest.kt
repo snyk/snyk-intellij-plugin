@@ -3,9 +3,7 @@ package io.snyk.plugin.ui.toolwindow
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.replaceService
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.snyk.plugin.services.SnykCliAuthenticationService
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
@@ -14,7 +12,6 @@ import javax.swing.JLabel
 import org.junit.Test
 import snyk.common.UIComponentFinder
 import snyk.trust.WorkspaceTrustService
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
 
@@ -24,8 +21,6 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
   override fun setUp() {
     super.setUp()
     unmockkAll()
-    mockkStatic("snyk.trust.TrustedProjectsKt")
-    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     val application = ApplicationManager.getApplication()
     application.replaceService(
       WorkspaceTrustService::class.java,
@@ -60,10 +55,10 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
     val cut = SnykAuthPanel(project)
     val authenticateButton =
       UIComponentFinder.getComponentByCondition(cut, JButton::class) {
-        it.text == SnykAuthPanel.TRUST_AND_SCAN_BUTTON_TEXT
+        it.text == SnykAuthPanel.AUTHENTICATE_BUTTON_TEXT
       }
     assertNotNull(authenticateButton)
-    assertEquals("Trust project and scan", authenticateButton!!.text)
+    assertEquals("Authenticate", authenticateButton!!.text)
   }
 
   @Test

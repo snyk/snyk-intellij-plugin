@@ -22,7 +22,6 @@ import java.util.concurrent.TimeoutException
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanState
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 @Service(Service.Level.PROJECT)
 class SnykTaskQueueService(val project: Project) {
@@ -50,10 +49,6 @@ class SnykTaskQueueService(val project: Project) {
 
   fun scan() {
     runInBackground("Snyk: triggering scan", project, true) {
-      it.checkCanceled()
-      it.text = "Snyk: checking if workspace is trusted"
-      if (!confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) return@runInBackground
-
       it.checkCanceled()
       it.text = "Snyk: saving all documents"
       ApplicationManager.getApplication().invokeAndWait {

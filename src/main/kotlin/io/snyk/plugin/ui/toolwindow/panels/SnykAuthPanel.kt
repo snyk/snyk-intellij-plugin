@@ -2,7 +2,6 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
@@ -13,7 +12,6 @@ import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.getContentRootPaths
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -29,7 +27,6 @@ import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
 import snyk.SnykBundle
-import snyk.trust.WorkspaceTrustService
 
 class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
 
@@ -37,26 +34,17 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
     name = "authPanel"
     val authButton =
       JButton(
-          object : AbstractAction(TRUST_AND_SCAN_BUTTON_TEXT) {
+          object : AbstractAction(AUTHENTICATE_BUTTON_TEXT) {
             override fun actionPerformed(e: ActionEvent?) {
               isEnabled = false
-              val waitingMessage = "Waiting for indexing to finish..."
               val jButton = e?.source as JButton
-              jButton.text = waitingMessage
+              jButton.text = "Waiting for indexing to finish..."
               DumbService.getInstance(project).runWhenSmart {
                 getSnykToolWindowPanel(project)?.cleanUiAndCaches()
 
                 jButton.setText("Authenticating...")
                 getSnykCliAuthenticationService(project)?.authenticate() ?: ""
 
-                // explicitly add the project to workspace trusted paths, because
-                // scan can be auto-triggered depending on "settings.pluginFirstRun" value
-                jButton.setText("Trusting project paths...")
-                val trustService = service<WorkspaceTrustService>()
-                val paths = project.getContentRootPaths()
-                for (path in paths) {
-                  trustService.addTrustedPath(path)
-                }
                 publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) {
                   settingsChanged()
                 }
@@ -128,7 +116,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
   override fun dispose() {}
 
   companion object {
-    const val TRUST_AND_SCAN_BUTTON_TEXT = "Trust project and scan"
+    const val AUTHENTICATE_BUTTON_TEXT = "Authenticate"
     val messagePolicyAndTermsHtml =
       """
                 <br>

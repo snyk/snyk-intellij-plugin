@@ -105,7 +105,7 @@ class FolderConfigSettings {
   fun hasStoredConfigForProject(project: Project): Boolean {
     val wrapper = LanguageServerWrapper.getInstance(project)
     return wrapper
-      .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+      .getWorkspaceFoldersFromRoots(project)
       .filter { wrapper.configuredWorkspaceFolders.contains(it) }
       .any {
         normalizePathOrNull(it.uri.fromUriToPath().toString())?.let(configs::containsKey) == true
@@ -157,7 +157,7 @@ class FolderConfigSettings {
   fun getFolderConfigs(project: Project): List<LspFolderConfig> {
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
     return languageServerWrapper
-      .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+      .getWorkspaceFoldersFromRoots(project)
       .asSequence()
       .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
       .map { getFolderConfig(it.uri.fromUriToPath().toString()) }
@@ -245,7 +245,7 @@ class FolderConfigSettings {
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
     val workspaceFolderPaths =
       languageServerWrapper
-        .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+        .getWorkspaceFoldersFromRoots(project)
         .map {
           Paths.get(it.uri.fromUriToPath().toString()).normalize().toAbsolutePath().toString()
         }

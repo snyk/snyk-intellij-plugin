@@ -69,7 +69,7 @@ class ReferenceChooserDialogTest : LightPlatform4TestCase() {
 
     // Mock getWorkspaceFoldersFromRoots to return the same WorkspaceFolder objects
     // that are in configuredWorkspaceFolders, ensuring getFolderConfigs filter works
-    every { languageServerWrapper.getWorkspaceFoldersFromRoots(any(), any()) } returns
+    every { languageServerWrapper.getWorkspaceFoldersFromRoots(any()) } returns
       setOf(workspaceFolder)
 
     cut = ReferenceChooserDialog(project)

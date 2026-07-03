@@ -38,7 +38,6 @@ import snyk.common.UIComponentFinder.getComponentByName
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.PresentableError
 import snyk.common.lsp.SnykScanParams
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 @RunWith(JUnit4::class)
 @Ignore("Too unstable in CI")
@@ -55,7 +54,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     super.setUp()
     unmockkAll()
     resetSettings(project)
-    mockkStatic("snyk.trust.TrustedProjectsKt")
     val settings = pluginSettings()
     settings.token = fakeApiToken // needed to avoid forced Auth panel showing
     settings.pluginFirstRun = false
@@ -71,7 +69,6 @@ class SnykToolWindowPanelIntegTest : HeavyPlatformTestCase() {
     // init{}
     toolWindowPanel = project.service()
     setupDummyCliFile()
-    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     mockkStatic(GotoFileCellRenderer::class)
     every { GotoFileCellRenderer.getRelativePath(any(), any()) } returns "abc/"
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
