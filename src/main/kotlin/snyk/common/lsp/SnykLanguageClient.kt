@@ -18,7 +18,6 @@ import com.intellij.util.queryParameters
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykFolderConfigListener
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
-import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykScanSummaryListener
 import io.snyk.plugin.events.SnykSettingsListener
@@ -351,9 +350,6 @@ class SnykLanguageClient(private val project: Project, val progressManager: Prog
         // refresh. On LS startup the initial config carries folder-level severities that may
         // differ from the global fallback the toolbar was displaying.
         publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
-        publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) {
-          filtersChanged()
-        }
         publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
           enablementChanged()
         }

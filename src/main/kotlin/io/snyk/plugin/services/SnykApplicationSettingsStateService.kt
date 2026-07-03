@@ -266,8 +266,6 @@ class SnykApplicationSettingsStateService :
   var highSeverityEnabled = true
   var criticalSeverityEnabled = true
   var riskScoreThreshold: Int? = null
-  var treeFiltering = TreeFiltering()
-
   // ignore display option store
   var isGlobalIgnoresFeatureEnabled = false
   var openIssuesEnabled = true
@@ -374,18 +372,6 @@ class SnykApplicationSettingsStateService :
     } == 1
   }
 
-  /**
-   * Default the per-product tree filter to match the product's enablement so that re-enabling a
-   * product in Settings makes its branch visible again without a separate toolbar click. Severity
-   * filtering is folder-scoped (see [FolderConfigSettings.setSeverityEnabledForProject]) and is not
-   * handled here.
-   */
-  fun matchFilteringWithEnablement() {
-    treeFiltering.ossResults = ossScanEnable
-    treeFiltering.codeSecurityResults = snykCodeSecurityIssuesScanEnable
-    treeFiltering.iacResults = iacScanEnabled
-  }
-
   fun setDeltaEnabled(enabled: Boolean) {
     issuesToDisplay =
       if (enabled) {
@@ -425,10 +411,4 @@ enum class AuthenticationType(
   OAUTH2("oauth", "OAuth2 (Recommended)", 0),
   PAT("pat", "Personal Access Token", 1),
   API_TOKEN("token", "API Token (Legacy)", 2),
-}
-
-class TreeFiltering {
-  var ossResults: Boolean = true
-  var codeSecurityResults: Boolean = true
-  var iacResults: Boolean = true
 }

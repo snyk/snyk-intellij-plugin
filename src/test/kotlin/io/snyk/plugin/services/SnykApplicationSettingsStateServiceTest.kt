@@ -122,20 +122,6 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun matchFilteringWithEnablement_syncsProductsOnly() {
-    val target = SnykApplicationSettingsStateService()
-    target.ossScanEnable = false
-    target.snykCodeSecurityIssuesScanEnable = true
-    target.iacScanEnabled = false
-
-    target.matchFilteringWithEnablement()
-
-    assertFalse(target.treeFiltering.ossResults)
-    assertTrue(target.treeFiltering.codeSecurityResults)
-    assertFalse(target.treeFiltering.iacResults)
-  }
-
-  @Test
   fun isDeltaFindingsEnabled_basedOnIssuesToDisplay() {
     val target = SnykApplicationSettingsStateService()
     assertFalse(target.isDeltaFindingsEnabled())

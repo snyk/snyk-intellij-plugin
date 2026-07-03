@@ -43,12 +43,6 @@
                  description="Use new HTML based config dialog served by language server"
                  restartRequired="false"
     />
-    <registryKey key="snyk.useHtmlTreeView"
-                 defaultValue="true"
-                 description="Use server-driven HTML tree view rendered via JCEF instead of native Swing tree"
-                  restartRequired="true"
-    />
-
     <notificationGroup id="Snyk" displayType="BALLOON" toolWindowId="Snyk"/>
 
     <codeInsight.codeVisionProvider implementation="snyk.common.codevision.LSCodeVisionProvider"
@@ -77,38 +71,12 @@
               text="Clean All Results"/>
     </group>
 
-    <group id="io.snyk.plugin.ViewActions">
-      <group id="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
-             class="io.snyk.plugin.ui.actions.SnykTreeScanTypeFilterActionGroup"
-             text="Filter Results by Scan Type"
-             popup="true"
-             description="Snyk: choose scan types to display in the tree"
-             icon="AllIcons.General.Filter"/>
-    </group>
-
     <group id="io.snyk.plugin.MiscActions">
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"
               text="Snyk Settings"/>
     </group>
 
-    <group id="io.snyk.plugin.TreeFilters.Severity">
-      <action id="io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction"
-              class="io.snyk.plugin.ui.actions.SnykTreeCriticalSeverityFilterAction"
-              description="Snyk: Show Critical severity issues"/>
-      <action id="io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction"
-              class="io.snyk.plugin.ui.actions.SnykTreeHighSeverityFilterAction"
-              text="High Severity"
-              description="Snyk: Show High severity issues"/>
-      <action id="io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction"
-              class="io.snyk.plugin.ui.actions.SnykTreeMediumSeverityFilterAction"
-              text="Medium Severity"
-              description="Snyk: Show Medium severity issues"/>
-      <action id="io.snyk.plugin.ui.actions.SnykTreeLowSeverityFilterAction"
-              class="io.snyk.plugin.ui.actions.SnykTreeLowSeverityFilterAction"
-              text="Low Severity"
-              description="Snyk: Show Low severity issues"/>
-    </group>
   </actions>
 
   <extensionPoints>

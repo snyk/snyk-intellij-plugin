@@ -15,7 +15,6 @@ import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
-import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
@@ -853,7 +852,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private fun publishConfigurationChanged() {
     if (project.isDisposed) return
     publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
-    publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
     publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
       enablementChanged()
     }

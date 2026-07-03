@@ -262,10 +262,6 @@ fun executePostApplySettings(project: Project) {
   val settings = pluginSettings()
 
   languageServerWrapper.refreshFeatureFlags()
-  // Sync the in-memory tree-filtering bitmap before pushing config so listeners triggered by
-  // updateConfiguration see consistent state.
-  settings.matchFilteringWithEnablement()
-  // updateConfiguration publishes SNYK_SETTINGS / SNYK_FILTERING / SNYK_ENABLEMENT.
   languageServerWrapper.updateConfiguration(true)
 }
 
@@ -312,8 +308,4 @@ fun handleDeltaFindingsChange(project: Project) {
   cache?.currentOSSResultsLS?.clear()
   cache?.currentSnykCodeResultsLS?.clear()
   cache?.currentIacResultsLS?.clear()
-  ApplicationManager.getApplication().invokeLater {
-    getSnykToolWindowPanel(project)?.getTree()?.isRootVisible =
-      pluginSettings().isDeltaFindingsEnabled()
-  }
 }
