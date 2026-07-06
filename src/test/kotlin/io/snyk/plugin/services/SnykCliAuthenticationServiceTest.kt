@@ -1,6 +1,5 @@
 package io.snyk.plugin.services
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.replaceService
 import io.mockk.every
@@ -13,11 +12,9 @@ import java.io.File
 import java.util.concurrent.CompletableFuture
 import org.junit.Test
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.trust.WorkspaceTrustService
 
 class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
 
-  private val workspaceTrustServiceMock = mockk<WorkspaceTrustService>(relaxed = true)
   private val languageServerWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
   private val taskQueueServiceMock = mockk<SnykTaskQueueService>(relaxed = true)
 
@@ -32,22 +29,10 @@ class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
       }
     every { getSnykTaskQueueService(any()) } returns taskQueueServiceMock
 
-    val application = ApplicationManager.getApplication()
-    application.replaceService(
-      WorkspaceTrustService::class.java,
-      workspaceTrustServiceMock,
-      application,
-    )
     project.replaceService(LanguageServerWrapper::class.java, languageServerWrapperMock, project)
   }
 
   override fun tearDown() {
-    val application = ApplicationManager.getApplication()
-    application.replaceService(
-      WorkspaceTrustService::class.java,
-      WorkspaceTrustService(),
-      application,
-    )
     project.replaceService(
       LanguageServerWrapper::class.java,
       LanguageServerWrapper(project),
