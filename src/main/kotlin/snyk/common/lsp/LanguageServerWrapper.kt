@@ -12,6 +12,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
@@ -358,7 +359,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       if (!root.isInLocalFileSystem) continue
       var add = true
       for (normalizedRoot in normalizedRoots) {
-        if (!root.path.startsWith(normalizedRoot.path)) continue
+        if (!VfsUtilCore.isAncestor(normalizedRoot, root, false)) continue
         add = false
         break
       }
