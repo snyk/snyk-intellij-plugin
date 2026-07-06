@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -85,9 +84,9 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
           },
         )
     } else {
-      val ideName = ApplicationNamesInfo.getInstance().fullProductName
       SnykBalloonNotificationHelper.showError(
-        "Failed to show HTML tree view. Please make sure you are running the latest version of $ideName.",
+        "Snyk results panel requires JCEF (Chromium Embedded Framework), which is not available " +
+          "in this environment. Please use a JetBrains Runtime (JBR) build of your IDE.",
         null,
       )
     }

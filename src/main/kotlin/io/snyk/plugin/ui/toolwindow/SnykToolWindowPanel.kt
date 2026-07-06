@@ -144,9 +144,6 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     clearDescriptionPanel()
   }
 
-  // ponytail: JCEF self-renders; kept as no-op for SnykApplicationActivationListener callers
-  fun refreshUI() = Unit
-
   fun cleanUiAndCaches(resetSummaryPanel: Boolean = true) {
     getSnykCachedResults(project)?.clearCaches()
     doCleanUi(true)
