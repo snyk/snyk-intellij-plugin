@@ -231,9 +231,12 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
   private fun noIssuesInAnyProductFound(): Boolean {
     val cache = getSnykCachedResults(project) ?: return true
-    return cache.currentOSSResultsLS.isEmpty() &&
-      cache.currentSnykCodeResultsLS.isEmpty() &&
-      cache.currentIacResultsLS.isEmpty()
+    // After a clean LS scan, maps have keys pointing to empty sets; check values too.
+    fun Map<*, Set<*>>.hasNoIssues() = isEmpty() || values.all { it.isEmpty() }
+    return cache.currentOSSResultsLS.hasNoIssues() &&
+      cache.currentSnykCodeResultsLS.hasNoIssues() &&
+      cache.currentIacResultsLS.hasNoIssues() &&
+      cache.currentSecretsResultsLS.hasNoIssues()
   }
 
   private fun updateSummaryPanel() {
