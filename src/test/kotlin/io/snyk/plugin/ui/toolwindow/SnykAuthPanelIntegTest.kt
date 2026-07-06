@@ -58,7 +58,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
         it.text == SnykAuthPanel.AUTHENTICATE_BUTTON_TEXT
       }
     assertNotNull(authenticateButton)
-    assertEquals("Authenticate", authenticateButton!!.text)
+    assertEquals(SnykAuthPanel.AUTHENTICATE_BUTTON_TEXT, authenticateButton!!.text)
   }
 
   @Test

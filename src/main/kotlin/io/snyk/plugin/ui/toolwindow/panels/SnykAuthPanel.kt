@@ -5,6 +5,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_EAST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_SOUTHWEST
@@ -13,7 +14,7 @@ import com.intellij.util.ui.UIUtil
 import icons.SnykIcons
 import io.snyk.plugin.events.SnykCliDownloadListener
 import io.snyk.plugin.events.SnykSettingsListener
-import io.snyk.plugin.getContentRootPaths
+import io.snyk.plugin.getContentRootVirtualFiles
 import io.snyk.plugin.getSnykCliAuthenticationService
 import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.getSnykToolWindowPanel
@@ -50,8 +51,9 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
 
                 jButton.setText("Trusting project paths...")
                 val trustService = service<WorkspaceTrustService>()
-                for (path in project.getContentRootPaths()) {
-                  trustService.addTrustedPath(path)
+                for (root in project.getContentRootVirtualFiles()) {
+                  if (!root.isInLocalFileSystem) continue
+                  root.path.toNioPathOrNull()?.normalize()?.let { trustService.addTrustedPath(it) }
                 }
 
                 publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) {
@@ -125,7 +127,7 @@ class SnykAuthPanel(val project: Project) : JPanel(), Disposable {
   override fun dispose() {}
 
   companion object {
-    const val AUTHENTICATE_BUTTON_TEXT = "Authenticate"
+    const val AUTHENTICATE_BUTTON_TEXT = "Trust project and authenticate"
     val messagePolicyAndTermsHtml =
       """
                 <br>
