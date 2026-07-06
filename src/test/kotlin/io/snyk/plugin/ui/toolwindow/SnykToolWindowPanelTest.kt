@@ -17,8 +17,8 @@ import snyk.UIComponentFinder
  * Panel-state switching tests for SnykToolWindowPanel. The native Swing tree was removed; these
  * tests cover displayEmptyDescription() logic only, not tree layout.
  *
- * Note: SnykToolWindowPanelIntegTest (HeavyPlatformTestCase, @Ignore("Too unstable in CI")) was
- * not restored — it was already skipped in CI before deletion.
+ * Note: SnykToolWindowPanelIntegTest (HeavyPlatformTestCase, @Ignore("Too unstable in CI")) was not
+ * restored — it was already skipped in CI before deletion.
  */
 class SnykToolWindowPanelTest : LightPlatform4TestCase() {
   private val settings = mockk<SnykApplicationSettingsStateService>(relaxed = true)
