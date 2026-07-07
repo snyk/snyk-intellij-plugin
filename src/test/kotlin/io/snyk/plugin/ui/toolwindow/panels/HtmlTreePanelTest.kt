@@ -256,8 +256,8 @@ class HtmlTreePanelTest : LightPlatform4TestCase() {
     Thread.sleep(500)
     PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
-    // only init HTML load, no extra loadHTML from null result
-    verify(exactly = 1) { mockJBCefBrowser.loadHTML(any<String>()) }
+    // null return → no loadHTML call at all (init HTML goes through JCEFUtils mock, not loadHTML)
+    verify(exactly = 0) { mockJBCefBrowser.loadHTML(any<String>()) }
   }
 
   @Test
