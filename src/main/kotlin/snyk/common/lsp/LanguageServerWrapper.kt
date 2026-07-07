@@ -13,8 +13,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
 import com.intellij.openapi.vfs.VfsUtilCore
-import com.intellij.openapi.vfs.toNioPathOrNull
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.toNioPathOrNull
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
 import io.snyk.plugin.events.SnykSettingsListener
