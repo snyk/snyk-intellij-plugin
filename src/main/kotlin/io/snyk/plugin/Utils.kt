@@ -50,11 +50,13 @@ import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
 import java.io.File
 import java.io.File.separator
 import java.io.FileNotFoundException
+import java.io.IOException
 import java.net.URI
 import java.net.URLDecoder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.attribute.PosixFilePermission
 import java.security.MessageDigest
 import java.util.Objects.nonNull
 import java.util.SortedSet
@@ -105,8 +107,30 @@ fun getCliFile() = File(pluginSettings().cliPath)
 fun isCliInstalled(): Boolean {
   if (ApplicationManager.getApplication().isUnitTestMode) return true
   val cliFile = getCliFile()
-  return cliFile.exists() && cliFile.canExecute()
+  // Both checks are intentional: File.canExecute() uses access(X_OK), which returns a FALSE
+  // POSITIVE on Docker Desktop's FUSE/virtiofs filesystem (reports a non-executable file as
+  // executable). Files.getPosixFilePermissions reads the actual permission bits and is
+  // authoritative.
+  // hasExecutableBit() is ANDed to VETO canExecute()'s false positive — && is correct, not ||.
+  return cliFile.exists() && cliFile.canExecute() && cliFile.hasExecutableBit()
 }
+
+private fun File.hasExecutableBit(): Boolean =
+  try {
+    val perms = Files.getPosixFilePermissions(toPath())
+    PosixFilePermission.OWNER_EXECUTE in perms ||
+      PosixFilePermission.GROUP_EXECUTE in perms ||
+      PosixFilePermission.OTHERS_EXECUTE in perms
+  } catch (_: UnsupportedOperationException) {
+    true // non-POSIX (Windows): defer to canExecute(), already AND-ed above
+  } catch (_: IOException) {
+    // Cannot confirm the execute bit: canExecute() is unreliable (false positive) on this FS,
+    // so we cannot trust it alone. Treat the CLI as not installed — a recoverable outcome
+    // (triggers re-download) rather than risking a stale or broken binary being used.
+    false
+  } catch (_: SecurityException) {
+    true // SecurityManager denied attribute read; exists() && canExecute() passed, so defer to them
+  }
 
 fun pluginSettings(): SnykApplicationSettingsStateService =
   ApplicationManager.getApplication().service()

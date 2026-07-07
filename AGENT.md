@@ -40,7 +40,7 @@ alwaysApply: true
 - I REPEAT: USE TDD
 - always write and update test cases before writing the implementation (Test Driven Development). iterate until they pass.
 - after changing .kt or .java files, run `./gradlew spotlessCheck ktlintCheck` to check formatting and lint. only continue, once they pass.
-- always verify if fixes worked by running `./gradlew test`
+- always verify if fixes worked by running the appropriate test command (see below)
 - do atomic commits, see committing section for details. ask before committing an atomic commit.
 - update current status in the implementation plan (in progress work, finished work, next steps)
 - Maintain existing code patterns and conventions
@@ -48,7 +48,13 @@ alwaysApply: true
 - Re-use mocks.
 - don't change code that does not need to be changed. only do the minimum changes.
 - don't comment what is done, instead comment why something is done if the code is not clear
-- use `./gradlew test` to run tests.
+- **Running tests** — `./gradlew test` everywhere (CI and in-container). No flags needed.
+  JaCoCo is the coverage backend unconditionally; it coexists with MockK's ByteBuddy
+  instrumentation without conflict (see ADR-2 in `docs/requirements/architecture.md`).
+  The ByteBuddy agent is preloaded automatically via `build.gradle.kts`.
+  In the Docker Desktop dev-container, set `JAVA_HOME` to your JDK before running:
+  `JAVA_HOME=/path/to/your/jdk ./gradlew test`
+  The pre-push hook resolves `JAVA_HOME` robustly — no manual configuration needed for hooks.
 - achieve 80% of test coverage. use `./gradlew koverXmlReport`
 - if files are not used or needed anymore, delete them instead of deprecating them.
 - ask the human, whether to maintain backwards compatibility or not
@@ -75,7 +81,7 @@ alwaysApply: true
 - NEVER amend commits, keep a history so we can revert atomic commits
 - NEVER NEVER NEVER skip the commit hooks
 - I REPEAT: NEVER USE --no-verify. DO NOT DO IT. NEVER. THIS IS CRITICAL, DO NOT DO IT.
-- run ./gradlew test before committing and fix the issues. don't run targeted tests, run the full suite (which may take >10min)
+- run the full test suite before committing and fix the issues (may take >10min). Use `./gradlew test` (no flags needed; see coding_guidelines above). Don't run targeted tests, run the full suite.
 - test failures prevent committing, regardless if caused by our changes. they MUST be fixed, even if they existed before. 
 - deactivating tests is NEVER ALLOWED.
 - check with Kover (`./gradlew koverXmlReport`) that coverage of changed files is 80%+
