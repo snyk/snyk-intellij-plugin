@@ -12,10 +12,11 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.toNioPathOrNull
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
-import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
@@ -92,7 +93,6 @@ import snyk.common.lsp.settings.LspConfigurationParam
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 private const val INITIALIZATION_TIMEOUT = 20L
 private const val PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS = 10L
@@ -346,50 +346,27 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   private fun processIsAlive() = ::process.isInitialized && process.isAlive
 
-  fun getWorkspaceFoldersFromRoots(
-    project: Project,
-    promptForTrust: Boolean = true,
-  ): Set<WorkspaceFolder> {
+  fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
     if (disposed || project.isDisposed) return emptySet()
-    val normalizedRoots = getTrustedContentRoots(project, promptForTrust)
+    val normalizedRoots = getContentRoots(project)
     return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
   }
 
-  private fun getTrustedContentRoots(
-    project: Project,
-    promptForTrust: Boolean,
-  ): MutableSet<VirtualFile> {
-    if (promptForTrust && !confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) {
-      return mutableSetOf()
-    }
-
+  private fun getContentRoots(project: Project): MutableSet<VirtualFile> {
     val contentRoots = project.getContentRootVirtualFiles()
-    val trustService = service<WorkspaceTrustService>()
     val normalizedRoots = mutableSetOf<VirtualFile>()
 
     for (root in contentRoots) {
-      val pathTrusted =
-        try {
-          trustService.isPathTrusted(root.toNioPath())
-        } catch (_: UnsupportedOperationException) {
-          // this must be temp filesystem so the path mapping doesn't work
-          continue
-        }
-
-      if (!pathTrusted) {
-        logger.debug("Path not trusted: ${root.path}")
-        continue
-      }
-
+      if (root.toNioPathOrNull() == null) continue
       var add = true
       for (normalizedRoot in normalizedRoots) {
-        if (!root.path.startsWith(normalizedRoot.path)) continue
+        if (!VfsUtilCore.isAncestor(normalizedRoot, root, false)) continue
         add = false
         break
       }
       if (add) normalizedRoots.add(root)
     }
-    logger.debug("Normalized content roots: $normalizedRoots")
+    logger.debug("Content roots: $normalizedRoots")
     return normalizedRoots
   }
 
@@ -514,10 +491,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   fun sendScanCommand() {
     if (notAuthenticated()) return
     DumbService.getInstance(project).runWhenSmart {
-      getTrustedContentRoots(project, promptForTrust = true).forEach {
-        addContentRoots(project)
-        sendFolderScanCommand(it.path, project)
-      }
+      val roots = getContentRoots(project)
+      if (roots.isNotEmpty()) addContentRoots(project)
+      roots.forEach { sendFolderScanCommand(it.path, project) }
     }
   }
 
@@ -673,7 +649,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.AUTHENTICATION_METHOD),
       )
 
-    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = true)
+    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = true, changed = true)
     settingsMap[LsSettingsKeys.AUTOMATIC_AUTHENTICATION] =
       ConfigSetting(value = false, changed = true)
 
@@ -878,7 +854,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private fun publishConfigurationChanged() {
     if (project.isDisposed) return
     publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
-    publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
     publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
       enablementChanged()
     }

@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.eclipse.lsp4j.services.LanguageServer
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 class SnykTaskQueueServiceTest : LightPlatformTestCase() {
 
@@ -37,14 +36,12 @@ class SnykTaskQueueServiceTest : LightPlatformTestCase() {
     resetSettings(project)
 
     mockkStatic("io.snyk.plugin.UtilsKt")
-    mockkStatic("snyk.trust.TrustedProjectsKt")
 
     downloaderServiceMock = spyk(SnykCliDownloaderService())
     every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
 
     every { getSnykCliDownloaderService() } returns downloaderServiceMock
     every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
-    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
 
     mockkObject(LanguageServerWrapper.Companion)
     val lswMock = mockk<LanguageServerWrapper>(relaxed = true)

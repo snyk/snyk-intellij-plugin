@@ -466,6 +466,7 @@ class LanguageServerWrapperTest {
     assertEquals(settings.organization, actual.settings?.get("organization")?.value)
     assertEquals(settings.isDeltaFindingsEnabled(), actual.settings?.get("scan_net_new")?.value)
     assertEquals(expectedTrustedFolders, actual.trustedFolders)
+    assertEquals(true, actual.settings?.get("trust_enabled")?.value)
   }
 
   @Test
@@ -573,14 +574,14 @@ class LanguageServerWrapperTest {
       every { virtualFile.path } returns pathString
       every { virtualFile.name } returns "snyk-test-workspace"
       every { virtualFile.isValid } returns true
+      every { virtualFile.isInLocalFileSystem } returns true
       every { virtualFile.toNioPath() } returns tempDir
 
       // Mock UtilsKt extension and project methods
       every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
       every { projectMock.basePath } returns pathString
-      every { trustServiceMock.isPathTrusted(tempDir) } returns true
 
-      val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+      val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock)
 
       assertEquals(1, workspaceFolders.size)
       val uri = workspaceFolders.first().uri

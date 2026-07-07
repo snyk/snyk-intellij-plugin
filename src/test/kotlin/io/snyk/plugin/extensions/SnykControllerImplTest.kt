@@ -14,7 +14,6 @@ import io.snyk.plugin.getSnykCliDownloaderService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.download.SnykCliDownloaderService
 import snyk.common.lsp.LanguageServerWrapper
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 class SnykControllerImplTest : LightPlatformTestCase() {
   private val languageServerWrapper = mockk<LanguageServerWrapper>()
@@ -24,12 +23,10 @@ class SnykControllerImplTest : LightPlatformTestCase() {
     super.setUp()
     unmockkAll()
     mockkStatic("io.snyk.plugin.UtilsKt")
-    mockkStatic("snyk.trust.TrustedProjectsKt")
     downloaderServiceMock = spyk(SnykCliDownloaderService())
     every { downloaderServiceMock.requestLatestReleasesInformation() } returns "testTag"
     every { getSnykCliDownloaderService() } returns downloaderServiceMock
     every { downloaderServiceMock.isFourDaysPassedSinceLastCheck() } returns false
-    every { confirmScanningAndSetWorkspaceTrustedStateIfNeeded(any()) } returns true
     mockkObject(LanguageServerWrapper.Companion)
     every { LanguageServerWrapper.getInstance(project) } returns languageServerWrapper
     every { languageServerWrapper.isInitialized } returns true
