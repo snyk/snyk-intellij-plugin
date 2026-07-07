@@ -2,6 +2,7 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.testFramework.LightPlatform4TestCase
 import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.replaceService
 import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
 import io.mockk.mockk
@@ -13,7 +14,9 @@ import io.snyk.plugin.resetSettings
 import io.snyk.plugin.ui.jcef.JCEFUtils
 import javax.swing.JLabel
 import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykTreeViewParams
+import snyk.common.lsp.commands.COMMAND_GET_TREE_VIEW
 
 class HtmlTreePanelTest : LightPlatform4TestCase() {
   private lateinit var cut: HtmlTreePanel
@@ -209,6 +212,52 @@ class HtmlTreePanelTest : LightPlatform4TestCase() {
     PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
 
     verify(exactly = 0) { mockJBCefBrowser.loadHTML(any<String>()) }
+  }
+
+  @Test
+  fun `should load tree HTML returned by getTreeView command on init`() {
+    val mockBrowserComponent = JLabel("mock-browser")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockBrowserComponent
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns mockJBCefBrowser
+
+    val mockLSW = mockk<LanguageServerWrapper>(relaxed = true)
+    project.replaceService(LanguageServerWrapper::class.java, mockLSW, testRootDisposable)
+    val treeHtml = "<html><head>\${ideStyle}</head><body>\${nonce}results</body></html>"
+    every { mockLSW.executeCommandWithArgs(COMMAND_GET_TREE_VIEW, emptyList()) } returns treeHtml
+
+    cut = HtmlTreePanel(project)
+
+    // Wait for runAsync to complete then flush EDT
+    Thread.sleep(500)
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    // init HTML load + tree HTML load = 2 calls; only the tree HTML must pass the placeholder check
+    verify {
+      mockJBCefBrowser.loadHTML(
+        match { html -> html.contains("results") && !html.contains("\${nonce}") }
+      )
+    }
+  }
+
+  @Test
+  fun `should not load tree HTML when getTreeView command returns null`() {
+    val mockBrowserComponent = JLabel("mock-browser")
+    val mockJBCefBrowser: JBCefBrowser = mockk(relaxed = true)
+    every { mockJBCefBrowser.component } returns mockBrowserComponent
+    every { JCEFUtils.getJBCefBrowserIfSupported(any<String>(), any()) } returns mockJBCefBrowser
+
+    val mockLSW = mockk<LanguageServerWrapper>(relaxed = true)
+    project.replaceService(LanguageServerWrapper::class.java, mockLSW, testRootDisposable)
+    every { mockLSW.executeCommandWithArgs(COMMAND_GET_TREE_VIEW, emptyList()) } returns null
+
+    cut = HtmlTreePanel(project)
+
+    Thread.sleep(500)
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    // only init HTML load, no extra loadHTML from null result
+    verify(exactly = 1) { mockJBCefBrowser.loadHTML(any<String>()) }
   }
 
   @Test

@@ -19,6 +19,7 @@ import javax.swing.JPanel
 import org.jetbrains.concurrency.runAsync
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykTreeViewParams
+import snyk.common.lsp.commands.COMMAND_GET_TREE_VIEW
 
 class HtmlTreePanel(project: Project) : JPanel(), Disposable {
   private val logger = logger<HtmlTreePanel>()
@@ -86,12 +87,22 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
           },
         )
       // Request the current tree in case a scan completed before this panel was opened.
+      // snyk.getTreeView returns the rendered HTML string directly.
       runAsync {
         try {
-          LanguageServerWrapper.getInstance(project)
-            .executeCommandWithArgs("snyk.getTreeView", emptyList())
+          val rawHtml =
+            LanguageServerWrapper.getInstance(project)
+              .executeCommandWithArgs(COMMAND_GET_TREE_VIEW, emptyList()) as? String
+          if (rawHtml != null && rawHtml != lastRawHtml) {
+            lastRawHtml = rawHtml
+            invokeLater {
+              if (!isDisposed) {
+                browser.loadHTML(getFormattedHtml(rawHtml))
+              }
+            }
+          }
         } catch (e: Exception) {
-          logger.debug("snyk.getTreeView on panel init failed: ${e.message}")
+          logger.debug("$COMMAND_GET_TREE_VIEW on panel init failed: ${e.message}")
         }
       }
     } else {
