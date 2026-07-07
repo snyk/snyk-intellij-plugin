@@ -9,7 +9,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.OnePixelSplitter
+import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykCliDownloadListener
+import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.events.SnykShowIssueDetailListener
 import io.snyk.plugin.events.SnykTaskQueueListener
@@ -37,7 +39,9 @@ import org.jetbrains.concurrency.runAsync
 import snyk.common.SnykError
 import snyk.common.lsp.AiFixParams
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
+import snyk.common.lsp.SnykScanParams
 
 /** Main panel for Snyk tool window. */
 @Service(Service.Level.PROJECT)
@@ -97,6 +101,31 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
         object : SnykTaskQueueListener {
           override fun stopped() =
             ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
+        },
+      )
+
+    project.messageBus
+      .connect(this)
+      .subscribe(
+        SnykScanListener.SNYK_SCAN_TOPIC,
+        object : SnykScanListener {
+          override fun scanningOssFinished() =
+            ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
+
+          override fun scanningSnykCodeFinished() =
+            ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
+
+          override fun scanningIacFinished() =
+            ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
+
+          override fun scanningError(snykScan: SnykScanParams) =
+            ApplicationManager.getApplication().invokeLater { displayEmptyDescription() }
+
+          override fun onPublishDiagnostics(
+            product: LsProduct,
+            snykFile: SnykFile,
+            issues: Set<ScanIssue>,
+          ) = Unit
         },
       )
 

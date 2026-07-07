@@ -8,6 +8,8 @@ import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_NORTHWEST
 import com.intellij.uiDesigner.core.GridConstraints.FILL_BOTH
 import io.snyk.plugin.events.SnykTreeViewListener
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
+import org.jetbrains.concurrency.runAsync
+import snyk.common.lsp.LanguageServerWrapper
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getStandardLayout
 import io.snyk.plugin.ui.jcef.JCEFUtils
@@ -83,6 +85,14 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
             }
           },
         )
+      // Request the current tree in case a scan completed before this panel was opened.
+      runAsync {
+        try {
+          LanguageServerWrapper.getInstance(project).executeCommandWithArgs("snyk.getTreeView", emptyList())
+        } catch (e: Exception) {
+          logger.debug("snyk.getTreeView on panel init failed: ${e.message}")
+        }
+      }
     } else {
       SnykBalloonNotificationHelper.showError(
         "Snyk results panel requires JCEF (Chromium Embedded Framework), which is not available " +
