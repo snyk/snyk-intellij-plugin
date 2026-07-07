@@ -17,6 +17,7 @@ import io.ktor.util.collections.ConcurrentMap
 import io.snyk.plugin.Severity
 import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
+import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import snyk.common.lsp.LsProduct
@@ -83,6 +84,13 @@ class SnykCachedResults(val project: Project) : Disposable {
             currentSnykCodeError = null
             currentIacError = null
             currentSecretsError = null
+            when (LsProduct.getFor(snykScan.product)) {
+              LsProduct.OpenSource -> currentOSSResultsLS.clear()
+              LsProduct.Code -> currentSnykCodeResultsLS.clear()
+              LsProduct.InfrastructureAsCode -> currentIacResultsLS.clear()
+              LsProduct.Secrets -> currentSecretsResultsLS.clear()
+              LsProduct.Unknown -> Unit
+            }
           }
 
           override fun scanningSnykCodeFinished() = Unit
@@ -118,6 +126,7 @@ class SnykCachedResults(val project: Project) : Disposable {
             if (snykScan.presentableError?.showNotification == true) {
               SnykBalloonNotificationHelper.showError(errorMessage, project)
             }
+            refreshAnnotationsForOpenFiles(project)
           }
 
           override fun onPublishDiagnostics(
