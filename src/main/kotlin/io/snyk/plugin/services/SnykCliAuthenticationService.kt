@@ -13,9 +13,12 @@ import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.scale.JBUIScale
 import com.intellij.util.PlatformIcons
+import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykTaskQueueService
+import io.snyk.plugin.getSnykToolWindowPanel
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.publishAsync
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.getReadOnlyClickableHtmlJEditorPane
 import java.awt.BorderLayout
@@ -34,6 +37,30 @@ import snyk.common.lsp.LanguageServerWrapper
 @Service(Service.Level.PROJECT)
 class SnykCliAuthenticationService(val project: Project) {
   private val logger = logger<SnykCliAuthenticationService>()
+
+  /**
+   * Log out of Snyk: clears the stored token both in the Language Server and locally, then returns
+   * the tool window to the authentication panel. Runs on a pooled thread so callers (actions, UI)
+   * do not block. Clearing the local token is what stops it being re-sent to the LS on the next
+   * workspace/didChangeConfiguration push.
+   */
+  fun logout() {
+    ApplicationManager.getApplication().executeOnPooledThread {
+      if (project.isDisposed) return@executeOnPooledThread
+      // Clear the local token before logging the LS out. If the LS pulls workspace/configuration
+      // while handling logout, getSettings() would otherwise hand the stale token straight back
+      // and re-authenticate the server we just logged out.
+      pluginSettings().token = ""
+      LanguageServerWrapper.getInstance(project).logout()
+
+      ApplicationManager.getApplication().invokeLater {
+        if (project.isDisposed) return@invokeLater
+        getSnykToolWindowPanel(project)?.cleanUiAndCaches()
+      }
+      // Re-render the tool window; with an empty token it falls back to the authentication panel.
+      publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
+    }
+  }
 
   fun authenticate() {
     fun showAuthDialog() {
