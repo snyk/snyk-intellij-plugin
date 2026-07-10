@@ -12,10 +12,11 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.util.io.toNioPathOrNull
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.openapi.vfs.toNioPathOrNull
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.snyk.plugin.events.SnykProductsOrSeverityListener
-import io.snyk.plugin.events.SnykResultsFilteringListener
 import io.snyk.plugin.events.SnykSettingsListener
 import io.snyk.plugin.fromUriToPath
 import io.snyk.plugin.getCliFile
@@ -25,14 +26,12 @@ import io.snyk.plugin.getWaitForResultsTimeout
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.publishAsync
 import io.snyk.plugin.runInBackground
-import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.settings.SnykProjectSettingsConfigurable
 import io.snyk.plugin.toLanguageServerURI
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.io.FileNotFoundException
 import java.nio.file.Paths
-import java.util.Collections
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
@@ -91,11 +90,9 @@ import snyk.common.lsp.settings.InitializationOptions
 import snyk.common.lsp.settings.LsFolderSettingsKeys
 import snyk.common.lsp.settings.LsSettingsKeys
 import snyk.common.lsp.settings.LspConfigurationParam
-import snyk.common.lsp.settings.LspFolderConfig
 import snyk.common.removeSuffix
 import snyk.pluginInfo
 import snyk.trust.WorkspaceTrustService
-import snyk.trust.confirmScanningAndSetWorkspaceTrustedStateIfNeeded
 
 private const val INITIALIZATION_TIMEOUT = 20L
 private const val PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS = 10L
@@ -137,7 +134,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   // internal for test set up
   internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> =
     ConcurrentHashMap.newKeySet()
-  private var folderConfigsRefreshed: MutableMap<String, Boolean> = ConcurrentHashMap()
   private var disposed = false
     get() {
       return ApplicationManager.getApplication().isDisposed || field
@@ -213,7 +209,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
 
     try {
-      this.folderConfigsRefreshed.clear()
       val snykLanguageClient = SnykLanguageClient(project, progressManager)
       languageClient = snykLanguageClient
       val logLevel =
@@ -405,50 +400,27 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   private fun processIsAlive() = ::process.isInitialized && process.isAlive
 
-  fun getWorkspaceFoldersFromRoots(
-    project: Project,
-    promptForTrust: Boolean = true,
-  ): Set<WorkspaceFolder> {
+  fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
     if (disposed || project.isDisposed) return emptySet()
-    val normalizedRoots = getTrustedContentRoots(project, promptForTrust)
+    val normalizedRoots = getContentRoots(project)
     return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
   }
 
-  private fun getTrustedContentRoots(
-    project: Project,
-    promptForTrust: Boolean,
-  ): MutableSet<VirtualFile> {
-    if (promptForTrust && !confirmScanningAndSetWorkspaceTrustedStateIfNeeded(project)) {
-      return mutableSetOf()
-    }
-
+  private fun getContentRoots(project: Project): MutableSet<VirtualFile> {
     val contentRoots = project.getContentRootVirtualFiles()
-    val trustService = service<WorkspaceTrustService>()
     val normalizedRoots = mutableSetOf<VirtualFile>()
 
     for (root in contentRoots) {
-      val pathTrusted =
-        try {
-          trustService.isPathTrusted(root.toNioPath())
-        } catch (_: UnsupportedOperationException) {
-          // this must be temp filesystem so the path mapping doesn't work
-          continue
-        }
-
-      if (!pathTrusted) {
-        logger.debug("Path not trusted: ${root.path}")
-        continue
-      }
-
+      if (root.toNioPathOrNull() == null) continue
       var add = true
       for (normalizedRoot in normalizedRoots) {
-        if (!root.path.startsWith(normalizedRoot.path)) continue
+        if (!VfsUtilCore.isAncestor(normalizedRoot, root, false)) continue
         add = false
         break
       }
       if (add) normalizedRoots.add(root)
     }
-    logger.debug("Normalized content roots: $normalizedRoots")
+    logger.debug("Content roots: $normalizedRoots")
     return normalizedRoots
   }
 
@@ -573,10 +545,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   fun sendScanCommand() {
     if (notAuthenticated()) return
     DumbService.getInstance(project).runWhenSmart {
-      getTrustedContentRoots(project, promptForTrust = true).forEach {
-        addContentRoots(project)
-        sendFolderScanCommand(it.path, project)
-      }
+      val roots = getContentRoots(project)
+      if (roots.isNotEmpty()) addContentRoots(project)
+      roots.forEach { sendFolderScanCommand(it.path, project) }
     }
   }
 
@@ -669,7 +640,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun getSettings(): LspConfigurationParam {
+  fun getSettings(
+    resets: Set<String> = pluginSettings().consumePendingResets()
+  ): LspConfigurationParam {
     val ps = pluginSettings()
 
     // Machine-scope settings (top-level settings map → user:global)
@@ -733,7 +706,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.AUTHENTICATION_METHOD),
       )
 
-    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = false, changed = true)
+    settingsMap[LsSettingsKeys.TRUST_ENABLED] = ConfigSetting(value = true, changed = true)
     settingsMap[LsSettingsKeys.AUTOMATIC_AUTHENTICATION] =
       ConfigSetting(value = false, changed = true)
 
@@ -750,6 +723,20 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       ConfigSetting(value = SystemUtils.JAVA_RUNTIME_NAME, changed = true)
     settingsMap[LsSettingsKeys.RUNTIME_VERSION] =
       ConfigSetting(value = SystemUtils.JAVA_VERSION, changed = true)
+
+    // Global (Project Defaults) advanced settings — always emit so the LS sees explicit clears
+    // (changed=true when user set or cleared, changed=false on startup with default blank value).
+    settingsMap[LsSettingsKeys.ADDITIONAL_PARAMETERS] =
+      ConfigSetting(
+        value = ps.globalAdditionalParameters,
+        changed = ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.ADDITIONAL_PARAMETERS),
+      )
+    settingsMap[LsSettingsKeys.ADDITIONAL_ENVIRONMENT] =
+      ConfigSetting(
+        value = ps.globalAdditionalEnvironment,
+        changed =
+          ps.lsUserAssertedChangeForLsConfigurationKey(LsSettingsKeys.ADDITIONAL_ENVIRONMENT),
+      )
 
     val trustService = service<WorkspaceTrustService>()
     val trustedPaths = trustService.settings.getTrustedPaths()
@@ -858,43 +845,27 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       )
 
     // Emit one-shot reset signals for keys the user cleared
-    val resets = ps.consumePendingResets()
     for (key in resets) {
       settingsMap[key] = ConfigSetting(value = null, changed = true)
     }
 
-    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org)
+    // Build folder configs (folder-specific settings only, e.g. base_branch, preferred_org). The
+    // stored LspFolderConfig already carries each setting's changed flag from where it was written
+    // (every writer sets changed=true via withSetting, incl. a reset's {value:null,changed:true}),
+    // so it is emitted verbatim — no changed-flag re-derivation, no separate reset queue.
+    val folderConfigSettings = service<FolderConfigSettings>()
     val folderConfigsList =
       configuredWorkspaceFolders
-        .filter {
-          val folderPath = it.uri.fromUriToPath().toString()
-          folderConfigsRefreshed[folderPath] == true
-        }
-        .map {
-          val folderPath = it.uri.fromUriToPath().toString()
-          val config = service<FolderConfigSettings>().getFolderConfig(folderPath)
-          applyPersistedFolderChangedFlags(config, ps)
-        }
+        .mapNotNull { folderConfigSettings.normalizePathOrNull(it.uri.fromUriToPath().toString()) }
+        // Emit every workspace folder unconditionally (mirrors VS Code). An unconfigured folder
+        // gets createEmpty defaults with changed=null, which snyk-ls ignores (it applies folder
+        // settings only when changed=true), so sending them is harmless. A reset writes
+        // {value:null, changed:true}, so it reaches the LS even before the LS has echoed this
+        // folder's config — no IDE-side refresh gate to drop it.
+        .map { folderConfigSettings.getFolderConfig(it) }
         .toList()
 
     return LspConfigurationParam(settings = settingsMap, folderConfigs = folderConfigsList)
-  }
-
-  private fun applyPersistedFolderChangedFlags(
-    config: LspFolderConfig,
-    ps: SnykApplicationSettingsStateService,
-  ): LspFolderConfig {
-    val settings = config.settings ?: return config
-    val enriched =
-      settings.mapValues { (key, setting) ->
-        val isUserOverride = ps.isExplicitlyChanged(config.folderPath, key)
-        if (isUserOverride != (setting.changed == true)) {
-          setting.copy(changed = isUserOverride)
-        } else {
-          setting
-        }
-      }
-    return config.copy(settings = enriched)
   }
 
   fun getInitializationOptions(): InitializationOptions {
@@ -902,7 +873,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     val trustService = service<WorkspaceTrustService>()
     val trustedFolders = trustService.settings.getTrustedPaths()
 
-    val param = getSettings()
+    val param = getSettings(pluginSettings().consumePendingResets())
 
     return InitializationOptions(
       settings = param.settings,
@@ -922,9 +893,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     )
   }
 
-  fun updateConfiguration(runScan: Boolean = false) {
+  fun updateConfiguration(runScan: Boolean = false, resets: Set<String> = emptySet()) {
     if (!ensureLanguageServerInitialized()) return
-    val params = DidChangeConfigurationParams(getSettings())
+    val params = DidChangeConfigurationParams(getSettings(resets))
     languageServer.workspaceService.didChangeConfiguration(params)
 
     // Notify listeners locally so the tool window tree, severity toolbar, and editor annotators
@@ -940,7 +911,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private fun publishConfigurationChanged() {
     if (project.isDisposed) return
     publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
-    publishAsync(project, SnykResultsFilteringListener.SNYK_FILTERING_TOPIC) { filtersChanged() }
     publishAsync(project, SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC) {
       enablementChanged()
     }
@@ -1197,14 +1167,6 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   override fun dispose() {
     disposed = true
     shutdown()
-  }
-
-  fun getFolderConfigsRefreshed(): Map<String?, Boolean?> =
-    Collections.unmodifiableMap(this.folderConfigsRefreshed)
-
-  fun updateFolderConfigRefresh(folderPath: String, refreshed: Boolean) {
-    val path = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-    this.folderConfigsRefreshed[path] = refreshed
   }
 
   companion object {

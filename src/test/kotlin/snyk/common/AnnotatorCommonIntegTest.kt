@@ -70,8 +70,7 @@ class AnnotatorCommonIntegTest : BasePlatformTestCase() {
 
   @Test
   fun `hasOnlyOneSeverityTreeFilterActive matches hasOnlyOneSeverityEnabled when no workspace folders`() {
-    every { languageServerWrapperMock.getWorkspaceFoldersFromRoots(any(), any()) } returns
-      emptySet()
+    every { languageServerWrapperMock.getWorkspaceFoldersFromRoots(any()) } returns emptySet()
     every { languageServerWrapperMock.configuredWorkspaceFolders } returns mutableSetOf()
 
     val ps = pluginSettings()
@@ -100,7 +99,7 @@ class AnnotatorCommonIntegTest : BasePlatformTestCase() {
         uri = normalizedBase.fromPathToUriString()
         name = "root"
       }
-    every { languageServerWrapperMock.getWorkspaceFoldersFromRoots(any(), any()) } returns
+    every { languageServerWrapperMock.getWorkspaceFoldersFromRoots(any()) } returns
       setOf(workspaceFolder)
     every { languageServerWrapperMock.configuredWorkspaceFolders } returns
       mutableSetOf(workspaceFolder)

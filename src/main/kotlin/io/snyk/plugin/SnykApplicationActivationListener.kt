@@ -37,14 +37,6 @@ class SnykApplicationActivationListener : ApplicationActivationListener {
       return
     }
 
-    val toolWindowPanel =
-      getSnykToolWindowPanel(project)
-        ?: run {
-          logger.debug("Snyk tool window panel not found, skipping")
-          return
-        }
-    logger.debug("Calling refreshUI on tool window panel")
-    toolWindowPanel.refreshUI()
-    logger.debug("refreshUI completed")
+    logger.debug("Snyk tool window activation check completed")
   }
 }

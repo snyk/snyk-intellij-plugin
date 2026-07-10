@@ -122,20 +122,6 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun matchFilteringWithEnablement_syncsProductsOnly() {
-    val target = SnykApplicationSettingsStateService()
-    target.ossScanEnable = false
-    target.snykCodeSecurityIssuesScanEnable = true
-    target.iacScanEnabled = false
-
-    target.matchFilteringWithEnablement()
-
-    assertFalse(target.treeFiltering.ossResults)
-    assertTrue(target.treeFiltering.codeSecurityResults)
-    assertFalse(target.treeFiltering.iacResults)
-  }
-
-  @Test
   fun isDeltaFindingsEnabled_basedOnIssuesToDisplay() {
     val target = SnykApplicationSettingsStateService()
     assertFalse(target.isDeltaFindingsEnabled())
@@ -218,42 +204,6 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun markAndCheckExplicitlyChanged_folder() {
-    val target = SnykApplicationSettingsStateService()
-    assertFalse(target.isExplicitlyChanged("/folder", "key"))
-
-    target.markExplicitlyChanged("/folder", "key")
-    assertTrue(target.isExplicitlyChanged("/folder", "key"))
-    assertFalse(target.isExplicitlyChanged("/folder", "other"))
-    assertFalse(target.isExplicitlyChanged("/other", "key"))
-  }
-
-  @Test
-  fun clearExplicitlyChanged_withFolderPath_removesKeyFromFolderSet() {
-    val target = SnykApplicationSettingsStateService()
-    target.markExplicitlyChanged("/folder", "key_a")
-    target.markExplicitlyChanged("/folder", "key_b")
-    assertTrue(target.isExplicitlyChanged("/folder", "key_a"))
-
-    target.clearExplicitlyChanged("/folder", "key_a")
-
-    assertFalse(target.isExplicitlyChanged("/folder", "key_a"))
-    assertTrue(target.isExplicitlyChanged("/folder", "key_b"))
-  }
-
-  @Test
-  fun clearExplicitlyChanged_withFolderPath_removesFolderEntryWhenLastKeyRemoved() {
-    val target = SnykApplicationSettingsStateService()
-    target.markExplicitlyChanged("/folder", "only_key")
-    assertTrue(target.isExplicitlyChanged("/folder", "only_key"))
-
-    target.clearExplicitlyChanged("/folder", "only_key")
-
-    assertFalse(target.isExplicitlyChanged("/folder", "only_key"))
-    assertTrue(target.folderExplicitChanges.isEmpty())
-  }
-
-  @Test
   fun addPendingReset_addsKeyToPendingSet() {
     val target = SnykApplicationSettingsStateService()
     target.addPendingReset("some_key")
@@ -276,6 +226,42 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun markExplicitlyChanged_cancelsPendingResetForSameKey() {
+    // Race fix (IDE-2149, mirrors vscode ExplicitLspConfigurationChangeTracker): a reset queues a
+    // pending null, then the user sets a concrete value -> markExplicitlyChanged must cancel the
+    // pending reset so consumePendingResets() no longer returns it (the concrete value wins).
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("some_key")
+
+    target.markExplicitlyChanged("some_key")
+
+    assertTrue(target.isExplicitlyChanged("some_key"))
+    assertFalse(target.consumePendingResets().contains("some_key"))
+  }
+
+  @Test
+  fun markExplicitlyChanged_forDifferentKey_doesNotCancelPendingReset() {
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("reset_key")
+
+    target.markExplicitlyChanged("other_key")
+
+    assertTrue(target.consumePendingResets().contains("reset_key"))
+  }
+
+  @Test
+  fun clearExplicitlyChanged_doesNotCancelPendingReset() {
+    // Only markExplicitlyChanged (a concrete user assertion) cancels a pending reset.
+    // clearExplicitlyChanged is part of the reset itself and must leave the pending reset intact.
+    val target = SnykApplicationSettingsStateService()
+    target.addPendingReset("reset_key")
+
+    target.clearExplicitlyChanged("reset_key")
+
+    assertTrue(target.consumePendingResets().contains("reset_key"))
+  }
+
+  @Test
   fun lsUserAssertedChangeForLsConfigurationKey_trueWhenProductDiffersFromDefaults() {
     val target = SnykApplicationSettingsStateService()
     target.iacScanEnabled = false
@@ -289,33 +275,49 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun initializeComponent_marksAllProductKeysExplicitWhenAnyProductDeviates() {
+  fun initializeComponent_marksOnlyDeviatingProductKeyExplicit() {
+    // Fix 2 (IDE-2149 PR review): per-product independent checks — only the deviating key is
+    // marked.
+    // Previously, the OR+markAll block marked all four keys when any one deviated, which would
+    // re-assert a reset OSS override if Secrets (or any other product) still deviates on startup.
     val target = SnykApplicationSettingsStateService()
-    target.iacScanEnabled = false
+    target.iacScanEnabled = false // only IaC deviates from its default (true)
 
     target.initializeComponent()
 
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
+  }
+
+  @Test
+  fun initializeComponent_marksAllDeviatingProductKeysExplicit() {
+    // When multiple products deviate, all of their keys are marked — but not the non-deviating
+    // ones.
+    val target = SnykApplicationSettingsStateService()
+    target.iacScanEnabled = false
+    target.secretsEnabled = true // secrets default is false, so this deviates
+
+    target.initializeComponent()
+
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
   }
 
   @Test
-  fun clearAllExplicitlyChanged_clearsBothGlobalAndFolderChanges() {
+  fun clearAllExplicitlyChanged_clearsGlobalChanges() {
     val target = SnykApplicationSettingsStateService()
-    target.markExplicitlyChanged("global_key")
-    target.markExplicitlyChanged("/folder_a", "folder_key")
-    target.markExplicitlyChanged("/folder_b", "another_key")
-    assertTrue(target.isExplicitlyChanged("global_key"))
-    assertTrue(target.isExplicitlyChanged("/folder_a", "folder_key"))
-    assertTrue(target.isExplicitlyChanged("/folder_b", "another_key"))
+    target.markExplicitlyChanged("global_key_a")
+    target.markExplicitlyChanged("global_key_b")
+    assertTrue(target.isExplicitlyChanged("global_key_a"))
+    assertTrue(target.isExplicitlyChanged("global_key_b"))
 
     target.clearAllExplicitlyChanged()
 
-    assertFalse(target.isExplicitlyChanged("global_key"))
-    assertFalse(target.isExplicitlyChanged("/folder_a", "folder_key"))
-    assertFalse(target.isExplicitlyChanged("/folder_b", "another_key"))
-    assertTrue(target.folderExplicitChanges.isEmpty())
+    assertFalse(target.isExplicitlyChanged("global_key_a"))
+    assertFalse(target.isExplicitlyChanged("global_key_b"))
   }
 }

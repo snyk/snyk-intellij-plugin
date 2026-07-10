@@ -23,6 +23,7 @@ import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
 import java.awt.BorderLayout
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -34,7 +35,44 @@ import snyk.common.lsp.LanguageServerWrapper
 class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), Disposable {
 
   companion object {
-    @Volatile var instance: HTMLSettingsPanel? = null
+    private val instances = ConcurrentHashMap<Project, HTMLSettingsPanel>()
+
+    /**
+     * Register [panel] as the active settings panel for [project]. Called from [init]. Visible to
+     * tests for mock setup; not part of the public consumer API.
+     */
+    internal fun registerForProject(project: Project, panel: HTMLSettingsPanel) {
+      instances[project] = panel
+    }
+
+    /**
+     * Remove the registration for [project]. Called from [dispose]; the atomic two-argument
+     * [remove] overload ensures a late-arriving [dispose] from a replaced instance cannot evict the
+     * newer registration. Visible to tests for mock teardown; not part of the public consumer API.
+     */
+    internal fun unregisterForProject(project: Project, panel: HTMLSettingsPanel) {
+      instances.remove(project, panel)
+    }
+
+    /** Returns the active [HTMLSettingsPanel] for [project], or null if none is open. */
+    fun getForProject(project: Project): HTMLSettingsPanel? = instances[project]
+
+    /**
+     * Pure comparison used for unit testing without JCEF: returns true when [rawHtml] themes to a
+     * value different from [currentThemedHtml].
+     */
+    internal fun themedHtmlDiffers(rawHtml: String, currentThemedHtml: String?): Boolean {
+      val themed = ThemeBasedStylingGenerator.replaceWithCustomStyles(rawHtml)
+      return themed != currentThemedHtml
+    }
+
+    /**
+     * Pure guard used for unit testing: returns true when the LS-triggered reload should be
+     * skipped. Reload is skipped when [isModified] is true (user has unsaved edits — data-loss
+     * guard) or when [lsHtml] is blank (empty LS response — robustness guard).
+     */
+    internal fun shouldSkipReload(lsHtml: String, isModified: Boolean): Boolean =
+      isModified || lsHtml.isBlank()
   }
 
   private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
@@ -45,6 +83,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
   private val modified = AtomicBoolean(false)
   private var currentNonce: String = JCEFUtils.generateNonce()
   @Volatile private var lastLsError: String? = null
+  @Volatile private var lastThemedHtml: String? = null
   private var saveConfigHandler: SaveConfigHandler? = null
   private val saveSemaphore = Semaphore(0)
 
@@ -52,7 +91,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     // Set panel background to match IDE theme (prevents white flash)
     background = UIUtil.getPanelBackground()
 
-    instance = this
+    registerForProject(project, this)
     Disposer.register(SnykPluginDisposable.getInstance(project), this)
     initializePanel()
     subscribeToCliDownloadEvents()
@@ -199,18 +238,17 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     }
   }
 
-  private fun initializeJcefBrowser(html: String) {
+  /**
+   * Shared browser initialisation body. Accepts already-themed HTML so the caller controls when
+   * theming occurs; [lastThemedHtml] is updated only after JCEF browser creation succeeds to avoid
+   * recording a stale value if browser initialisation throws.
+   */
+  private fun initializeJcefBrowserFromThemed(themedHtml: String) {
     removeAll()
-
-    // Dispose existing browser before creating new one
     disposeCurrentBrowser()
 
-    // Generate new nonce and replace placeholder in HTML
     currentNonce = JCEFUtils.generateNonce()
-    var processedHtml = html.replace("ideNonce", currentNonce)
-
-    // Apply theme styling via string replacement
-    processedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(processedHtml)
+    val processedHtml = themedHtml.replace("ideNonce", currentNonce)
 
     val (cefClient, browser) = JCEFUtils.createBrowser()
     jbCefClient = cefClient
@@ -240,13 +278,21 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     val loadHandler = handler.generateSaveConfigHandler(jcefBrowser, currentNonce)
     cefClient.addLoadHandler(loadHandler, jcefBrowser.cefBrowser)
 
-    // Add browser to panel first (it already has IDE background from createBrowser)
     add(jcefBrowser.component, BorderLayout.CENTER)
     revalidate()
     repaint()
 
-    // Then load the actual content
     jcefBrowser.loadHTML(processedHtml, jcefBrowser.cefBrowser.url ?: "about:blank")
+
+    // Record themed HTML after a successful initialisation so change-detection stays correct
+    // even if browser creation throws on a subsequent call.
+    lastThemedHtml = themedHtml
+  }
+
+  private fun initializeJcefBrowser(html: String) {
+    // Apply theme first (before nonce) so the themed content can be compared for change detection
+    val themedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
+    initializeJcefBrowserFromThemed(themedHtml)
   }
 
   private fun disposeCurrentBrowser() {
@@ -265,33 +311,50 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
 
         override fun cliDownloadFinished(succeed: Boolean) {
           if (succeed && isUsingFallback) {
-            refreshWithLsConfig()
+            reloadFromLanguageServer()
           }
         }
       },
     )
   }
 
-  private fun refreshWithLsConfig() {
+  fun reloadFromLanguageServer() {
     // Fetch LS HTML in background to avoid blocking EDT
     ApplicationManager.getApplication().executeOnPooledThread {
       if (isDisposed) return@executeOnPooledThread
       val lsWrapper = LanguageServerWrapper.getInstance(project)
-      val lsHtml = lsWrapper.getConfigHtml()
+      val lsHtml = lsWrapper.getConfigHtml() ?: return@executeOnPooledThread
 
-      if (lsHtml != null) {
-        ApplicationManager.getApplication()
-          .invokeLater(
-            {
-              if (isDisposed) return@invokeLater
-              isUsingFallback = false
-              initializeJcefBrowser(lsHtml)
-            },
-            ModalityState.any(),
-          )
-      }
+      // Skip reload when the user has unsaved edits (data-loss guard) or when the LS returned a
+      // blank string that would wipe the settings page (robustness guard).
+      if (shouldSkipReload(lsHtml, isModified())) return@executeOnPooledThread
+
+      // Theming and browser init both require the EDT (Swing/JBUI APIs). The pooled thread only
+      // fetches raw HTML from the LS; all UI work is dispatched via invokeLater.
+      ApplicationManager.getApplication()
+        .invokeLater(
+          {
+            if (isDisposed) return@invokeLater
+            // Re-check isModified on the EDT to close the TOCTOU window: user could have started
+            // editing between the pooled-thread guard check and this EDT dispatch.
+            if (isModified()) return@invokeLater
+            val themedHtml = ThemeBasedStylingGenerator.replaceWithCustomStyles(lsHtml)
+            // Skip re-render when themed content is unchanged (prevents flicker)
+            if (themedHtml == lastThemedHtml) return@invokeLater
+            isUsingFallback = false
+            initializeJcefBrowserFromThemed(themedHtml)
+          },
+          ModalityState.any(),
+        )
     }
   }
+
+  /**
+   * Returns true when the given raw HTML, after theme injection, differs from what the browser
+   * currently displays. Used to skip needless re-renders when the LS returns identical content.
+   */
+  internal fun themedHtmlDiffersFromCurrent(rawHtml: String): Boolean =
+    themedHtmlDiffers(rawHtml, lastThemedHtml)
 
   private fun showJcefNotSupportedMessage() {
     removeAll()
@@ -442,9 +505,8 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
 
   override fun dispose() {
     isDisposed = true
-    if (instance === this) {
-      instance = null
-    }
+    lastThemedHtml = null
+    unregisterForProject(project, this)
     disposeCurrentBrowser()
   }
 }

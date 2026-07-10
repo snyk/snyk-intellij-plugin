@@ -151,7 +151,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     val languageServerWrapper = LanguageServerWrapper.getInstance(project)
     val folderConfigs =
       languageServerWrapper
-        .getWorkspaceFoldersFromRoots(project, promptForTrust = false)
+        .getWorkspaceFoldersFromRoots(project)
         .asSequence()
         .filter { languageServerWrapper.configuredWorkspaceFolders.contains(it) }
         .map { it.uri.fromUriToPath().toString() }
@@ -262,10 +262,6 @@ fun executePostApplySettings(project: Project) {
   val settings = pluginSettings()
 
   languageServerWrapper.refreshFeatureFlags()
-  // Sync the in-memory tree-filtering bitmap before pushing config so listeners triggered by
-  // updateConfiguration see consistent state.
-  settings.matchFilteringWithEnablement()
-  // updateConfiguration publishes SNYK_SETTINGS / SNYK_FILTERING / SNYK_ENABLEMENT.
   languageServerWrapper.updateConfiguration(true)
 }
 
@@ -312,8 +308,4 @@ fun handleDeltaFindingsChange(project: Project) {
   cache?.currentOSSResultsLS?.clear()
   cache?.currentSnykCodeResultsLS?.clear()
   cache?.currentIacResultsLS?.clear()
-  ApplicationManager.getApplication().invokeLater {
-    getSnykToolWindowPanel(project)?.getTree()?.isRootVisible =
-      pluginSettings().isDeltaFindingsEnabled()
-  }
 }

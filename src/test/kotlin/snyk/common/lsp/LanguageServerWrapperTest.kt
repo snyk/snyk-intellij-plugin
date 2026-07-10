@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
+import junit.framework.TestCase.assertNull
 import junit.framework.TestCase.assertTrue
 import junit.framework.TestCase.fail
 import org.apache.commons.lang3.SystemUtils
@@ -74,6 +75,10 @@ class LanguageServerWrapperTest {
       snykPluginDisposable
     every { applicationMock.getService(FolderConfigSettings::class.java) } returns
       folderConfigSettingsMock
+    // getSettings normalizes each workspace-folder path via this; the real impl is identity for the
+    // already-normalized absolute paths these tests use, so pass the arg through (relaxed mock
+    // would otherwise return null and drop every folder config).
+    every { folderConfigSettingsMock.normalizePathOrNull(any()) } answers { firstArg() }
     every { applicationMock.isDisposed } returns false
 
     every { projectManagerMock.openProjects } returns arrayOf(projectMock)
@@ -461,6 +466,7 @@ class LanguageServerWrapperTest {
     assertEquals(settings.organization, actual.settings?.get("organization")?.value)
     assertEquals(settings.isDeltaFindingsEnabled(), actual.settings?.get("scan_net_new")?.value)
     assertEquals(expectedTrustedFolders, actual.trustedFolders)
+    assertEquals(true, actual.settings?.get("trust_enabled")?.value)
   }
 
   @Test
@@ -512,6 +518,53 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `getSettings emits one-shot null reset signal then does not re-push on reconnect`() {
+    // Simulate a global reset applied to persisted state: the override was cleared, the value
+    // restored to its plugin default, and a pending reset queued.
+    settings.iacScanEnabled = true // restored default; deviation check must be false
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    settings.addPendingReset(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+    // First getSettings (e.g. didChangeConfiguration after save) emits the one-shot reset.
+    val first = cut.getSettings()
+    val firstSetting = first.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    assertNull("reset must carry value=null", firstSetting?.value)
+    assertEquals("reset must carry changed=true", true, firstSetting?.changed)
+
+    // Second getSettings (simulating reconnect/initialize after the pending reset was consumed)
+    // must NOT re-assert the override: value is the default and changed must be false.
+    val second = cut.getSettings()
+    val secondSetting = second.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    assertEquals("default value re-published", true, secondSetting?.value)
+    assertEquals(
+      "no changed:true on reconnect -- override must stay cleared",
+      false,
+      secondSetting?.changed,
+    )
+  }
+
+  @Test
+  fun `getSettings emits changed true when field re-asserted to its default value after reset (ADR-1)`() {
+    // Regression for IDE-2149 / ADR-1: after a reset restored the field to its plugin default and
+    // the pending reset was consumed, the user re-enables the field to that SAME default value.
+    // SaveConfigHandler marks it explicitly changed, so getSettings must emit changed:true (with
+    // the
+    // real value, NOT value=null) even though the value equals the default. Previously the
+    // value-equals-default auto-clear made getSettings emit changed:false and the LS never
+    // relearned
+    // the override.
+    settings.iacScanEnabled =
+      true // equals the plugin default; deviation check alone would be false
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+    val actual = cut.getSettings()
+    val setting = actual.settings?.get(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+
+    assertEquals("re-asserted value must be published", true, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
   fun `getWorkspaceFoldersFromRoots should return URIs without trailing slashes`() {
     // Create a real temporary directory to test with
     val tempDir = java.nio.file.Files.createTempDirectory("snyk-test-workspace")
@@ -521,14 +574,14 @@ class LanguageServerWrapperTest {
       every { virtualFile.path } returns pathString
       every { virtualFile.name } returns "snyk-test-workspace"
       every { virtualFile.isValid } returns true
+      every { virtualFile.isInLocalFileSystem } returns true
       every { virtualFile.toNioPath() } returns tempDir
 
       // Mock UtilsKt extension and project methods
       every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
       every { projectMock.basePath } returns pathString
-      every { trustServiceMock.isPathTrusted(tempDir) } returns true
 
-      val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock, promptForTrust = false)
+      val workspaceFolders = cut.getWorkspaceFoldersFromRoots(projectMock)
 
       assertEquals(1, workspaceFolders.size)
       val uri = workspaceFolders.first().uri
@@ -617,7 +670,6 @@ class LanguageServerWrapperTest {
     every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
 
     cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "folder-toggles"))
-    cut.updateFolderConfigRefresh(normalizedPath, true)
 
     val result = cut.getSettings()
 
@@ -746,26 +798,6 @@ class LanguageServerWrapperTest {
     cut.updateWorkspaceFolders(setOf(WorkspaceFolder("file:///test", "test")), emptySet())
 
     verify(exactly = 0) { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
-  }
-
-  @Test
-  fun `getFolderConfigsRefreshed returns unmodifiable map`() {
-    val result = cut.getFolderConfigsRefreshed()
-    assertTrue(result.isEmpty())
-  }
-
-  @Test
-  fun `updateFolderConfigRefresh stores normalized path`() {
-    cut.updateFolderConfigRefresh("/test/folder", true)
-
-    val refreshed = cut.getFolderConfigsRefreshed()
-    assertTrue(refreshed.values.contains(true))
-    assertEquals(1, refreshed.size)
-
-    cut.updateFolderConfigRefresh("/test/folder", false)
-
-    val refreshed2 = cut.getFolderConfigsRefreshed()
-    assertTrue(refreshed2.values.contains(false))
   }
 
   @Test
@@ -918,43 +950,56 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `getSettings folder configs only include refreshed folders`() {
-    val folderPath = "/test/refreshed-folder"
-    val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
-    val folderUri = Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
+  fun `getSettings emits every configured folder including a reset never echoed by the LS`() {
+    // No IDE-side refresh gate (mirrors VS Code): every configured folder is emitted. A folder
+    // reset
+    // {value:null, changed:true} must reach the LS even though the LS never echoed this folder's
+    // config — the bug the old refresh-flag gate caused by dropping such folders.
+    val plainPath = "/test/plain-folder"
+    val plainNormalized = Paths.get(plainPath).normalize().toAbsolutePath().toString()
+    val plainUri = Paths.get(plainPath).toUri().toASCIIString().removeSuffix("/")
 
-    val unrefreshedPath = "/test/not-refreshed"
-    val unrefreshedNormalized = Paths.get(unrefreshedPath).normalize().toAbsolutePath().toString()
-    val unrefreshedUri = Paths.get(unrefreshedPath).toUri().toASCIIString().removeSuffix("/")
+    val resetPath = "/test/reset-folder"
+    val resetNormalized = Paths.get(resetPath).normalize().toAbsolutePath().toString()
+    val resetUri = Paths.get(resetPath).toUri().toASCIIString().removeSuffix("/")
 
-    val folderConfig =
+    val plainConfig =
       LspFolderConfig(
-        folderPath = normalizedPath,
+        folderPath = plainNormalized,
         settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main")),
       )
-    val unrefreshedConfig =
+    val resetConfig =
       LspFolderConfig(
-        folderPath = unrefreshedNormalized,
-        settings = mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "develop")),
+        folderPath = resetNormalized,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = null, changed = true)
+          ),
       )
 
-    every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
-    every { folderConfigSettingsMock.getFolderConfig(unrefreshedNormalized) } returns
-      unrefreshedConfig
+    every { folderConfigSettingsMock.getFolderConfig(plainNormalized) } returns plainConfig
+    every { folderConfigSettingsMock.getFolderConfig(resetNormalized) } returns resetConfig
 
-    cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "refreshed"))
-    cut.configuredWorkspaceFolders.add(WorkspaceFolder(unrefreshedUri, "not-refreshed"))
-
-    // Only mark one as refreshed
-    cut.updateFolderConfigRefresh(normalizedPath, true)
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(plainUri, "plain"))
+    cut.configuredWorkspaceFolders.add(WorkspaceFolder(resetUri, "reset"))
 
     val result = cut.getSettings()
 
-    assertEquals("Should only include the refreshed folder", 1, result.folderConfigs?.size)
+    assertEquals("Both configured folders are emitted", 2, result.folderConfigs?.size)
+    val emittedReset = result.folderConfigs?.first { it.folderPath == resetNormalized }
+    assertEquals(
+      "Reset folder ships value=null changed=true with no refresh flag set",
+      null,
+      emittedReset?.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.value,
+    )
+    assertEquals(true, emittedReset?.settings?.get(LsFolderSettingsKeys.SNYK_CODE_ENABLED)?.changed)
   }
 
   @Test
-  fun `getSettings applies persisted folder changed flags`() {
+  fun `getSettings emits the stored folder config changed flag verbatim`() {
+    // The stored LspFolderConfig is the single source of truth for the changed flag; getSettings
+    // emits it as-is with no re-derivation. A folder writer (e.g. the reset path) sets changed=true
+    // on the stored config and that flag reaches the LS unchanged.
     val folderPath = "/test/changed-folder"
     val normalizedPath = Paths.get(folderPath).normalize().toAbsolutePath().toString()
     val folderUri = Paths.get(folderPath).toUri().toASCIIString().removeSuffix("/")
@@ -963,22 +1008,18 @@ class LanguageServerWrapperTest {
       LspFolderConfig(
         folderPath = normalizedPath,
         settings =
-          mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main", changed = false)),
+          mapOf(LsFolderSettingsKeys.BASE_BRANCH to ConfigSetting(value = "main", changed = true)),
       )
 
     every { folderConfigSettingsMock.getFolderConfig(normalizedPath) } returns folderConfig
 
     cut.configuredWorkspaceFolders.add(WorkspaceFolder(folderUri, "changed"))
-    cut.updateFolderConfigRefresh(normalizedPath, true)
-
-    // Mark base_branch as explicitly changed for this folder
-    settings.markExplicitlyChanged(normalizedPath, LsFolderSettingsKeys.BASE_BRANCH)
 
     val result = cut.getSettings()
 
     val outputConfig = result.folderConfigs?.first()
     assertEquals(
-      "Changed flag should be overridden to true",
+      "Stored changed flag is emitted verbatim",
       true,
       outputConfig?.settings?.get(LsFolderSettingsKeys.BASE_BRANCH)?.changed,
     )
@@ -1100,6 +1141,44 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `getSettings emits a stored folder reset as value null changed true`() {
+    // A reset is written straight into the stored folder config as {value:null, changed:true}
+    // (SaveConfigHandler.applyFolderResetsFromRawJson, mirroring VS Code). getSettings emits the
+    // stored settings map verbatim, so the null reaches the LS as an Unset signal.
+    val folderPath = Paths.get("/work/reset-project").toAbsolutePath().toString()
+    val storedReset =
+      LspFolderConfig(
+        folderPath = folderPath,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.SNYK_CODE_ENABLED to ConfigSetting(value = null, changed = true),
+            LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = null, changed = true),
+            LsFolderSettingsKeys.SCAN_COMMAND_CONFIG to ConfigSetting(value = null, changed = true),
+          ),
+      )
+    every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns storedReset
+    cut.configuredWorkspaceFolders.add(
+      WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
+    )
+
+    val actual = cut.getSettings()
+
+    val folderConfig =
+      actual.folderConfigs?.firstOrNull { it.folderPath == folderPath }
+        ?: error("expected a folder config carrying the reset for $folderPath")
+    for (key in
+      listOf(
+        LsFolderSettingsKeys.SNYK_CODE_ENABLED,
+        LsFolderSettingsKeys.PREFERRED_ORG,
+        LsFolderSettingsKeys.SCAN_COMMAND_CONFIG,
+      )) {
+      val setting = folderConfig.settings?.get(key) ?: error("expected $key reset setting")
+      assertNull(setting.value)
+      assertEquals(true, setting.changed)
+    }
+  }
+
+  @Test
   fun `verifyCliProtocolVersion re-runs when the CLI binary at the same path changes`() {
     assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
     val scriptFile =
@@ -1124,6 +1203,270 @@ class LanguageServerWrapperTest {
     } finally {
       scriptFile.delete()
     }
+  }
+
+  @Test
+  fun `getSettings emits the authoritative value after the LS pushes it back over a reset`() {
+    // snyk-ls owns config: after the IDE sends the reset it Unsets the override, recomputes, and
+    // pushes the resolved config back via addAll (full overwrite of the stored LspFolderConfig).
+    // The transient null is replaced, so getSettings then emits the authoritative value.
+    val folderPath = Paths.get("/work/push-back-project").toAbsolutePath().toString()
+    cut.configuredWorkspaceFolders.add(
+      WorkspaceFolder(Paths.get(folderPath).toUri().toASCIIString(), folderPath)
+    )
+
+    // Before push-back: stored config carries the reset null.
+    every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns
+      LspFolderConfig(
+        folderPath = folderPath,
+        settings =
+          mapOf(LsFolderSettingsKeys.PREFERRED_ORG to ConfigSetting(value = null, changed = true)),
+      )
+    val beforeSetting =
+      cut
+        .getSettings()
+        .folderConfigs
+        ?.firstOrNull { it.folderPath == folderPath }
+        ?.settings
+        ?.get(LsFolderSettingsKeys.PREFERRED_ORG)
+        ?: error("expected reset setting before push-back")
+    assertNull(beforeSetting.value)
+
+    // After push-back: addAll overwrote the stored config with the resolved value.
+    every { folderConfigSettingsMock.getFolderConfig(folderPath) } returns
+      LspFolderConfig(
+        folderPath = folderPath,
+        settings =
+          mapOf(
+            LsFolderSettingsKeys.PREFERRED_ORG to
+              ConfigSetting(value = "resolved-org", changed = true)
+          ),
+      )
+    val afterSetting =
+      cut
+        .getSettings()
+        .folderConfigs
+        ?.firstOrNull { it.folderPath == folderPath }
+        ?.settings
+        ?.get(LsFolderSettingsKeys.PREFERRED_ORG) ?: error("expected setting after push-back")
+    assertEquals("resolved-org", afterSetting.value)
+  }
+
+  @Test
+  fun `getSettings emits global additional_parameters when set`() {
+    settings.globalAdditionalParameters = "--severity-threshold=high --debug"
+
+    val actual = cut.getSettings()
+
+    assertEquals(
+      "--severity-threshold=high --debug",
+      actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+    assertEquals(true, actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.changed)
+  }
+
+  @Test
+  fun `getSettings emits global additional_environment when set`() {
+    settings.globalAdditionalEnvironment = "VAR1=value1;VAR2=value2"
+
+    val actual = cut.getSettings()
+
+    assertEquals(
+      "VAR1=value1;VAR2=value2",
+      actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value,
+    )
+    assertEquals(true, actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.changed)
+  }
+
+  @Test
+  fun `getSettings emits global additional_parameters with changed=false when blank`() {
+    settings.globalAdditionalParameters = ""
+
+    val actual = cut.getSettings()
+
+    assertEquals("", actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.value)
+    assertEquals(false, actual.settings?.get(LsSettingsKeys.ADDITIONAL_PARAMETERS)?.changed)
+  }
+
+  @Test
+  fun `getSettings emits global additional_environment with changed=false when blank`() {
+    settings.globalAdditionalEnvironment = ""
+
+    val actual = cut.getSettings()
+
+    assertEquals("", actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.value)
+    assertEquals(false, actual.settings?.get(LsSettingsKeys.ADDITIONAL_ENVIRONMENT)?.changed)
+  }
+
+  // ── Scenario 2: ADR-1 re-assert for MULTIPLE key kinds ──────────────────────
+  // After a reset restored a field to its plugin default and the pending reset was consumed, the
+  // user re-asserts that SAME default value. SaveConfigHandler marks it explicitly changed, so
+  // getSettings must emit changed:true (with the real value, not null) even though the value equals
+  // the default. The single existing case covers snyk_code_enabled; this extends to a severity key,
+  // a scan-mode key, and risk_score_threshold. Mirrors vscode "does not skip when value equals
+  // schema default but differs from effective value".
+  @Test
+  fun `getSettings emits changed true when severity re-asserted to default after reset (ADR-1)`() {
+    settings.criticalSeverityEnabled = true // equals plugin default; deviation alone would be false
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    assertEquals("re-asserted value must be published", true, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
+  fun `getSettings emits changed true when scan_automatic re-asserted to default after reset (ADR-1)`() {
+    settings.scanOnSave = true // equals plugin default
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_AUTOMATIC)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_AUTOMATIC)
+
+    assertEquals("re-asserted value must be published", true, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
+  fun `getSettings emits changed true when scan_net_new re-asserted to default after reset (ADR-1)`() {
+    settings.setDeltaEnabled(false) // equals plugin default (false)
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)
+
+    assertEquals("re-asserted value must be published", false, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  @Test
+  fun `getSettings emits changed true when risk_score_threshold re-asserted after reset (ADR-1)`() {
+    // risk_score_threshold has no non-null default; any concrete re-assert must be changed:true.
+    settings.riskScoreThreshold = 700
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+
+    val setting = cut.getSettings().settings?.get(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+
+    assertEquals("re-asserted value must be published", 700, setting?.value)
+    assertEquals("re-asserted override must be changed:true", true, setting?.changed)
+  }
+
+  // ── Scenario 3: DEDUP / all-severity-together (emission side) ────────────────
+  @Test
+  fun `getSettings emits null reset for all four severity filters at once then default on reconnect`() {
+    // All four severity_filter_* reset together: restored to default (true), override cleared, all
+    // four pending resets queued (mirrors save-side dedup). getSettings emits {null,true} for each
+    // once, then {default,false} on the second call. Mirrors vscode "persists non-reset entries
+    // while resetting reset entries" applied to the four siblings sharing a reset.
+    val severityKeys =
+      listOf(
+        LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL,
+        LsFolderSettingsKeys.SEVERITY_FILTER_HIGH,
+        LsFolderSettingsKeys.SEVERITY_FILTER_MEDIUM,
+        LsFolderSettingsKeys.SEVERITY_FILTER_LOW,
+      )
+    // Post-reset state: defaults restored, overrides cleared, resets queued.
+    settings.criticalSeverityEnabled = true
+    settings.highSeverityEnabled = true
+    settings.mediumSeverityEnabled = true
+    settings.lowSeverityEnabled = true
+    for (key in severityKeys) {
+      settings.clearExplicitlyChanged(key)
+      settings.addPendingReset(key)
+    }
+
+    val first = cut.getSettings().settings!!
+    for (key in severityKeys) {
+      assertNull("$key: first emit must carry value=null", first[key]?.value)
+      assertEquals("$key: first emit must carry changed=true", true, first[key]?.changed)
+    }
+
+    val second = cut.getSettings().settings!!
+    for (key in severityKeys) {
+      assertEquals("$key: second emit re-publishes default value", true, second[key]?.value)
+      assertEquals("$key: second emit must be changed=false", false, second[key]?.changed)
+    }
+  }
+
+  // ── Scenario 4: MIXED batch (emission side) ─────────────────────────────────
+  @Test
+  fun `getSettings emits null for reset keys and concrete changed values for non-reset keys`() {
+    // Mixed post-save state: organization + risk_score_threshold were reset (default restored,
+    // override cleared, reset queued); snyk_iac_enabled + severity_filter_critical were concretely
+    // asserted (marked explicitly changed). One getSettings must emit {null,true} for the reset
+    // keys
+    // AND the concrete value with changed:true for the others; a second call clears the resets to
+    // changed:false. Mirrors vscode "persists non-reset entries while resetting reset entries".
+    settings.organization = null
+    settings.clearExplicitlyChanged(LsSettingsKeys.ORGANIZATION)
+    settings.addPendingReset(LsSettingsKeys.ORGANIZATION)
+    settings.riskScoreThreshold = null
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+    settings.addPendingReset(LsFolderSettingsKeys.RISK_SCORE_THRESHOLD)
+
+    settings.iacScanEnabled = false
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED)
+    settings.criticalSeverityEnabled = true
+    settings.markExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    val first = cut.getSettings().settings!!
+
+    // Reset keys emit {null, true}.
+    assertNull(first[LsSettingsKeys.ORGANIZATION]?.value)
+    assertEquals(true, first[LsSettingsKeys.ORGANIZATION]?.changed)
+    // risk_score_threshold only appears in the map because a reset was queued (value would be
+    // omitted when null otherwise).
+    assertNull(first[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.value)
+    assertEquals(true, first[LsFolderSettingsKeys.RISK_SCORE_THRESHOLD]?.changed)
+
+    // Concrete keys emit their value with changed:true.
+    assertEquals(false, first[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.value)
+    assertEquals(true, first[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.changed)
+    assertEquals(true, first[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.value)
+    assertEquals(true, first[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.changed)
+
+    // Second getSettings: reset for organization is consumed, so it now re-publishes the default
+    // (null organization is omitted from the map entirely) and no longer carries a null reset.
+    val second = cut.getSettings().settings!!
+    assertFalse(
+      "organization reset is one-shot; null org must be omitted on the second call",
+      second.containsKey(LsSettingsKeys.ORGANIZATION),
+    )
+    // Concrete keys remain changed:true across calls.
+    assertEquals(true, second[LsFolderSettingsKeys.SNYK_IAC_ENABLED]?.changed)
+    assertEquals(true, second[LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL]?.changed)
+  }
+
+  // ── Scenario 6: one-shot exactly-once for additional key types ───────────────
+  // The existing exactly-once cases cover ORGANIZATION and SNYK_IAC_ENABLED. Extend to a severity
+  // filter and a scan-mode key to guard the re-push/reconnect path for those types too.
+  @Test
+  fun `getSettings emits severity reset exactly once then default with changed false on reconnect`() {
+    settings.criticalSeverityEnabled = true // restored default; deviation check must be false
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    settings.addPendingReset(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+
+    val first = cut.getSettings().settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    assertNull("first emit must carry value=null", first?.value)
+    assertEquals("first emit must carry changed=true", true, first?.changed)
+
+    val second = cut.getSettings().settings?.get(LsFolderSettingsKeys.SEVERITY_FILTER_CRITICAL)
+    assertEquals("reconnect re-publishes default value", true, second?.value)
+    assertEquals("reconnect must not re-assert override", false, second?.changed)
+  }
+
+  @Test
+  fun `getSettings emits scan_net_new reset exactly once then default with changed false on reconnect`() {
+    settings.setDeltaEnabled(false) // restored default (false); deviation check must be false
+    settings.clearExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
+    settings.addPendingReset(LsFolderSettingsKeys.SCAN_NET_NEW)
+
+    val first = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)
+    assertNull("first emit must carry value=null", first?.value)
+    assertEquals("first emit must carry changed=true", true, first?.changed)
+
+    val second = cut.getSettings().settings?.get(LsFolderSettingsKeys.SCAN_NET_NEW)
+    assertEquals("reconnect re-publishes default value", false, second?.value)
+    assertEquals("reconnect must not re-assert override", false, second?.changed)
   }
 
   private data class VerifyProtocolScenario(

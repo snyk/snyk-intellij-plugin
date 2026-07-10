@@ -29,11 +29,8 @@ import javax.swing.JEditorPane
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import javax.swing.JTree
 import javax.swing.ScrollPaneConstants
 import javax.swing.text.html.HTMLDocument
-import javax.swing.tree.DefaultMutableTreeNode
-import javax.swing.tree.TreePath
 import org.apache.commons.text.StringEscapeUtils
 
 fun boldLabel(title: String): JLabel {
@@ -351,10 +348,3 @@ fun txtToHtml(s: String): String {
 
 fun getDisabledIcon(originalIcon: Icon?): Icon? =
   originalIcon?.let { IconLoader.getDisabledIcon(it) }
-
-fun expandTreeNodeRecursively(tree: JTree, node: DefaultMutableTreeNode) {
-  invokeLater { tree.expandPath(TreePath(node.path)) }
-  node.children().asSequence().forEach {
-    expandTreeNodeRecursively(tree, it as DefaultMutableTreeNode)
-  }
-}

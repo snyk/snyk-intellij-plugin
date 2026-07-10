@@ -1,7 +1,6 @@
 package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationNamesInfo
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
@@ -17,7 +16,10 @@ import io.snyk.plugin.ui.jcef.TreeViewBridgeHandler
 import io.snyk.plugin.ui.toolwindow.panels.PanelHTMLUtils.Companion.getFormattedHtml
 import java.awt.Dimension
 import javax.swing.JPanel
+import org.jetbrains.concurrency.runAsync
+import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.SnykTreeViewParams
+import snyk.common.lsp.commands.COMMAND_GET_TREE_VIEW
 
 class HtmlTreePanel(project: Project) : JPanel(), Disposable {
   private val logger = logger<HtmlTreePanel>()
@@ -84,10 +86,29 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
             }
           },
         )
+      // Request the current tree in case a scan completed before this panel was opened.
+      // snyk.getTreeView returns the rendered HTML string directly.
+      runAsync {
+        try {
+          val rawHtml =
+            LanguageServerWrapper.getInstance(project)
+              .executeCommandWithArgs(COMMAND_GET_TREE_VIEW, emptyList()) as? String
+          if (rawHtml != null && rawHtml != lastRawHtml) {
+            lastRawHtml = rawHtml
+            invokeLater {
+              if (!isDisposed) {
+                browser.loadHTML(getFormattedHtml(rawHtml))
+              }
+            }
+          }
+        } catch (e: Exception) {
+          logger.debug("$COMMAND_GET_TREE_VIEW on panel init failed: ${e.message}")
+        }
+      }
     } else {
-      val ideName = ApplicationNamesInfo.getInstance().fullProductName
       SnykBalloonNotificationHelper.showError(
-        "Failed to show HTML tree view. Please make sure you are running the latest version of $ideName.",
+        "Snyk results panel requires JCEF (Chromium Embedded Framework), which is not available " +
+          "in this environment. Please use a JetBrains Runtime (JBR) build of your IDE.",
         null,
       )
     }
