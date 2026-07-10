@@ -116,12 +116,10 @@ class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
 
     SnykCliAuthenticationService(project).logout()
 
-    // logout() runs on a pooled thread; verify with a timeout, then poll for the token clear.
+    // logout() runs on a pooled thread; verify with a timeout. The local token clear happens on
+    // the same thread strictly before the LS logout() call, so once MockK observes that call the
+    // token is guaranteed to already be cleared - no need to sleep-poll for it separately.
     verify(timeout = 2000) { languageServerWrapperMock.logout() }
-    val deadline = System.currentTimeMillis() + 2000
-    while (System.currentTimeMillis() < deadline && !pluginSettings().token.isNullOrEmpty()) {
-      Thread.sleep(20)
-    }
     assertTrue(pluginSettings().token.isNullOrEmpty())
   }
 

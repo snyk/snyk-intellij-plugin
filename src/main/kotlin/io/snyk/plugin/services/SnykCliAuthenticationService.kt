@@ -50,15 +50,20 @@ class SnykCliAuthenticationService(val project: Project) {
       // Clear the local token before logging the LS out. If the LS pulls workspace/configuration
       // while handling logout, getSettings() would otherwise hand the stale token straight back
       // and re-authenticate the server we just logged out.
-      pluginSettings().token = ""
-      LanguageServerWrapper.getInstance(project).logout()
-
-      ApplicationManager.getApplication().invokeLater {
-        if (project.isDisposed) return@invokeLater
-        getSnykToolWindowPanel(project)?.cleanUiAndCaches()
+      pluginSettings().token = null
+      try {
+        LanguageServerWrapper.getInstance(project).logout()
+      } finally {
+        // Always clean up locally, even if the LS logout call throws something other than the
+        // TimeoutException it already handles internally. Otherwise the previous user's cached
+        // scan findings would remain on screen after the token has been cleared.
+        ApplicationManager.getApplication().invokeLater {
+          if (project.isDisposed) return@invokeLater
+          getSnykToolWindowPanel(project)?.cleanUiAndCaches()
+        }
+        // Re-render the tool window; with an empty token it falls back to the authentication panel.
+        publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
       }
-      // Re-render the tool window; with an empty token it falls back to the authentication panel.
-      publishAsync(project, SnykSettingsListener.SNYK_SETTINGS_TOPIC) { settingsChanged() }
     }
   }
 
