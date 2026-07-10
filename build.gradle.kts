@@ -1,3 +1,4 @@
+import java.time.Duration
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
@@ -174,6 +175,15 @@ tasks {
     compilerOptions.jvmTarget.set(JvmTarget.fromTarget(jdk))
     compilerOptions.languageVersion.set(KotlinVersion.KOTLIN_2_1)
   }
+
+  // Wall-clock cap on the unit-test task only (deliberately NOT withType<Test>, so heavier Test
+  // tasks such as a future testIdeUi don't inherit this 25m limit sized for the unit suite). It
+  // bounds an *interruptible* hung test with a precise "test timed out" failure, locally and in
+  // CI, and sits above the ~16m worst-case real run so it won't false-trip. It is not a guarantee:
+  // a test wedged in uninterruptible native I/O can ignore the interrupt, so the GitHub Actions
+  // `test` job `timeout-minutes` (40m) in .github/workflows/build.yml is the real backstop. Keep
+  // this below that job timeout.
+  named<Test>("test") { timeout.set(Duration.ofMinutes(25)) }
 
   withType<Test> {
     maxHeapSize = "4096m"
