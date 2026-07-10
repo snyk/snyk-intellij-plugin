@@ -19,13 +19,9 @@ jobs:
     name: Test
     needs: gradleValidation
     runs-on: ${{ matrix.os }}
-    # Outer backstop and the real safety net: catches anything the Gradle test timeout can't
-    # (wedged daemon, hung compile/spotless/kover, hung setup, or a test wedged in uninterruptible
-    # native I/O that ignores Gradle's interrupt). An interruptible hung test is caught earlier and
-    # more precisely by the Gradle `test` task timeout (25m) in build.gradle.kts. No per-step
-    # timeout on the "Run Tests" step on purpose: a step timeout low enough to be useful would fire
-    # before Gradle's 25m test timeout (compile+lint run first), turning a precise "test timed out"
-    # failure into a generic "step timed out". Keep this comfortably above the 25m Gradle timeout.
+    # Real backstop for hangs the Gradle `test` task timeout (in build.gradle.kts) can't catch
+    # — wedged daemon, hung compile/lint, or uninterruptible native I/O. No per-step timeout: a
+    # step limit could fire before that task timeout and mask the precise failure.
     timeout-minutes: 40
     strategy:
       matrix:
@@ -52,9 +48,7 @@ jobs:
 
       - name: Run Tests
         # Linters listed before `check` so a formatting slip fails fast, before the long test task.
-        # An interruptible hung test is bounded by the Gradle `test` task timeout (25m) in
-        # build.gradle.kts; the job timeout (40m) is the real backstop. No step-level timeout — see
-        # the job comment.
+        # No per-step timeout — see the job `timeout-minutes` comment above for why.
         run: ./gradlew clean ktlintCheck spotlessCheck check
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
