@@ -47,7 +47,14 @@ repositories {
   maven { url = uri("https://cache-redirector.jetbrains.com/intellij-dependencies") }
 }
 
-configurations.all { resolutionStrategy.force("com.fasterxml.jackson.core:jackson-core:2.21.2") }
+configurations.all {
+  resolutionStrategy.force(
+    "com.fasterxml.jackson.core:jackson-core:2.21.4",
+    // jackson-databind@2.21.2 is pulled in transitively by the IntelliJ test-framework and is
+    // flagged for CVE-2026-54512/54513; 2.21.4 is the fix on the 2.21 line (patch-level, no API changes).
+    "com.fasterxml.jackson.core:jackson-databind:2.21.4",
+  )
+}
 
 dependencies {
   intellijPlatform {
@@ -58,7 +65,7 @@ dependencies {
     testFramework(TestFrameworkType.Platform)
   }
 
-  implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.1"))
+  implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.4"))
   implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
   implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
   implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.23.1")
