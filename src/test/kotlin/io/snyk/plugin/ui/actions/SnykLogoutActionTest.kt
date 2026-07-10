@@ -3,6 +3,7 @@ package io.snyk.plugin.ui.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.testFramework.LightPlatform4TestCase
+import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
@@ -90,5 +91,25 @@ class SnykLogoutActionTest : LightPlatform4TestCase() {
     // that call the token is guaranteed to already be cleared - no need to sleep-poll for it.
     verify(timeout = 2000) { languageServerWrapperMock.logout() }
     assertTrue(pluginSettings().token.isNullOrEmpty())
+  }
+
+  @Test
+  fun `actionPerformed cleans up the tool window UI and caches`() {
+    pluginSettings().token = "a-stale-token"
+    val cleanupLatch = java.util.concurrent.CountDownLatch(1)
+    every { toolWindowPanelMock.cleanUiAndCaches() } answers { cleanupLatch.countDown() }
+
+    action.actionPerformed(actionEvent())
+
+    // The cleanup runs inside invokeLater, scheduled from the pooled thread after the LS logout()
+    // call returns. Pump the EDT queue while waiting for the pooled thread to post and the
+    // invokeLater runnable to execute - race-free regardless of timing.
+    PlatformTestUtil.waitWithEventsDispatching(
+      "cleanUiAndCaches() was not called on logout",
+      { cleanupLatch.count == 0L },
+      5,
+    )
+
+    verify { toolWindowPanelMock.cleanUiAndCaches() }
   }
 }
