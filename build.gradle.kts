@@ -51,7 +51,8 @@ configurations.all {
   resolutionStrategy.force(
     "com.fasterxml.jackson.core:jackson-core:2.21.4",
     // jackson-databind@2.21.2 is pulled in transitively by the IntelliJ test-framework and is
-    // flagged for CVE-2026-54512/54513; 2.21.4 is the fix on the 2.21 line (patch-level, no API changes).
+    // flagged for CVE-2026-54512/54513; 2.21.4 is the fix on the 2.21 line (patch-level, no API
+    // changes).
     "com.fasterxml.jackson.core:jackson-databind:2.21.4",
   )
 }
