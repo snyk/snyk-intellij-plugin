@@ -60,6 +60,17 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
 
+      # Upload test results even when the job fails or times out, so a hung run (see the Gradle
+      # `test` timeout in build.gradle.kts) can be diagnosed: the last-written result file points at
+      # the test that was in flight when the suite wedged.
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: build/test-results/**/*.xml
+          if-no-files-found: ignore
+
       - name: Publish Kover Report
         uses: mi-kas/kover-report@v1
         with:
