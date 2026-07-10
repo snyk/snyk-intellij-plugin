@@ -160,7 +160,12 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   var isInitializing: ReentrantLock = ReentrantLock()
 
-  var isInitialized: Boolean = false
+  // Written by initialize() / the LS-termination listener on background threads and read
+  // cross-thread (e.g. the settings panel poll and the non-forcing getConfigHtml check) outside the
+  // isInitializing lock. @Volatile guarantees those readers observe the latest write rather than a
+  // stale cached value. Note: this only prevents torn/stale reads; it does not make check-then-act
+  // sequences atomic (that is what the isInitializing lock is for).
+  @Volatile var isInitialized: Boolean = false
 
   private fun initialize() {
     if (disposed) return
@@ -306,27 +311,35 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       }
     }
 
-    val (compatible, parsedVersion) = runCliProtocolVersionCheck(required)
+    val (compatible, parsedVersion) = runCliProtocolVersionCheck(currentPath, required)
     parsedVersion?.let { ps.currentLSProtocolVersion = it }
-    protocolVersionCheckCache =
-      ProtocolVersionCheckResult(
-        cliPath = currentPath,
-        lastModified = lastModified,
-        size = size,
-        requiredVersion = required,
-        compatible = compatible,
-        parsedVersion = parsedVersion,
-      )
+    // Only cache definitive results. A null parsedVersion indicates a failure that must be retried.
+    if (parsedVersion != null) {
+      protocolVersionCheckCache =
+        ProtocolVersionCheckResult(
+          cliPath = currentPath,
+          lastModified = lastModified,
+          size = size,
+          requiredVersion = required,
+          compatible = compatible,
+          parsedVersion = parsedVersion,
+        )
+    }
     return compatible
   }
 
   /**
-   * Runs the CLI protocol-version subprocess. Returns whether the CLI's protocol version matches
-   * [required], plus the parsed version (null when the check could not produce an integer).
+   * Runs the CLI protocol-version subprocess against [cliBinaryPath]. Returns whether the CLI's
+   * protocol version matches [required], plus the parsed version (null when the check could not
+   * produce an integer).
+   *
+   * The path is passed in (rather than re-resolved via the [cliPath] getter, which re-invokes
+   * getCliFile()) so the subprocess and the cache key in [verifyCliProtocolVersion] refer to the
+   * same path.
    */
-  private fun runCliProtocolVersionCheck(required: Int): Pair<Boolean, Int?> {
+  private fun runCliProtocolVersionCheck(cliBinaryPath: String, required: Int): Pair<Boolean, Int?> {
     return try {
-      val processBuilder = ProcessBuilder(cliPath, "language-server", "--protocolVersion")
+      val processBuilder = ProcessBuilder(cliBinaryPath, "language-server", "--protocolVersion")
       processBuilder.redirectErrorStream(false)
       val p = processBuilder.start()
       val output = p.inputStream.bufferedReader().use { it.readText() }
@@ -1150,8 +1163,22 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     return ""
   }
 
-  fun getConfigHtml(): String? {
-    if (!ensureLanguageServerInitialized()) return null
+  /**
+   * Returns the LS-rendered settings configuration HTML, or null if it cannot be produced.
+   *
+   * When [forceInitialization] is true (the default) a not-yet-initialized LS is initialized first,
+   * which re-runs the CLI protocol-version check (a subprocess that can block up to
+   * [PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS]). Callers on a UI-adjacent path (the settings panel)
+   * pass false so they can NEVER trigger that blocking init: if the LS is not already up they get
+   * null and can fall back immediately. This closes the TOCTOU window where [isInitialized] flips
+   * to false between the panel's own check and this call.
+   */
+  fun getConfigHtml(forceInitialization: Boolean = true): String? {
+    if (forceInitialization) {
+      if (!ensureLanguageServerInitialized()) return null
+    } else if (!isInitialized) {
+      return null
+    }
     try {
       val executeCommandParams = ExecuteCommandParams(COMMAND_WORKSPACE_CONFIGURATION, emptyList())
       val response = executeCommand(executeCommandParams, 10000)

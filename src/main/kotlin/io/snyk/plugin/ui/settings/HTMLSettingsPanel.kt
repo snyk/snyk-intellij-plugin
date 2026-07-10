@@ -73,6 +73,46 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
      */
     internal fun shouldSkipReload(lsHtml: String, isModified: Boolean): Boolean =
       isModified || lsHtml.isBlank()
+
+    /** Outcome of [resolveHtmlContent]: the HTML to render plus how it was obtained. */
+    internal data class HtmlContentResolution(
+      val html: String?,
+      val usingFallback: Boolean,
+      val lastError: String?,
+    )
+
+    /**
+     * Pure poll/decision logic behind [getHtmlContent], extracted so it can be unit-tested without a
+     * live JCEF browser. Only queries LS when it is initialized. IF we hit the timeout, return
+     * default HTML
+     */
+    internal fun resolveHtmlContent(
+      attempts: Int,
+      isInitialized: () -> Boolean,
+      fetchConfigHtml: () -> String?,
+      loadFallback: () -> String?,
+      onRetryWait: () -> Unit,
+    ): HtmlContentResolution {
+      var lastError: String? = null
+      repeat(attempts) { attempt ->
+        if (isInitialized()) {
+          try {
+            val lsHtml = fetchConfigHtml()
+            if (!lsHtml.isNullOrBlank()) {
+              return HtmlContentResolution(html = lsHtml, usingFallback = false, lastError = null)
+            }
+          } catch (e: Exception) {
+            lastError = e.message
+          }
+        }
+        if (attempt < attempts - 1) onRetryWait()
+      }
+      return HtmlContentResolution(
+        html = loadFallback(),
+        usingFallback = true,
+        lastError = lastError,
+      )
+    }
   }
 
   private val logger = Logger.getInstance(HTMLSettingsPanel::class.java)
@@ -159,42 +199,21 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
 
     // Try to get HTML from LS, with retries if LS is still initializing.
     // Only query the LS once it is already initialized; we must NOT force
-    // initialization from here. ensureLanguageServerInitialized() re-runs the
-    // CLI protocol-version check (a subprocess that blocks up to 10s) on every
-    // call while the LS is not up, so forcing it here would stall the settings
-    // dialog for ~30s before the fallback renders when the CLI is missing or
-    // incompatible. The fallback exists precisely for that case, so fall back
-    // quickly instead. A short poll still picks up an init that another thread
-    // (e.g. project startup) is completing in the background.
-    repeat(3) { attempt ->
-      if (lsWrapper.isInitialized) {
-        try {
-          val lsHtml = lsWrapper.getConfigHtml()
-          logger.debug(
-            "getHtmlContent attempt ${attempt + 1}: lsHtml is ${if (lsHtml != null) "available (${lsHtml.length} chars)" else "null"}"
-          )
-          if (lsHtml != null && lsHtml.isNotBlank()) {
-            isUsingFallback = false
-            return lsHtml
-          }
-        } catch (e: Exception) {
-          logger.warn("getHtmlContent attempt ${attempt + 1} failed", e)
-          lastLsError = e.message
-        }
-      } else {
-        logger.debug(
-          "getHtmlContent attempt ${attempt + 1}: language server not initialized, will use fallback if it does not come up"
-        )
-      }
-      // Wait a bit before retry if LS might still be initializing
-      if (attempt < 2) {
-        Thread.sleep(1000)
-      }
+    // initialization from here as the version check can block for up to 10s.
+    val resolution =
+      resolveHtmlContent(
+        attempts = 3,
+        isInitialized = { lsWrapper.isInitialized },
+        fetchConfigHtml = { lsWrapper.getConfigHtml(forceInitialization = false) },
+        loadFallback = { loadFallbackHtml() },
+        onRetryWait = { Thread.sleep(1000) },
+      )
+    isUsingFallback = resolution.usingFallback
+    lastLsError = resolution.lastError
+    if (resolution.usingFallback) {
+      logger.debug("getHtmlContent: using fallback HTML after retries")
     }
-
-    logger.debug("getHtmlContent: using fallback HTML after retries")
-    isUsingFallback = true
-    return loadFallbackHtml()
+    return resolution.html
   }
 
   private fun loadFallbackHtml(): String? {
@@ -323,7 +342,10 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     ApplicationManager.getApplication().executeOnPooledThread {
       if (isDisposed) return@executeOnPooledThread
       val lsWrapper = LanguageServerWrapper.getInstance(project)
-      val lsHtml = lsWrapper.getConfigHtml() ?: return@executeOnPooledThread
+      // Non-forcing: this reload is triggered by the LS pushing new config, so it is already up;
+      // never let the settings panel trigger a blocking (re-)initialization from a pooled thread.
+      val lsHtml =
+        lsWrapper.getConfigHtml(forceInitialization = false) ?: return@executeOnPooledThread
 
       // Skip reload when the user has unsaved edits (data-loss guard) or when the LS returned a
       // blank string that would wipe the settings page (robustness guard).

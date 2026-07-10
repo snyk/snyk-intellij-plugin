@@ -96,4 +96,89 @@ class HTMLSettingsPanelTest : BasePlatformTestCase() {
 
     assertTrue("shouldSkipReload should return true (skip) when lsHtml is empty", result)
   }
+
+  // Regression for the duplicate-timeout fix: while the LS never initializes, the panel must NOT
+  // query it (which would force the blocking CLI protocol-version check) and must fall back.
+  fun `test resolveHtmlContent never queries the LS and falls back when never initialized`() {
+    var fetchCalls = 0
+    val result =
+      HTMLSettingsPanel.resolveHtmlContent(
+        attempts = 3,
+        isInitialized = { false },
+        fetchConfigHtml = {
+          fetchCalls++
+          "<html>should never be returned</html>"
+        },
+        loadFallback = { "<html>fallback</html>" },
+        onRetryWait = {}, // no real sleeping in the test
+      )
+
+    assertEquals("LS must never be queried while uninitialized", 0, fetchCalls)
+    assertTrue("must fall back when the LS never comes up", result.usingFallback)
+    assertEquals("<html>fallback</html>", result.html)
+    assertNull("no LS error should be recorded when the LS was never queried", result.lastError)
+  }
+
+  // Happy path: LS initialized and returns non-blank HTML → return it, no fallback.
+  fun `test resolveHtmlContent returns LS html without fallback when initialized`() {
+    val result =
+      HTMLSettingsPanel.resolveHtmlContent(
+        attempts = 3,
+        isInitialized = { true },
+        fetchConfigHtml = { "<html>real config</html>" },
+        loadFallback = { "<html>fallback</html>" },
+        onRetryWait = {},
+      )
+
+    assertFalse("must not use fallback when the LS returned usable HTML", result.usingFallback)
+    assertEquals("<html>real config</html>", result.html)
+    assertNull(result.lastError)
+  }
+
+  // The poll picks up an init that completes on a later attempt (background init in progress).
+  fun `test resolveHtmlContent polls until the LS becomes initialized`() {
+    var initCalls = 0
+    val result =
+      HTMLSettingsPanel.resolveHtmlContent(
+        attempts = 3,
+        isInitialized = { initCalls++ >= 2 }, // false, false, then true on the 3rd check
+        fetchConfigHtml = { "<html>late config</html>" },
+        loadFallback = { "<html>fallback</html>" },
+        onRetryWait = {},
+      )
+
+    assertFalse(result.usingFallback)
+    assertEquals("<html>late config</html>", result.html)
+  }
+
+  // A blank LS response falls back rather than rendering an empty page.
+  fun `test resolveHtmlContent falls back when the LS returns blank html`() {
+    val result =
+      HTMLSettingsPanel.resolveHtmlContent(
+        attempts = 2,
+        isInitialized = { true },
+        fetchConfigHtml = { "   " },
+        loadFallback = { "<html>fallback</html>" },
+        onRetryWait = {},
+      )
+
+    assertTrue(result.usingFallback)
+    assertEquals("<html>fallback</html>", result.html)
+  }
+
+  // An exception from the LS is captured as lastError and the panel falls back.
+  fun `test resolveHtmlContent captures the LS error and falls back on exception`() {
+    val result =
+      HTMLSettingsPanel.resolveHtmlContent(
+        attempts = 1,
+        isInitialized = { true },
+        fetchConfigHtml = { throw RuntimeException("boom") },
+        loadFallback = { "<html>fallback</html>" },
+        onRetryWait = {},
+      )
+
+    assertTrue(result.usingFallback)
+    assertEquals("boom", result.lastError)
+    assertEquals("<html>fallback</html>", result.html)
+  }
 }
