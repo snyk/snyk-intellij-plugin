@@ -1164,7 +1164,10 @@ class LanguageServerWrapperTest {
       val first = cut.verifyCliProtocolVersion()
       val second = cut.verifyCliProtocolVersion()
 
-      assertFalse("transient failure must not be reported as a definitive incompatible verdict", first)
+      assertFalse(
+        "transient failure must not be reported as a definitive incompatible verdict",
+        first,
+      )
       assertTrue("second call must re-run the subprocess and self-heal", second)
       assertEquals(
         "transient failure must not be cached, so the subprocess re-runs on the next call",
@@ -1186,7 +1189,8 @@ class LanguageServerWrapperTest {
     val scriptFile =
       java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
         // A parsed-but-mismatched version is a definitive negative (parsedVersion != null), so it
-        // must be cached — unlike a transient failure. This is the boundary of the sticky-cache fix.
+        // must be cached — unlike a transient failure. This is the boundary of the sticky-cache
+        // fix.
         writeText(
           "#!/bin/sh\necho run >> '${invocationLog.absolutePath}'\necho $mismatchedVersion\n"
         )

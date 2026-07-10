@@ -337,7 +337,10 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
    * getCliFile()) so the subprocess and the cache key in [verifyCliProtocolVersion] refer to the
    * same path.
    */
-  private fun runCliProtocolVersionCheck(cliBinaryPath: String, required: Int): Pair<Boolean, Int?> {
+  private fun runCliProtocolVersionCheck(
+    cliBinaryPath: String,
+    required: Int,
+  ): Pair<Boolean, Int?> {
     return try {
       val processBuilder = ProcessBuilder(cliBinaryPath, "language-server", "--protocolVersion")
       processBuilder.redirectErrorStream(false)

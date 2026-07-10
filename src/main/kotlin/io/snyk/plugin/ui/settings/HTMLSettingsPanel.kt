@@ -82,8 +82,8 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     )
 
     /**
-     * Pure poll/decision logic behind [getHtmlContent], extracted so it can be unit-tested without a
-     * live JCEF browser. Only queries LS when it is initialized. IF we hit the timeout, return
+     * Pure poll/decision logic behind [getHtmlContent], extracted so it can be unit-tested without
+     * a live JCEF browser. Only queries LS when it is initialized. IF we hit the timeout, return
      * default HTML
      */
     internal fun resolveHtmlContent(
