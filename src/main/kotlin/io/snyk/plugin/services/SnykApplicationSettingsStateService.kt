@@ -59,11 +59,6 @@ class SnykApplicationSettingsStateService :
   // ([snyk.common.lsp.settings.withSetting]), which getSettings emits verbatim.
   var explicitChanges: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-  // One-shot upgrade marker for the per-key `changed` LS schema (introduced after 2.21.0).
-  // Persisted; defaults to false so it fires once on the first launch after upgrading from a
-  // pre-[explicitChanges] version. See [migrateProductEnablementToExplicitChanges].
-  var explicitProductEnablementMigrated: Boolean = false
-
   // Global keys pending a reset signal ({ value: null, changed: true }) to the LS.
   // Transient (not persisted): enqueued by the JCEF query thread, consumed once by every
   // getSettings() across the multi-project fan-out. Concurrent-set backed so all access is
@@ -256,7 +251,12 @@ class SnykApplicationSettingsStateService :
 
   // products enablement store
   var ossScanEnable: Boolean = true
-  var snykCodeSecurityIssuesScanEnable: Boolean = true
+  // Defaults to false to match the Language Server's own flagset default for Snyk Code
+  // (register_configurations.go: SettingSnykCodeEnabled = false). Keeping this in sync with the LS
+  // default means an at-default value sent with changed=false resolves back to the same state, so a
+  // user's enabled preference (which now deviates from the default -> changed=true) survives upgrade
+  // without a bespoke migration. OSS/IaC (true) and Secrets (false) already match the LS defaults.
+  var snykCodeSecurityIssuesScanEnable: Boolean = false
   var iacScanEnabled: Boolean = true
   var secretsEnabled: Boolean = false
 
@@ -318,37 +318,7 @@ class SnykApplicationSettingsStateService :
       useTokenAuthentication = false
     }
 
-    migrateProductEnablementToExplicitChanges()
-  }
-
-  /**
-   * One-time upgrade migration for the per-key `changed` LS schema (introduced after 2.21.0).
-   *
-   * Plugin versions <= 2.21.0 pushed every product-enablement value to the LS as an
-   * always-authoritative value (e.g. `activateSnykCodeSecurity="true"`). The new schema only honors
-   * a user:global value when its [ConfigSetting.changed] flag is true; otherwise the LS defers to
-   * org/LDX-Sync/default. So on the first launch after upgrading we must carry the persisted
-   * product toggles forward as explicit user intent — otherwise a pre-existing "enabled" preference
-   * that happens to equal the new plugin default is silently dropped and the org "Disabled at Snyk"
-   * state wins.
-   *
-   * Fresh installs ([pluginFirstRun]) must NOT be seeded: with no prior user preference they must
-   * defer to org governance. After the one-time migration, steady-state startups fall back to
-   * [reconcileProductExplicitKeysIfDeviatingFromDefaults] so a product reset isn't re-asserted.
-   */
-  private fun migrateProductEnablementToExplicitChanges() {
-    val isLegacyUpgrade = !explicitProductEnablementMigrated && !pluginFirstRun
-    if (isLegacyUpgrade) {
-      // Covers Code/OSS/IaC/Secrets — every toggle that shares the default-equality path.
-      markAllProductEnablementKeysExplicit()
-    } else {
-      reconcileProductExplicitKeysIfDeviatingFromDefaults()
-    }
-    // Flip the one-shot only AFTER the keys are marked, so "migrated" always implies "work done".
-    // The flag and [explicitChanges] persist together in the same settings component, so a crash
-    // before persistence loses both and re-runs the migration next launch — never a flag set with
-    // keys unmarked.
-    explicitProductEnablementMigrated = true
+    reconcileProductExplicitKeysIfDeviatingFromDefaults()
   }
 
   fun isDeltaFindingsEnabled(): Boolean = (issuesToDisplay == DISPLAY_NEW_ISSUES)
@@ -421,7 +391,9 @@ class SnykApplicationSettingsStateService :
     const val DISPLAY_NEW_ISSUES = "Net new issues"
 
     private const val PLUGIN_DEFAULT_OSS_SCAN_ENABLE = true
-    private const val PLUGIN_DEFAULT_CODE_SCAN_ENABLE = true
+    // false to match the Language Server flagset default for Snyk Code — see the field declaration
+    // [snykCodeSecurityIssuesScanEnable] for why the plugin default is kept in sync with the LS.
+    private const val PLUGIN_DEFAULT_CODE_SCAN_ENABLE = false
     private const val PLUGIN_DEFAULT_IAC_SCAN_ENABLE = true
     private const val PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE = false
     private const val PLUGIN_DEFAULT_OPEN_ISSUES_ENABLED = true

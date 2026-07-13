@@ -308,57 +308,45 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
-  fun initializeComponent_legacyUpgrade_marksAllProductKeysExplicitEvenWhenAtDefault() {
-    // Bug repro: upgrading from a pre-explicit-change version (<= 2.21.0) must carry the persisted
-    // product toggles forward as user intent, even when a toggle equals the new plugin default
-    // (e.g. Snyk Code enabled == default true). pluginFirstRun == false marks this as an upgrade,
-    // not a fresh install; explicitProductEnablementMigrated == false means the one-shot hasn't
-    // run.
+  fun snykCodeDefault_matchesLanguageServerDefault_false() {
+    // The plugin's Snyk Code default is kept in sync with the Language Server flagset default
+    // (false). This alignment is what lets an at-default value sent with changed=false resolve back
+    // to the same state, so no bespoke upgrade migration is needed. See the field declaration.
     val target = SnykApplicationSettingsStateService()
-    target.pluginFirstRun = false
-    target.explicitProductEnablementMigrated = false
-    // All products left at their plugin defaults — this is exactly the case that used to be lost.
-    target.snykCodeSecurityIssuesScanEnable = true // == PLUGIN_DEFAULT_CODE_SCAN_ENABLE
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+  }
+
+  @Test
+  fun initializeComponent_enabledCodeSurvivesUpgrade_becauseItDeviatesFromDefault() {
+    // Upgrade repro: a user who had Snyk Code enabled in the old plugin has snykCode... == true
+    // persisted. Because the plugin default is now false, that value deviates from the default, so
+    // it is emitted with changed=true and the LS honors it — the preference survives the upgrade
+    // without any migration.
+    val target = SnykApplicationSettingsStateService()
+    target.snykCodeSecurityIssuesScanEnable = true // persisted "enabled" from the old plugin
 
     target.initializeComponent()
 
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
-    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
-    assertTrue(target.explicitProductEnablementMigrated)
+    assertTrue(
+      target.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    )
   }
 
   @Test
-  fun initializeComponent_freshInstall_doesNotSeedProductKeysAtDefault() {
-    // Fresh install (pluginFirstRun == true): no prior preference to preserve, so products at their
-    // defaults must NOT be marked explicit — org governance ("Disabled at Snyk") must still apply.
+  fun initializeComponent_codeAtDefault_defersToLanguageServer() {
+    // A fresh install (or a user who had Code disabled, which now equals the default) leaves Code at
+    // the default false. It must NOT be marked explicit, so it is sent changed=false and the LS
+    // resolves it (org governance / its own default). Both cases resolve back to false — no
+    // preference is lost.
     val target = SnykApplicationSettingsStateService()
-    assertTrue(target.pluginFirstRun) // default for a genuinely new install
-    assertFalse(target.explicitProductEnablementMigrated)
 
     target.initializeComponent()
 
     assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_OSS_ENABLED))
-    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
-    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
-    // The one-shot must be marked done so it never fires later for this install.
-    assertTrue(target.explicitProductEnablementMigrated)
-  }
-
-  @Test
-  fun initializeComponent_afterMigration_doesNotReAssertResetKeys() {
-    // Steady state: once migrated, a product reset back to default (cleared from explicitChanges)
-    // must not be re-asserted on the next startup — only still-deviating keys get re-marked.
-    val target = SnykApplicationSettingsStateService()
-    target.pluginFirstRun = false
-    target.explicitProductEnablementMigrated = true
-    target.snykCodeSecurityIssuesScanEnable = true // reset to default, no longer explicit
-
-    target.initializeComponent()
-
-    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertFalse(
+      target.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    )
   }
 
   @Test
