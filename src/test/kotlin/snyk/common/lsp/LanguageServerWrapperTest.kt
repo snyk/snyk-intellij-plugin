@@ -1117,6 +1117,127 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `verifyCliProtocolVersion caches result and does not re-run subprocess for unchanged CLI`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val invocationLog =
+      java.io.File.createTempFile("snyk-cli-invocations-", ".log").apply { deleteOnExit() }
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        // Records each invocation in a separate file so the script's own size/mtime stay unchanged.
+        writeText(
+          "#!/bin/sh\necho run >> '${invocationLog.absolutePath}'\necho ${settings.requiredLsProtocolVersion}\n"
+        )
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      val first = cut.verifyCliProtocolVersion()
+      val second = cut.verifyCliProtocolVersion()
+
+      assertTrue(first)
+      assertTrue(second)
+      assertEquals(
+        "subprocess should run once and the result be served from cache afterwards",
+        1,
+        invocationLog.readLines().count { it.isNotBlank() },
+      )
+    } finally {
+      scriptFile.delete()
+      invocationLog.delete()
+    }
+  }
+
+  @Test
+  fun `verifyCliProtocolVersion does not cache a transient failure and re-runs on the next call`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val invocationLog =
+      java.io.File.createTempFile("snyk-cli-invocations-", ".log").apply { deleteOnExit() }
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        // First invocation exits non-zero (a transient failure: parsedVersion == null); the second
+        // succeeds. A sticky cache would serve the first failure and never re-run the subprocess.
+        writeText(
+          "#!/bin/sh\n" +
+            "echo run >> '${invocationLog.absolutePath}'\n" +
+            "if [ \"\$(wc -l < '${invocationLog.absolutePath}')\" -eq 1 ]; then exit 1; fi\n" +
+            "echo ${settings.requiredLsProtocolVersion}\n"
+        )
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      val first = cut.verifyCliProtocolVersion()
+      val second = cut.verifyCliProtocolVersion()
+
+      assertFalse(
+        "transient failure must not be reported as a definitive incompatible verdict",
+        first,
+      )
+      assertTrue("second call must re-run the subprocess and self-heal", second)
+      assertEquals(
+        "transient failure must not be cached, so the subprocess re-runs on the next call",
+        2,
+        invocationLog.readLines().count { it.isNotBlank() },
+      )
+    } finally {
+      scriptFile.delete()
+      invocationLog.delete()
+    }
+  }
+
+  @Test
+  fun `verifyCliProtocolVersion caches a deterministic version mismatch and does not re-run`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val invocationLog =
+      java.io.File.createTempFile("snyk-cli-invocations-", ".log").apply { deleteOnExit() }
+    val mismatchedVersion = settings.requiredLsProtocolVersion + 1
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        // A parsed-but-mismatched version is a definitive negative (parsedVersion != null), so it
+        // must be cached — unlike a transient failure. This is the boundary of the sticky-cache
+        // fix.
+        writeText(
+          "#!/bin/sh\necho run >> '${invocationLog.absolutePath}'\necho $mismatchedVersion\n"
+        )
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      val first = cut.verifyCliProtocolVersion()
+      val second = cut.verifyCliProtocolVersion()
+
+      assertFalse("a version mismatch must report incompatible", first)
+      assertFalse("the cached mismatch must still report incompatible", second)
+      assertEquals(
+        "a deterministic mismatch must be cached, so the subprocess runs only once",
+        1,
+        invocationLog.readLines().count { it.isNotBlank() },
+      )
+    } finally {
+      scriptFile.delete()
+      invocationLog.delete()
+    }
+  }
+
+  @Test
+  fun `getConfigHtml with forceInitialization false returns null without initializing when LS is down`() {
+    cut.isInitialized = false
+    // getCliFile() is the first thing initialize() -> verifyCliProtocolVersion() touches; if the
+    // non-forcing guard fails to short-circuit, this throws and fails the test.
+    every { getCliFile() } throws AssertionError("must not initialize on the non-forcing path")
+
+    val result = cut.getConfigHtml(forceInitialization = false)
+
+    assertNull("non-forcing getConfigHtml must return null when the LS is not initialized", result)
+  }
+
+  @Test
   fun `getSettings emits a stored folder reset as value null changed true`() {
     // A reset is written straight into the stored folder config as {value:null, changed:true}
     // (SaveConfigHandler.applyFolderResetsFromRawJson, mirroring VS Code). getSettings emits the
@@ -1151,6 +1272,33 @@ class LanguageServerWrapperTest {
       val setting = folderConfig.settings?.get(key) ?: error("expected $key reset setting")
       assertNull(setting.value)
       assertEquals(true, setting.changed)
+    }
+  }
+
+  @Test
+  fun `verifyCliProtocolVersion re-runs when the CLI binary at the same path changes`() {
+    assumeFalse("Mock CLI scripts are POSIX shell scripts", SystemUtils.IS_OS_WINDOWS)
+    val scriptFile =
+      java.io.File.createTempFile("snyk-cli-mock-", ".sh").apply {
+        writeText("#!/bin/sh\necho ${settings.requiredLsProtocolVersion}\n")
+        setExecutable(true)
+        deleteOnExit()
+      }
+    try {
+      every { getCliFile() } returns scriptFile
+
+      assertTrue(cut.verifyCliProtocolVersion())
+
+      // Replace the binary at the same path with one reporting a different version. The longer body
+      // changes the file size, so the cache key differs regardless of mtime granularity.
+      scriptFile.writeText(
+        "#!/bin/sh\n# replaced binary reporting a different protocol version\necho 1\n"
+      )
+      scriptFile.setExecutable(true)
+
+      assertFalse(cut.verifyCliProtocolVersion())
+    } finally {
+      scriptFile.delete()
     }
   }
 
