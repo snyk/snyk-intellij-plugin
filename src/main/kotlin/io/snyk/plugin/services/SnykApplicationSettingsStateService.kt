@@ -254,7 +254,8 @@ class SnykApplicationSettingsStateService :
   // Defaults to false to match the Language Server's own flagset default for Snyk Code
   // (register_configurations.go: SettingSnykCodeEnabled = false). Keeping this in sync with the LS
   // default means an at-default value sent with changed=false resolves back to the same state, so a
-  // user's enabled preference (which now deviates from the default -> changed=true) survives upgrade
+  // user's enabled preference (which now deviates from the default -> changed=true) survives
+  // upgrade
   // without a bespoke migration. OSS/IaC (true) and Secrets (false) already match the LS defaults.
   var snykCodeSecurityIssuesScanEnable: Boolean = false
   var iacScanEnabled: Boolean = true

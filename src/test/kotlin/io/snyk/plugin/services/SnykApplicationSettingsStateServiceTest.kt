@@ -335,7 +335,8 @@ class SnykApplicationSettingsStateServiceTest {
 
   @Test
   fun initializeComponent_codeAtDefault_defersToLanguageServer() {
-    // A fresh install (or a user who had Code disabled, which now equals the default) leaves Code at
+    // A fresh install (or a user who had Code disabled, which now equals the default) leaves Code
+    // at
     // the default false. It must NOT be marked explicit, so it is sent changed=false and the LS
     // resolves it (org governance / its own default). Both cases resolve back to false — no
     // preference is lost.
