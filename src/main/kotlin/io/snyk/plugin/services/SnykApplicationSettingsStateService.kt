@@ -251,12 +251,7 @@ class SnykApplicationSettingsStateService :
 
   // products enablement store
   var ossScanEnable: Boolean = true
-  // Defaults to false to match the Language Server's own flagset default for Snyk Code
-  // (register_configurations.go: SettingSnykCodeEnabled = false). Keeping this in sync with the LS
-  // default means an at-default value sent with changed=false resolves back to the same state, so a
-  // user's enabled preference (which now deviates from the default -> changed=true) survives
-  // upgrade
-  // without a bespoke migration. OSS/IaC (true) and Secrets (false) already match the LS defaults.
+  // Product enablement flags match the language server's defaults.
   var snykCodeSecurityIssuesScanEnable: Boolean = false
   var iacScanEnabled: Boolean = true
   var secretsEnabled: Boolean = false
@@ -392,8 +387,7 @@ class SnykApplicationSettingsStateService :
     const val DISPLAY_NEW_ISSUES = "Net new issues"
 
     private const val PLUGIN_DEFAULT_OSS_SCAN_ENABLE = true
-    // false to match the Language Server flagset default for Snyk Code — see the field declaration
-    // [snykCodeSecurityIssuesScanEnable] for why the plugin default is kept in sync with the LS.
+    // Product enablement flags match the Language Server defaults.
     private const val PLUGIN_DEFAULT_CODE_SCAN_ENABLE = false
     private const val PLUGIN_DEFAULT_IAC_SCAN_ENABLE = true
     private const val PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE = false
