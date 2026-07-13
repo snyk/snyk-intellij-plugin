@@ -1,0 +1,115 @@
+package io.snyk.plugin.ui.actions
+
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.Presentation
+import com.intellij.testFramework.LightPlatform4TestCase
+import com.intellij.testFramework.PlatformTestUtil
+import com.intellij.testFramework.replaceService
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.ui.toolwindow.SnykToolWindowPanel
+import org.junit.Test
+import snyk.common.lsp.LanguageServerWrapper
+
+class SnykLogoutActionTest : LightPlatform4TestCase() {
+
+  private val languageServerWrapperMock = mockk<LanguageServerWrapper>(relaxed = true)
+  private val toolWindowPanelMock = mockk<SnykToolWindowPanel>(relaxed = true)
+  private lateinit var action: SnykLogoutAction
+
+  override fun setUp() {
+    super.setUp()
+    unmockkAll()
+    mockkStatic("io.snyk.plugin.UtilsKt")
+    every { getSnykToolWindowPanel(any()) } returns toolWindowPanelMock
+    project.replaceService(LanguageServerWrapper::class.java, languageServerWrapperMock, project)
+    action = SnykLogoutAction()
+  }
+
+  override fun tearDown() {
+    pluginSettings().token = null
+    project.replaceService(
+      LanguageServerWrapper::class.java,
+      LanguageServerWrapper(project),
+      project,
+    )
+    unmockkAll()
+    super.tearDown()
+  }
+
+  private fun actionEvent(withProject: Boolean = true): AnActionEvent {
+    val presentation = Presentation()
+    return mockk<AnActionEvent>(relaxed = true).also {
+      every { it.project } returns if (withProject) project else null
+      every { it.presentation } returns presentation
+    }
+  }
+
+  @Test
+  fun `update enables the action when a token is present`() {
+    pluginSettings().token = "a-token"
+    val event = actionEvent()
+
+    action.update(event)
+
+    assertTrue(event.presentation.isEnabled)
+  }
+
+  @Test
+  fun `update disables the action when the token is blank`() {
+    pluginSettings().token = ""
+    val event = actionEvent()
+
+    action.update(event)
+
+    assertFalse(event.presentation.isEnabled)
+  }
+
+  @Test
+  fun `update disables the action when there is no project`() {
+    pluginSettings().token = "a-token"
+    val event = actionEvent(withProject = false)
+
+    action.update(event)
+
+    assertFalse(event.presentation.isEnabled)
+  }
+
+  @Test
+  fun `actionPerformed logs out of the language server and clears the local token`() {
+    pluginSettings().token = "a-stale-token"
+
+    action.actionPerformed(actionEvent())
+
+    // actionPerformed runs on a pooled thread; verify with a timeout. The local token clear
+    // happens on the same thread strictly before the LS logout() call, so once MockK observes
+    // that call the token is guaranteed to already be cleared - no need to sleep-poll for it.
+    verify(timeout = 2000) { languageServerWrapperMock.logout() }
+    assertTrue(pluginSettings().token.isNullOrEmpty())
+  }
+
+  @Test
+  fun `actionPerformed cleans up the tool window UI and caches`() {
+    pluginSettings().token = "a-stale-token"
+    val cleanupLatch = java.util.concurrent.CountDownLatch(1)
+    every { toolWindowPanelMock.cleanUiAndCaches() } answers { cleanupLatch.countDown() }
+
+    action.actionPerformed(actionEvent())
+
+    // The cleanup runs inside invokeLater, scheduled from the pooled thread after the LS logout()
+    // call returns. Pump the EDT queue while waiting for the pooled thread to post and the
+    // invokeLater runnable to execute - race-free regardless of timing.
+    PlatformTestUtil.waitWithEventsDispatching(
+      "cleanUiAndCaches() was not called on logout",
+      { cleanupLatch.count == 0L },
+      5,
+    )
+
+    verify { toolWindowPanelMock.cleanUiAndCaches() }
+  }
+}
