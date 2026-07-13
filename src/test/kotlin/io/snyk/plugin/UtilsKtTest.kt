@@ -155,7 +155,10 @@ class UtilsKtTest {
     mockkStatic(::pluginSettings)
     every { pluginSettings() } returns settingsStateService
 
-    assertEquals(getDefaultCliPath(), getCliFile().path)
+    // Compare via File so the assertion is separator-agnostic: getDefaultCliPath() builds a raw
+    // string with a hardcoded '/', while getCliFile().path is normalized to the OS separator
+    // (e.g. '\' on Windows). Wrapping both in File normalizes them consistently.
+    assertEquals(File(getDefaultCliPath()).path, getCliFile().path)
   }
 
   @Test
