@@ -102,7 +102,7 @@ fun getSnykCliAuthenticationService(project: Project?): SnykCliAuthenticationSer
 fun getSnykCliDownloaderService(): SnykCliDownloaderService =
   ApplicationManager.getApplication().service()
 
-fun getCliFile() = File(pluginSettings().cliPath)
+fun getCliFile() = File(pluginSettings().cliPath.ifBlank { getDefaultCliPath() })
 
 fun isCliInstalled(): Boolean {
   if (ApplicationManager.getApplication().isUnitTestMode) return true
