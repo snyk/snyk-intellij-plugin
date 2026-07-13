@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -144,6 +145,17 @@ class UtilsKtTest {
       assertEquals("Testing $actualPath to uri conversion", uri, actualPath.fromPathToUriString())
       i++
     }
+  }
+
+  @Test
+  fun `getCliFile falls back to default path when cliPath setting is blank`() {
+    unmockkAll()
+    val settingsStateService = SnykApplicationSettingsStateService()
+    settingsStateService.cliPath = ""
+    mockkStatic(::pluginSettings)
+    every { pluginSettings() } returns settingsStateService
+
+    assertEquals(getDefaultCliPath(), getCliFile().path)
   }
 
   @Test
