@@ -251,7 +251,8 @@ class SnykApplicationSettingsStateService :
 
   // products enablement store
   var ossScanEnable: Boolean = true
-  var snykCodeSecurityIssuesScanEnable: Boolean = true
+  // Product enablement flags match the language server's defaults.
+  var snykCodeSecurityIssuesScanEnable: Boolean = false
   var iacScanEnabled: Boolean = true
   var secretsEnabled: Boolean = false
 
@@ -386,7 +387,8 @@ class SnykApplicationSettingsStateService :
     const val DISPLAY_NEW_ISSUES = "Net new issues"
 
     private const val PLUGIN_DEFAULT_OSS_SCAN_ENABLE = true
-    private const val PLUGIN_DEFAULT_CODE_SCAN_ENABLE = true
+    // Product enablement flags match the Language Server defaults.
+    private const val PLUGIN_DEFAULT_CODE_SCAN_ENABLE = false
     private const val PLUGIN_DEFAULT_IAC_SCAN_ENABLE = true
     private const val PLUGIN_DEFAULT_SECRETS_SCAN_ENABLE = false
     private const val PLUGIN_DEFAULT_OPEN_ISSUES_ENABLED = true

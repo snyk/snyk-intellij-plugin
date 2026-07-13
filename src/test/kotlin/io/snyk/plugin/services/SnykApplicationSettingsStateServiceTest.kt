@@ -308,6 +308,49 @@ class SnykApplicationSettingsStateServiceTest {
   }
 
   @Test
+  fun snykCodeDefault_matchesLanguageServerDefault_false() {
+    // The plugin's Snyk Code default is kept in sync with the Language Server flagset default
+    // (false). This alignment is what lets an at-default value sent with changed=false resolve back
+    // to the same state, so no bespoke upgrade migration is needed. See the field declaration.
+    val target = SnykApplicationSettingsStateService()
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+  }
+
+  @Test
+  fun initializeComponent_enabledCodeSurvivesUpgrade_becauseItDeviatesFromDefault() {
+    // Upgrade repro: a user who had Snyk Code enabled in the old plugin has snykCode... == true
+    // persisted. Because the plugin default is now false, that value deviates from the default, so
+    // it is emitted with changed=true and the LS honors it — the preference survives the upgrade
+    // without any migration.
+    val target = SnykApplicationSettingsStateService()
+    target.snykCodeSecurityIssuesScanEnable = true // persisted "enabled" from the old plugin
+
+    target.initializeComponent()
+
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(
+      target.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    )
+  }
+
+  @Test
+  fun initializeComponent_codeAtDefault_defersToLanguageServer() {
+    // A fresh install (or a user who had Code disabled, which now equals the default) leaves Code
+    // at
+    // the default false. It must NOT be marked explicit, so it is sent changed=false and the LS
+    // resolves it (org governance / its own default). Both cases resolve back to false — no
+    // preference is lost.
+    val target = SnykApplicationSettingsStateService()
+
+    target.initializeComponent()
+
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertFalse(
+      target.lsUserAssertedChangeForLsConfigurationKey(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+    )
+  }
+
+  @Test
   fun clearAllExplicitlyChanged_clearsGlobalChanges() {
     val target = SnykApplicationSettingsStateService()
     target.markExplicitlyChanged("global_key_a")
