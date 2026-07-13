@@ -6,8 +6,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getSnykTaskQueueService
+import io.snyk.plugin.pluginSettings
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import org.junit.Test
@@ -105,6 +107,20 @@ class SnykCliAuthenticationServiceTest : LightPlatform4TestCase() {
     val wrapper = LanguageServerWrapper.getInstance(project)
     assertNotNull(wrapper)
     assertEquals(languageServerWrapperMock, wrapper)
+  }
+
+  @Test
+  fun `logout clears the language server and the local token`() {
+    every { languageServerWrapperMock.logout() } returns Unit
+    pluginSettings().token = "a-stale-token"
+
+    SnykCliAuthenticationService(project).logout()
+
+    // logout() runs on a pooled thread; verify with a timeout. The local token clear happens on
+    // the same thread strictly before the LS logout() call, so once MockK observes that call the
+    // token is guaranteed to already be cleared - no need to sleep-poll for it separately.
+    verify(timeout = 2000) { languageServerWrapperMock.logout() }
+    assertTrue(pluginSettings().token.isNullOrEmpty())
   }
 
   @Test

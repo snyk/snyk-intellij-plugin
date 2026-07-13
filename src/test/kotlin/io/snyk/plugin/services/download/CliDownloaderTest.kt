@@ -72,6 +72,49 @@ class CliDownloaderTest {
   }
 
   @Test
+  fun `should fall back to default base url when cliBaseDownloadURL setting is blank`() {
+    pluginSettings().cliBaseDownloadURL = ""
+
+    assertEquals("https://downloads.snyk.io", CliDownloader.BASE_URL)
+    assertEquals(
+      "https://downloads.snyk.io/cli/${pluginSettings().cliReleaseChannel}/ls-protocol-version-" +
+        pluginSettings().requiredLsProtocolVersion,
+      CliDownloader.LATEST_RELEASES_URL,
+    )
+  }
+
+  @Test
+  fun `should pass through custom cliBaseDownloadURL setting unchanged when non-blank`() {
+    val customUrl = "https://custom.example.com"
+    pluginSettings().cliBaseDownloadURL = customUrl
+
+    assertEquals(customUrl, CliDownloader.BASE_URL)
+  }
+
+  @Test
+  fun `should fall back to default release channel when cliReleaseChannel setting is blank`() {
+    pluginSettings().cliReleaseChannel = ""
+
+    assertEquals(
+      "${CliDownloader.BASE_URL}/cli/stable/ls-protocol-version-" +
+        pluginSettings().requiredLsProtocolVersion,
+      CliDownloader.LATEST_RELEASES_URL,
+    )
+  }
+
+  @Test
+  fun `should pass through custom cliReleaseChannel setting unchanged when non-blank`() {
+    val customChannel = "customChannel"
+    pluginSettings().cliReleaseChannel = customChannel
+
+    assertEquals(
+      "${CliDownloader.BASE_URL}/cli/$customChannel/ls-protocol-version-" +
+        pluginSettings().requiredLsProtocolVersion,
+      CliDownloader.LATEST_RELEASES_URL,
+    )
+  }
+
+  @Test
   fun `should not delete file if checksum verification fails`() {
     val testFile = Files.createTempFile("test", "test").toFile()
     testFile.deleteOnExit()

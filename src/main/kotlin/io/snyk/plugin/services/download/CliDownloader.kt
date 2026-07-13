@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.progress.ProgressIndicator
 import io.snyk.plugin.cli.Platform
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.download.HttpRequestHelper.createRequest
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.io.File
@@ -22,11 +23,18 @@ class CliDownloader {
 
   companion object {
     val BASE_URL: String
-      get() = pluginSettings().cliBaseDownloadURL
+      get() =
+        pluginSettings().cliBaseDownloadURL.ifBlank {
+          SnykApplicationSettingsStateService.PLUGIN_DEFAULT_BINARY_BASE_URL
+        }
 
     val LATEST_RELEASES_URL: String
       get() =
-        "$BASE_URL/cli/${pluginSettings().cliReleaseChannel}/ls-protocol-version-" +
+        "$BASE_URL/cli/${
+          pluginSettings().cliReleaseChannel.ifBlank {
+            SnykApplicationSettingsStateService.PLUGIN_DEFAULT_CLI_RELEASE_CHANNEL
+          }
+        }/ls-protocol-version-" +
           pluginSettings().requiredLsProtocolVersion
   }
 
