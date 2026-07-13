@@ -327,10 +327,10 @@ class SnykApplicationSettingsStateService :
    * Plugin versions <= 2.21.0 pushed every product-enablement value to the LS as an
    * always-authoritative value (e.g. `activateSnykCodeSecurity="true"`). The new schema only honors
    * a user:global value when its [ConfigSetting.changed] flag is true; otherwise the LS defers to
-   * org/LDX-Sync/default. So on the first launch after upgrading we must carry the persisted product
-   * toggles forward as explicit user intent — otherwise a pre-existing "enabled" preference that
-   * happens to equal the new plugin default is silently dropped and the org "Disabled at Snyk" state
-   * wins.
+   * org/LDX-Sync/default. So on the first launch after upgrading we must carry the persisted
+   * product toggles forward as explicit user intent — otherwise a pre-existing "enabled" preference
+   * that happens to equal the new plugin default is silently dropped and the org "Disabled at Snyk"
+   * state wins.
    *
    * Fresh installs ([pluginFirstRun]) must NOT be seeded: with no prior user preference they must
    * defer to org governance. After the one-time migration, steady-state startups fall back to

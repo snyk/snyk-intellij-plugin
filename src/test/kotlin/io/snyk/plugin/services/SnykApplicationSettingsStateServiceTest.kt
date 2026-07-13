@@ -312,7 +312,8 @@ class SnykApplicationSettingsStateServiceTest {
     // Bug repro: upgrading from a pre-explicit-change version (<= 2.21.0) must carry the persisted
     // product toggles forward as user intent, even when a toggle equals the new plugin default
     // (e.g. Snyk Code enabled == default true). pluginFirstRun == false marks this as an upgrade,
-    // not a fresh install; explicitProductEnablementMigrated == false means the one-shot hasn't run.
+    // not a fresh install; explicitProductEnablementMigrated == false means the one-shot hasn't
+    // run.
     val target = SnykApplicationSettingsStateService()
     target.pluginFirstRun = false
     target.explicitProductEnablementMigrated = false
