@@ -197,6 +197,15 @@ class LanguageServerWrapperTest {
   }
 
   @Test
+  fun `logout does not send COMMAND_LOGOUT when the language server is not initialized`() {
+    every { applicationMock.isDisposed } returns true
+
+    cut.logout()
+
+    verify(exactly = 0) { lsMock.workspaceService.executeCommand(any()) }
+  }
+
+  @Test
   fun `sendScanCommand waits for smart mode`() {
     simulateRunningLS()
     justRun { dumbServiceMock.runWhenSmart(any()) }

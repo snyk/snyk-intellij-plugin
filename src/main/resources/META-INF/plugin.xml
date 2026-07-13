@@ -74,8 +74,13 @@
     <group id="io.snyk.plugin.MiscActions">
       <action id="io.snyk.plugin.ui.actions.SnykSettingsAction"
               class="io.snyk.plugin.ui.actions.SnykSettingsAction"
-              text="Snyk Settings"/>
+              text="Snyk: Settings"/>
     </group>
+
+    <action id="io.snyk.plugin.ui.actions.SnykLogoutAction"
+            class="io.snyk.plugin.ui.actions.SnykLogoutAction"
+            text="Snyk: Log out"
+            description="Clear the stored Snyk authentication token and return to the login screen."/>
 
   </actions>
 
