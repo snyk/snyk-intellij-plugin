@@ -113,6 +113,24 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   private val gson = Gson()
   private var loginFuture: CompletableFuture<Any>? = null
 
+  // Caches the (expensive) CLI protocol-version check. The check spawns a CLI subprocess that
+  // blocks up to PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS, and it is re-run on every
+  // ensureLanguageServerInitialized() call while the LS is not initialized (e.g. an incompatible
+  // CLI). The result only changes when the CLI binary or the required protocol version changes, so
+  // we key the cache on those and skip the subprocess on a hit. Volatile because tests invoke
+  // verifyCliProtocolVersion() directly, outside the isInitializing lock that otherwise serializes
+  // it via initialize().
+  @Volatile private var protocolVersionCheckCache: ProtocolVersionCheckResult? = null
+
+  private data class ProtocolVersionCheckResult(
+    val cliPath: String,
+    val lastModified: Long,
+    val size: Long,
+    val requiredVersion: Int,
+    val compatible: Boolean,
+    val parsedVersion: Int?,
+  )
+
   // internal for test set up
   internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> =
     ConcurrentHashMap.newKeySet()
@@ -142,7 +160,12 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   var isInitializing: ReentrantLock = ReentrantLock()
 
-  var isInitialized: Boolean = false
+  // Written by initialize() / the LS-termination listener on background threads and read
+  // cross-thread (e.g. the settings panel poll and the non-forcing getConfigHtml check) outside the
+  // isInitializing lock. @Volatile guarantees those readers observe the latest write rather than a
+  // stale cached value. Note: this only prevents torn/stale reads; it does not make check-then-act
+  // sequences atomic (that is what the isInitializing lock is for).
+  @Volatile var isInitialized: Boolean = false
 
   private fun initialize() {
     if (disposed) return
@@ -270,8 +293,56 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   internal fun verifyCliProtocolVersion(): Boolean {
     val ps = pluginSettings()
     val required = ps.requiredLsProtocolVersion
+    val cliFile = getCliFile()
+    val currentPath = cliFile.absolutePath
+    val lastModified = cliFile.lastModified()
+    val size = cliFile.length()
+
+    protocolVersionCheckCache?.let { cached ->
+      if (
+        cached.cliPath == currentPath &&
+          cached.lastModified == lastModified &&
+          cached.size == size &&
+          cached.requiredVersion == required
+      ) {
+        // Re-apply the cached version so callers/settings observe the same value as a fresh check.
+        cached.parsedVersion?.let { ps.currentLSProtocolVersion = it }
+        return cached.compatible
+      }
+    }
+
+    val (compatible, parsedVersion) = runCliProtocolVersionCheck(currentPath, required)
+    parsedVersion?.let { ps.currentLSProtocolVersion = it }
+    // Only cache definitive results. A null parsedVersion indicates a failure that must be retried.
+    if (parsedVersion != null) {
+      protocolVersionCheckCache =
+        ProtocolVersionCheckResult(
+          cliPath = currentPath,
+          lastModified = lastModified,
+          size = size,
+          requiredVersion = required,
+          compatible = compatible,
+          parsedVersion = parsedVersion,
+        )
+    }
+    return compatible
+  }
+
+  /**
+   * Runs the CLI protocol-version subprocess against [cliBinaryPath]. Returns whether the CLI's
+   * protocol version matches [required], plus the parsed version (null when the check could not
+   * produce an integer).
+   *
+   * The path is passed in (rather than re-resolved via the [cliPath] getter, which re-invokes
+   * getCliFile()) so the subprocess and the cache key in [verifyCliProtocolVersion] refer to the
+   * same path.
+   */
+  private fun runCliProtocolVersionCheck(
+    cliBinaryPath: String,
+    required: Int,
+  ): Pair<Boolean, Int?> {
     return try {
-      val processBuilder = ProcessBuilder(cliPath, "language-server", "--protocolVersion")
+      val processBuilder = ProcessBuilder(cliBinaryPath, "language-server", "--protocolVersion")
       processBuilder.redirectErrorStream(false)
       val p = processBuilder.start()
       val output = p.inputStream.bufferedReader().use { it.readText() }
@@ -281,27 +352,26 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
         logger.warn(
           "CLI protocol version check timed out after $PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS seconds"
         )
-        return false
+        return false to null
       }
       val exit = p.exitValue()
       if (exit != 0) {
         logger.warn("CLI protocol version check exited with code $exit, output='$output'")
-        return false
+        return false to null
       }
       val parsed = output.trim().toIntOrNull()
       if (parsed == null) {
         logger.warn("CLI protocol version check returned non-integer output: '$output'")
-        return false
+        return false to null
       }
-      ps.currentLSProtocolVersion = parsed
       val matches = parsed == required
       if (!matches) {
         logger.warn("CLI protocol version mismatch: cli=$parsed required=$required")
       }
-      matches
+      matches to parsed
     } catch (e: Exception) {
       logger.warn("Failed to invoke CLI for protocol version check: ${e.message}", e)
-      false
+      false to null
     }
   }
 
@@ -578,6 +648,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     runInBackground("Snyk: restarting language server...") {
       shutdown()
       Thread.sleep(1000)
+      // Force a fresh protocol-version check on an explicit restart, even if the binary is
+      // unchanged.
+      protocolVersionCheckCache = null
       ensureLanguageServerInitialized()
       addContentRoots(project)
     }
@@ -1093,8 +1166,22 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     return ""
   }
 
-  fun getConfigHtml(): String? {
-    if (!ensureLanguageServerInitialized()) return null
+  /**
+   * Returns the LS-rendered settings configuration HTML, or null if it cannot be produced.
+   *
+   * When [forceInitialization] is true (the default) a not-yet-initialized LS is initialized first,
+   * which re-runs the CLI protocol-version check (a subprocess that can block up to
+   * [PROTOCOL_VERSION_CHECK_TIMEOUT_SECONDS]). Callers on a UI-adjacent path (the settings panel)
+   * pass false so they can NEVER trigger that blocking init: if the LS is not already up they get
+   * null and can fall back immediately. This closes the TOCTOU window where [isInitialized] flips
+   * to false between the panel's own check and this call.
+   */
+  fun getConfigHtml(forceInitialization: Boolean = true): String? {
+    if (forceInitialization) {
+      if (!ensureLanguageServerInitialized()) return null
+    } else if (!isInitialized) {
+      return null
+    }
     try {
       val executeCommandParams = ExecuteCommandParams(COMMAND_WORKSPACE_CONFIGURATION, emptyList())
       val response = executeCommand(executeCommandParams, 10000)
