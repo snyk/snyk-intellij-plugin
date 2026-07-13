@@ -49,7 +49,17 @@ jobs:
       - name: Run Tests
         # Linters listed before `check` so a formatting slip fails fast, before the long test task.
         # No per-step timeout — see the job `timeout-minutes` comment above for why.
-        run: ./gradlew clean ktlintCheck spotlessCheck check
+        # A background watchdog captures thread dumps of the test worker if it runs abnormally long,
+        # so an intermittent hang (see the Gradle `test` timeout in build.gradle.kts) is diagnosable
+        # from the uploaded dumps alone. `shell: bash` so the one script runs on all three OSes
+        # (git-bash on Windows). The trap tears the watchdog down whether gradle passes, fails, or is
+        # killed by its task timeout.
+        shell: bash
+        run: |
+          bash .github/scripts/hang-watchdog.sh &
+          WATCHDOG_PID=$!
+          trap 'kill "$WATCHDOG_PID" 2>/dev/null || true' EXIT
+          ./gradlew clean ktlintCheck spotlessCheck check
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
@@ -63,6 +73,16 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}
           path: build/test-results/**/*.xml
+          if-no-files-found: ignore
+
+      # Thread dumps captured by hang-watchdog.sh when the test worker ran abnormally long. Present
+      # only on a hung run; they identify the wedged thread (see IDE-2237).
+      - name: Upload hang thread dumps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-hang-dumps-${{ matrix.os }}
+          path: build/hang-dumps/**
           if-no-files-found: ignore
 
       - name: Publish Kover Report
