@@ -30,7 +30,11 @@ class CliDownloader {
 
     val LATEST_RELEASES_URL: String
       get() =
-        "$BASE_URL/cli/${pluginSettings().cliReleaseChannel}/ls-protocol-version-" +
+        "$BASE_URL/cli/${
+          pluginSettings().cliReleaseChannel.ifBlank {
+            SnykApplicationSettingsStateService.PLUGIN_DEFAULT_CLI_RELEASE_CHANNEL
+          }
+        }/ls-protocol-version-" +
           pluginSettings().requiredLsProtocolVersion
   }
 
