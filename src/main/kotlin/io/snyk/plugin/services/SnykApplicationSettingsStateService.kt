@@ -41,7 +41,7 @@ class SnykApplicationSettingsStateService :
   var currentLSProtocolVersion: Int? = 0
   var cliBaseDownloadURL: String = PLUGIN_DEFAULT_BINARY_BASE_URL
   var cliPath: String = getDefaultCliPath()
-  var cliReleaseChannel = "stable"
+  var cliReleaseChannel = PLUGIN_DEFAULT_CLI_RELEASE_CHANNEL
   var manageBinariesAutomatically: Boolean = true
 
   // testing flag
@@ -399,7 +399,7 @@ class SnykApplicationSettingsStateService :
 
     private const val PLUGIN_DEFAULT_API_ENDPOINT = "https://api.snyk.io"
     const val PLUGIN_DEFAULT_BINARY_BASE_URL = "https://downloads.snyk.io"
-    private const val PLUGIN_DEFAULT_CLI_RELEASE_CHANNEL = "stable"
+    const val PLUGIN_DEFAULT_CLI_RELEASE_CHANNEL = "stable"
   }
 }
 
