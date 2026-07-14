@@ -9,6 +9,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.xmlb.XmlSerializerUtil
+import com.intellij.util.xmlb.annotations.OptionTag
+import com.intellij.util.xmlb.annotations.Transient
 import io.snyk.plugin.Severity
 import io.snyk.plugin.getDefaultCliPath
 import java.time.Instant
@@ -236,6 +238,26 @@ class SnykApplicationSettingsStateService :
     }
   }
 
+  /**
+   * One-time upgrade migration (2.22.1) that recovers Snyk Code enablement lost when the plugin
+   * default flipped from `true` (<= 2.21.0) to `false` (2.22.0, to match the Language Server, which
+   * is needed for LDX-Sync).
+   */
+  private fun migrateCodeEnablementForV2221() {
+    if (!codeEnablementUpgradeMigratedV2221) {
+      codeEnablementUpgradeMigratedV2221 = true
+      val existingInstallAtLegacyDefault =
+        !pluginFirstRun &&
+          snykCodeSecurityIssuesScanEnableRaw == null &&
+          !isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+      if (existingInstallAtLegacyDefault) {
+        snykCodeSecurityIssuesScanEnableRaw = true
+        markExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+      }
+    }
+    reconcileProductExplicitKeysIfDeviatingFromDefaults()
+  }
+
   // TODO migrate to
   // https://plugins.jetbrains.com/docs/intellij/persisting-sensitive-data.html?from=jetbrains.org
   var token: String? = null
@@ -251,10 +273,33 @@ class SnykApplicationSettingsStateService :
 
   // products enablement store
   var ossScanEnable: Boolean = true
-  // Product enablement flags match the language server's defaults.
-  var snykCodeSecurityIssuesScanEnable: Boolean = false
+
+  // Persisted raw Snyk Code enablement. `null` means no value was ever written to
+  // snyk.settings.xml, which is an important distinction for [migrateCodeEnablementForV2221]
+  // @OptionTag keeps the element name identical to the pre-2.22.1 field so existing configs
+  // are still deserialize.
+  @OptionTag("snykCodeSecurityIssuesScanEnable")
+  var snykCodeSecurityIssuesScanEnableRaw: Boolean? = null
+
+  // Non-null view used by the rest of the plugin.
+  // Falls back to the plugin default when unset. NOT serialized — the raw field above is;
+  // @Transient also keeps XmlSerializerUtil.copyBean (loadState) from overwriting the null via
+  // the getter.
+  @get:Transient
+  @set:Transient
+  var snykCodeSecurityIssuesScanEnable: Boolean
+    get() = snykCodeSecurityIssuesScanEnableRaw ?: PLUGIN_DEFAULT_CODE_SCAN_ENABLE
+    set(value) {
+      snykCodeSecurityIssuesScanEnableRaw = value
+    }
+
   var iacScanEnabled: Boolean = true
   var secretsEnabled: Boolean = false
+
+  // One-shot upgrade marker for the 2.22.1 Snyk Code enablement migration. Persisted; `false` on
+  // any config last written by <= 2.22.0, so [migrateCodeEnablementForV2221] runs exactly once
+  // after upgrading.
+  var codeEnablementUpgradeMigratedV2221: Boolean = false
 
   // feature flag / server-side enablement
   var sastOnServerEnabled: Boolean? = null
@@ -314,7 +359,7 @@ class SnykApplicationSettingsStateService :
       useTokenAuthentication = false
     }
 
-    reconcileProductExplicitKeysIfDeviatingFromDefaults()
+    migrateCodeEnablementForV2221()
   }
 
   fun isDeltaFindingsEnabled(): Boolean = (issuesToDisplay == DISPLAY_NEW_ISSUES)
