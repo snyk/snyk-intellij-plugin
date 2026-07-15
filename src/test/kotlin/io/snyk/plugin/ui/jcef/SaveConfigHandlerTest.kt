@@ -604,7 +604,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
 
   fun `test re-enabling a field to its default value after reset re-asserts the override (ADR-1)`() {
     // Regression for IDE-2149 / ADR-1: after a Project Defaults reset restores snyk_code_enabled to
-    // its plugin default (true), a later save re-enabling it to that SAME default value must still
+    // its plugin default (false), a later save setting it to that SAME default value must still
     // mark it explicitly changed so getSettings() emits changed:true and the LS relearns the
     // override. Previously the value-equals-default shortcut auto-cleared it (changed:false).
     val realSettings = SnykApplicationSettingsStateService()
@@ -613,20 +613,20 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
     // 1) User resets snyk_code_enabled to Project Defaults (explicit JSON null).
     invokeParseAndSaveConfig("""{"snyk_code_enabled": null}""")
     assertFalse(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    // reset restores the plugin default (true) and queues a one-shot reset
-    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
+    // reset restores the plugin default (false) and queues a one-shot reset
+    assertFalse(realSettings.snykCodeSecurityIssuesScanEnable)
     verify {
       lsWrapperMock.updateConfiguration(
         resets = match { it.contains(LsFolderSettingsKeys.SNYK_CODE_ENABLED) }
       )
     }
 
-    // 2) User re-enables snyk_code_enabled to the SAME value as the store default.
-    invokeParseAndSaveConfig("""{"snyk_code_enabled": true}""")
+    // 2) User re-saves snyk_code_enabled at the SAME value as the store default (false).
+    invokeParseAndSaveConfig("""{"snyk_code_enabled": false}""")
 
     // The re-assertion is tracked as an explicit change, so getSettings() will emit changed:true.
     assertTrue(realSettings.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
-    assertTrue(realSettings.snykCodeSecurityIssuesScanEnable)
+    assertFalse(realSettings.snykCodeSecurityIssuesScanEnable)
   }
 
   fun `test applyGlobalSettings marks machine-scoped keys as explicitly changed`() {
@@ -1516,7 +1516,7 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
         assertTrue("snyk_oss_enabled default is true", it.ossScanEnable)
       },
       ResetKeySpec("snyk_code_enabled", LsFolderSettingsKeys.SNYK_CODE_ENABLED) {
-        assertTrue("snyk_code_enabled default is true", it.snykCodeSecurityIssuesScanEnable)
+        assertFalse("snyk_code_enabled default is false", it.snykCodeSecurityIssuesScanEnable)
       },
       ResetKeySpec("snyk_iac_enabled", LsFolderSettingsKeys.SNYK_IAC_ENABLED) {
         assertTrue("snyk_iac_enabled default is true", it.iacScanEnabled)
@@ -1565,7 +1565,8 @@ class SaveConfigHandlerTest : BasePlatformTestCase() {
       // undo.
       when (spec.jsonField) {
         "snyk_oss_enabled" -> realSettings.ossScanEnable = false
-        "snyk_code_enabled" -> realSettings.snykCodeSecurityIssuesScanEnable = false
+        // default is now false, so drive it to true to make the reset observable
+        "snyk_code_enabled" -> realSettings.snykCodeSecurityIssuesScanEnable = true
         "snyk_iac_enabled" -> realSettings.iacScanEnabled = false
         "snyk_secrets_enabled" -> realSettings.secretsEnabled = true
         "scan_automatic" -> realSettings.scanOnSave = false

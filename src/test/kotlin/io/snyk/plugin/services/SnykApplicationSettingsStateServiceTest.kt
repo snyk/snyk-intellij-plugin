@@ -1,5 +1,7 @@
 package io.snyk.plugin.services
 
+import com.intellij.util.xmlb.SkipDefaultsSerializationFilter
+import com.intellij.util.xmlb.XmlSerializer
 import io.snyk.plugin.Severity
 import java.time.LocalDateTime
 import junit.framework.TestCase.assertEquals
@@ -305,6 +307,151 @@ class SnykApplicationSettingsStateServiceTest {
     assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_IAC_ENABLED))
     assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_SECRETS_ENABLED))
+  }
+
+  @Test
+  fun snykCodeDefault_matchesLanguageServerDefault_false() {
+    // An unset Code value resolves to the plugin default, kept in sync with the LS flagset default
+    // (false). The raw persisted value is null until something writes it.
+    val target = SnykApplicationSettingsStateService()
+    assertNull(target.snykCodeSecurityIssuesScanEnableRaw)
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+  }
+
+  @Test
+  fun codeEnablement_unsetValueOmittedFromPersistedXml_setValueWrittenUnderLegacyName() {
+    // The 2.21.0-enabled recovery depends on the enabled value being ABSENT from persisted state.
+    // Lock the serialization contract using the same skip-defaults filter PersistentStateComponent
+    // applies: an unset (null) raw value is not written; a set value is, under the legacy element
+    // name so old configs still deserialize.
+    val filter = SkipDefaultsSerializationFilter()
+    val unsetXml = XmlSerializer.serialize(SnykApplicationSettingsStateService(), filter)
+    assertFalse(
+      unsetXml.getChildren("option").any {
+        it.getAttributeValue("name") == "snykCodeSecurityIssuesScanEnable"
+      }
+    )
+
+    val enabled = SnykApplicationSettingsStateService()
+    enabled.snykCodeSecurityIssuesScanEnable = true
+    val enabledXml = XmlSerializer.serialize(enabled, filter)
+    assertTrue(
+      enabledXml.getChildren("option").any {
+        it.getAttributeValue("name") == "snykCodeSecurityIssuesScanEnable" &&
+          it.getAttributeValue("value") == "true"
+      }
+    )
+  }
+
+  @Test
+  fun migration_enabledCodeFrom221_recoveredWhenNoValuePersisted() {
+    // 2.21.0 user who had Code enabled (the old default): the value equalled the default and so was
+    // omitted from persisted state -> loads as null. On an existing install it must be recovered as
+    // enabled AND asserted, so the LS (default false) honors it.
+    val persisted =
+      SnykApplicationSettingsStateService().apply {
+        pluginFirstRun = false // existing install upgrading
+        // snykCodeSecurityIssuesScanEnableRaw stays null == absent from persisted XML
+      }
+    val target = SnykApplicationSettingsStateService()
+    target.loadState(persisted)
+
+    target.initializeComponent()
+
+    assertTrue(target.snykCodeSecurityIssuesScanEnable)
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(target.codeEnablementUpgradeMigratedV2221)
+  }
+
+  @Test
+  fun migration_enabledCodeVia222Straggler_recoveredWhenConfigUnchanged() {
+    // 2.21.0 -> 2.22.0 -> 2.22.1 with no config changes: 2.22.0 silently disabled Code, but that
+    // disabled value equalled 2.22.0's own default (false), so it was omitted from persisted state
+    // and never entered explicitChanges. The migration marker did not exist in 2.22.0 either. So
+    // the loaded 2.22.1 state is indistinguishable from a direct 2.21.0 -> 2.22.1 upgrade, and
+    // Code is recovered the same way.
+    val persisted =
+      SnykApplicationSettingsStateService().apply {
+        pluginFirstRun = false // already existed since 2.21.0
+        // raw == null (no code element ever persisted), SNYK_CODE_ENABLED not explicit,
+        // codeEnablementUpgradeMigratedV2221 == false (absent in <= 2.22.0)
+      }
+    val target = SnykApplicationSettingsStateService()
+    target.loadState(persisted)
+
+    target.initializeComponent()
+
+    assertTrue(target.snykCodeSecurityIssuesScanEnable)
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+  }
+
+  @Test
+  fun migration_explicitlyDisabledCodeFrom221_preserved() {
+    // 2.21.0 user who explicitly disabled Code: persisted as false (deviated from the old true
+    // default), so raw loads as false. Must stay disabled and NOT be re-enabled.
+    val persisted =
+      SnykApplicationSettingsStateService().apply {
+        pluginFirstRun = false
+        snykCodeSecurityIssuesScanEnableRaw = false
+      }
+    val target = SnykApplicationSettingsStateService()
+    target.loadState(persisted)
+
+    target.initializeComponent()
+
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+  }
+
+  @Test
+  fun migration_freshInstall_defersToLanguageServer() {
+    // Fresh 2.22.1 install (pluginFirstRun == true) with no persisted Code value must not be
+    // seeded: LS default applies.
+    val target = SnykApplicationSettingsStateService()
+    assertTrue(target.pluginFirstRun)
+
+    target.initializeComponent()
+
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+    assertTrue(target.codeEnablementUpgradeMigratedV2221)
+  }
+
+  @Test
+  fun migration_2220UserExplicitlyDisabledCode_preserved() {
+    // Users who already upgraded to 2.22.0 and explicitly disabled Code: the value equals the
+    // 2.22.0 default (false) so it was omitted (raw null), but the toggle is tracked in
+    // explicitChanges, which persists. The explicit-change guard must keep them disabled.
+    val persisted =
+      SnykApplicationSettingsStateService().apply {
+        pluginFirstRun = false
+        markExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED)
+      }
+    val target = SnykApplicationSettingsStateService()
+    target.loadState(persisted)
+
+    target.initializeComponent()
+
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+    assertTrue(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
+  }
+
+  @Test
+  fun migration_isOneShot_doesNotReAssertAfterUserResetsCode() {
+    // Once migrated, a later reset of Code back to default must not be re-enabled on next startup.
+    val persisted =
+      SnykApplicationSettingsStateService().apply {
+        pluginFirstRun = false
+        codeEnablementUpgradeMigratedV2221 = true // migration already ran previously
+        // Code since reset to default: raw null, not explicitly changed
+      }
+    val target = SnykApplicationSettingsStateService()
+    target.loadState(persisted)
+
+    target.initializeComponent()
+
+    assertFalse(target.snykCodeSecurityIssuesScanEnable)
+    assertFalse(target.isExplicitlyChanged(LsFolderSettingsKeys.SNYK_CODE_ENABLED))
   }
 
   @Test
