@@ -52,6 +52,9 @@ run_bounded() { # $1 = outfile; rest = command...
 
 capture() { # $1 = pid, $2 = outfile
   run_bounded "$2" "${JAVA_BIN}jstack" -l "$1" && return 0
+  # jstack failed or timed out. If it left a partial dump, keep it — do NOT let the jcmd fallback
+  # truncate it (both use `>` on the same file). Only fall back when jstack produced nothing.
+  [ -s "$2" ] && return 1
   run_bounded "$2" "${JAVA_BIN}jcmd" "$1" Thread.print
 }
 
