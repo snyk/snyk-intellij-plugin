@@ -52,11 +52,13 @@ jobs:
         # A background watchdog captures thread dumps of the test worker if it runs abnormally long,
         # so an intermittent hang (see the Gradle `test` timeout in build.gradle.kts) is diagnosable
         # from the uploaded dumps alone. `shell: bash` so the one script runs on all three OSes
-        # (git-bash on Windows). The trap tears the watchdog down whether gradle passes, fails, or is
-        # killed by its task timeout.
+        # (git-bash on Windows). Its stdio is redirected to a file (uploaded as an artifact) rather
+        # than inherited: otherwise the backgrounded process holds the runner's log pipe open, and a
+        # healthy run would stall at step end waiting for that fd to close. The trap tears the
+        # watchdog down whether gradle passes, fails, or is killed by its task timeout.
         shell: bash
         run: |
-          bash .github/scripts/hang-watchdog.sh &
+          bash .github/scripts/hang-watchdog.sh >hang-watchdog.log 2>&1 &
           WATCHDOG_PID=$!
           trap 'kill "$WATCHDOG_PID" 2>/dev/null || true' EXIT
           ./gradlew clean ktlintCheck spotlessCheck check
@@ -82,7 +84,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-hang-dumps-${{ matrix.os }}
-          path: build/hang-dumps/**
+          path: |
+            build/hang-dumps/**
+            hang-watchdog.log
           if-no-files-found: ignore
 
       - name: Publish Kover Report
