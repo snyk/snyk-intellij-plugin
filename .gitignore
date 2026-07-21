@@ -96,3 +96,4 @@ DESIGN.md
 .snyk-code-output.err
 .verification-result.*
 docs/plan.md
+.verify-report
