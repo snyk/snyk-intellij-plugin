@@ -2,6 +2,7 @@ package io.snyk.plugin
 
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.pom.Navigatable
@@ -365,10 +366,15 @@ class UtilsKtTest {
     every { PsiNavigationSupport.getInstance() } returns psiNavSupport
     every { psiNavSupport.createNavigatable(project, virtualFile, 5) } returns navigatable
 
-    navigateToSource(project, virtualFile, 5, 10)
+    // document == null, so the selection-highlight block (guarded by `document != null`) is
+    // skipped and FileEditorManager is never touched here — no mock needed for it in this test.
+    val promise = navigateToSource(project, virtualFile, 5, 10)
 
     assertTrue("Navigation should complete within timeout", latch.await(2, TimeUnit.SECONDS))
     verify { navigatable.navigate(false) }
+    // Drain the async work (including the selection-highlight invokeLater) before the test
+    // returns, so it cannot leak into a later test's mocks/EDT queue.
+    promise.blockingGet(2000)
   }
 
   @Test
@@ -377,6 +383,7 @@ class UtilsKtTest {
     mockkStatic("io.snyk.plugin.UtilsKt")
     mockkStatic(ApplicationManager::class)
     mockkStatic(PsiNavigationSupport::class)
+    mockkStatic(FileEditorManager::class)
 
     val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
     every { ApplicationManager.getApplication() } returns appMock
@@ -407,10 +414,24 @@ class UtilsKtTest {
     every { PsiNavigationSupport.getInstance() } returns psiNavSupport
     every { psiNavSupport.createNavigatable(project, virtualFile, 100) } returns navigatable
 
-    navigateToSource(project, virtualFile, 100, 110)
+    // document != null here, so the selection-highlight invokeLater path runs too. It needs a
+    // real (mocked) FileEditorManager or it throws a ClassCastException on the pooled thread
+    // after this test has already returned/torn down its mocks (the original hang cause).
+    val editor = mockk<com.intellij.openapi.editor.Editor>(relaxed = true)
+    val editorDocument = mockk<com.intellij.openapi.editor.Document>(relaxed = true)
+    every { editorDocument.textLength } returns 50
+    every { editor.document } returns editorDocument
+    val fileEditorManager = mockk<FileEditorManager>(relaxed = true)
+    every { FileEditorManager.getInstance(project) } returns fileEditorManager
+    every { fileEditorManager.selectedTextEditor } returns editor
+
+    val promise = navigateToSource(project, virtualFile, 100, 110)
 
     assertTrue("Navigation should complete within timeout", latch.await(2, TimeUnit.SECONDS))
     verify { navigatable.navigate(false) }
+    // Drain the async work (including the selection-highlight invokeLater) before the test
+    // returns, so it cannot leak into a later test's mocks/EDT queue.
+    promise.blockingGet(2000)
   }
 
   @Test
