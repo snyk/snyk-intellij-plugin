@@ -41,7 +41,13 @@ run_bounded() { # $1 = outfile; rest = command...
   local p=$! waited=0
   while kill -0 "$p" 2>/dev/null; do
     if [ "$waited" -ge "$CAPTURE_TIMEOUT" ]; then
+      # A capture wedged in JVM dynamic-attach may ignore SIGTERM; escalate to SIGKILL after a
+      # brief grace, then reap so stuck attach processes don't accumulate (zombies / a half-open
+      # attach socket) and degrade later captures in the series.
       kill "$p" 2>/dev/null || true
+      sleep 2
+      kill -0 "$p" 2>/dev/null && kill -9 "$p" 2>/dev/null || true
+      wait "$p" 2>/dev/null || true
       return 124
     fi
     sleep 2
@@ -51,11 +57,15 @@ run_bounded() { # $1 = outfile; rest = command...
 }
 
 capture() { # $1 = pid, $2 = outfile
-  run_bounded "$2" "${JAVA_BIN}jstack" -l "$1" && return 0
-  # jstack failed or timed out. If it left a partial dump, keep it — do NOT let the jcmd fallback
-  # truncate it (both use `>` on the same file). Only fall back when jstack produced nothing.
-  [ -s "$2" ] && return 1
+  run_bounded "$2" "${JAVA_BIN}jstack" -l "$1"
+  # Keep the jstack output only if it is a real thread dump (even a partial one, from a timeout)
+  # rather than an error string — `run_bounded` merges stderr into the file, so a fast attach
+  # failure ("Unable to open socket file", AttachNotSupportedException, wrong pid) also makes the
+  # file non-empty. A dump always contains a thread-state line; an error string does not. If it is
+  # a real dump, keep it and don't let the jcmd fallback truncate it; otherwise fall back to jcmd.
+  grep -q 'java.lang.Thread.State' "$2" 2>/dev/null && return 0
   run_bounded "$2" "${JAVA_BIN}jcmd" "$1" Thread.print
+  grep -q 'java.lang.Thread.State' "$2" 2>/dev/null
 }
 
 sleep "$THRESHOLD"
