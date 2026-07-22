@@ -337,7 +337,6 @@ class UtilsKtTest {
     mockkStatic("io.snyk.plugin.UtilsKt")
     mockkStatic(ApplicationManager::class)
     mockkStatic(PsiNavigationSupport::class)
-    mockkStatic(FileEditorManager::class)
 
     val appMock = mockk<com.intellij.openapi.application.Application>(relaxed = true)
     every { ApplicationManager.getApplication() } returns appMock
@@ -367,12 +366,8 @@ class UtilsKtTest {
     every { PsiNavigationSupport.getInstance() } returns psiNavSupport
     every { psiNavSupport.createNavigatable(project, virtualFile, 5) } returns navigatable
 
-    // Selection-highlight path early-returns on a null selected editor, so this mock only
-    // needs to keep the (unmocked-by-default) static call from throwing.
-    val fileEditorManager = mockk<FileEditorManager>(relaxed = true)
-    every { FileEditorManager.getInstance(project) } returns fileEditorManager
-    every { fileEditorManager.selectedTextEditor } returns null
-
+    // document == null, so the selection-highlight block (guarded by `document != null`) is
+    // skipped and FileEditorManager is never touched here — no mock needed for it in this test.
     val promise = navigateToSource(project, virtualFile, 5, 10)
 
     assertTrue("Navigation should complete within timeout", latch.await(2, TimeUnit.SECONDS))

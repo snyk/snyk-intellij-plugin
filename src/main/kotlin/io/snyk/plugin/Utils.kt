@@ -361,7 +361,12 @@ fun refreshAnnotationsForOpenFiles(project: Project): Promise<Unit> {
         }
       }
     } else {
-      openFiles.forEach { refreshAnnotationsForFile(project, it) }
+      // Wait for the per-file refresh promises, so the Promise this function returns reflects
+      // them rather than resolving as soon as they are started. (Each still schedules its EDT work
+      // via invokeLater — see refreshAnnotationsForFile — so this drains the pooled portion; the
+      // EDT portion only completes synchronously when invokeLater is executed inline, e.g. in
+      // tests.)
+      openFiles.map { refreshAnnotationsForFile(project, it) }.forEach { it.blockingGet(10_000) }
     }
   }
 }
