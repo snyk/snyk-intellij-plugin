@@ -1,3 +1,4 @@
+import java.time.Duration
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
@@ -221,6 +222,12 @@ tasks {
       }
     )
   }
+
+  // Wall-clock cap on the unit-test task only (deliberately NOT withType<Test> above, so heavier
+  // Test tasks such as a future testIdeUi don't inherit this limit). Bounds an *interruptible*
+  // hung test with a precise "test timed out" failure; the GitHub Actions job `timeout-minutes`
+  // (in .github/workflows/build.yml) is the real backstop for non-interruptible hangs.
+  named<Test>("test") { timeout.set(Duration.ofMinutes(25)) }
 
   // Configure the PatchPluginXml task
   patchPluginXml {

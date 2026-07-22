@@ -19,6 +19,10 @@ jobs:
     name: Test
     needs: gradleValidation
     runs-on: ${{ matrix.os }}
+    # Real backstop for hangs the Gradle `test` task timeout (in build.gradle.kts) can't catch
+    # — wedged daemon, hung compile/lint, or uninterruptible native I/O. No per-step timeout: a
+    # step limit could fire before that task timeout and mask the precise failure.
+    timeout-minutes: 40
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -43,10 +47,47 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
 
       - name: Run Tests
-        run: ./gradlew clean ktlintCheck spotlessCheck check
+        # Linters listed before `check` so a formatting slip fails fast, before the long test task.
+        # No per-step timeout — see the job `timeout-minutes` comment above for why.
+        # A background watchdog captures thread dumps of the test worker if it runs abnormally long,
+        # so an intermittent hang (see the Gradle `test` timeout in build.gradle.kts) is diagnosable
+        # from the uploaded dumps alone. `shell: bash` so the one script runs on all three OSes
+        # (git-bash on Windows). Its stdio is redirected to a file (uploaded as an artifact) rather
+        # than inherited: otherwise the backgrounded process holds the runner's log pipe open, and a
+        # healthy run would stall at step end waiting for that fd to close. The trap tears the
+        # watchdog down whether gradle passes, fails, or is killed by its task timeout.
+        shell: bash
+        run: |
+          bash .github/scripts/hang-watchdog.sh >hang-watchdog.log 2>&1 &
+          WATCHDOG_PID=$!
+          trap 'kill "$WATCHDOG_PID" 2>/dev/null || true' EXIT
+          ./gradlew clean ktlintCheck spotlessCheck check
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
           SNYK_ORG_NAME: ${{ secrets.SNYK_ORG_NAME }}
+
+      # Upload test results even when the job fails or times out, so a hung run (see the Gradle
+      # `test` timeout in build.gradle.kts) can be diagnosed: the last-written result file points at
+      # the test that was in flight when the suite wedged.
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: build/test-results/**/*.xml
+          if-no-files-found: ignore
+
+      # Thread dumps captured by hang-watchdog.sh when the test worker ran abnormally long. Present
+      # only on a hung run; they identify the wedged thread (see IDE-2237).
+      - name: Upload hang thread dumps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-hang-dumps-${{ matrix.os }}
+          path: |
+            build/hang-dumps/**
+            hang-watchdog.log
+          if-no-files-found: ignore
 
       - name: Publish Kover Report
         uses: mi-kas/kover-report@v1
