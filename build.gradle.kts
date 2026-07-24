@@ -184,6 +184,9 @@ tasks {
 
   withType<Test> {
     maxHeapSize = "4096m"
+    // Fresh JVM per test class: contains a cross-class EDT-queue leak that deadlocked the suite
+    // intermittently (IDE-2237). Do not remove without a replacement. See the PR / commit / ticket.
+    forkEvery = 1
     testLogging { exceptionFormat = TestExceptionFormat.FULL }
     // Preload the ByteBuddy agent at test-JVM startup so MockK never needs runtime self-attach.
     // This is unconditional and harmless under the JaCoCo backend (JaCoCo uses class-file
