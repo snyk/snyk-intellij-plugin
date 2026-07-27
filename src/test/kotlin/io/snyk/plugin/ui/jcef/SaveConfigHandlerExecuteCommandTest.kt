@@ -205,4 +205,26 @@ class SaveConfigHandlerExecuteCommandTest {
     handler.dispatchSettingsCommand("not-valid-json")
     // should not throw
   }
+
+  @Test
+  fun `dispatchSettingsCommand surfaces an error to the callback when the language server is not initialized`() {
+    every { lsWrapperMock.executeCommandWithArgs("snyk.logout", any(), any()) } throws
+      IllegalStateException(
+        "Cannot execute command 'snyk.logout': language server is not initialized"
+      )
+
+    val latch = CountDownLatch(1)
+    var receivedResult: String? = null
+
+    val request =
+      ExecuteCommandRequest(command = "snyk.logout", args = emptyList(), callbackId = "__cb_1")
+    handler.dispatchSettingsCommand(gson.toJson(request)) { _, escaped ->
+      receivedResult = escaped
+      latch.countDown()
+    }
+
+    assertTrue("Callback should be invoked within timeout", latch.await(2, TimeUnit.SECONDS))
+    assertTrue(receivedResult!!.contains("error"))
+    assertTrue(receivedResult!!.contains("not initialized"))
+  }
 }
