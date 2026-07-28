@@ -2,18 +2,16 @@
 
 package snyk
 
-import com.intellij.ide.plugins.PluginManagerCore
+import com.intellij.ide.plugins.cl.PluginAwareClassLoader
 import com.intellij.openapi.application.ApplicationInfo
-import com.intellij.openapi.extensions.PluginId
-
-const val PLUGIN_ID = "io.snyk.snyk-intellij-plugin"
 
 /** Snyk IntelliJ plugin information. */
 val pluginInfo: PluginInformation by lazy { getPluginInformation() }
 
 private fun getPluginInformation(): PluginInformation {
+  val classLoader = PluginInformation::class.java.classLoader
   val snykPluginVersion =
-    PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
+    (classLoader as? PluginAwareClassLoader)?.pluginDescriptor?.version ?: "UNKNOWN"
 
   val applicationInfo = ApplicationInfo.getInstance()
   val integrationEnvironment =
