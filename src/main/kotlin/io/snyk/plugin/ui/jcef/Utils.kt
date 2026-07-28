@@ -1,5 +1,6 @@
 package io.snyk.plugin.ui.jcef
 
+import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.ui.jcef.JBCefApp
@@ -10,6 +11,9 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import java.awt.Color
 import java.security.SecureRandom
 import java.util.Base64
+import org.cef.browser.CefBrowser
+import org.cef.browser.CefFrame
+import org.cef.handler.CefLifeSpanHandlerAdapter
 import org.cef.handler.CefLoadHandlerAdapter
 
 typealias LoadHandlerGenerator = (jbCefBrowser: JBCefBrowser) -> CefLoadHandlerAdapter
@@ -66,10 +70,43 @@ object JCEFUtils {
         .setUrl("about:blank")
         .build()
     logger.debug("JCEFUtils.createBrowser: browser built")
+    // Covers same-frame navigation (onBeforeBrowse) only.
     jbCefBrowser.setOpenLinksInExternalBrowser(true)
+    // `target="_blank"` links request a popup instead of navigating the frame, so they bypass the
+    // handler above and are silently dropped. Route them to the system browser as well.
+    cefClient.addLifeSpanHandler(
+      object : CefLifeSpanHandlerAdapter() {
+        override fun onBeforePopup(
+          browser: CefBrowser?,
+          frame: CefFrame?,
+          targetUrl: String?,
+          targetFrameName: String?,
+        ): Boolean {
+          openInExternalBrowser(targetUrl)
+          return true // always cancel the popup; JCEF has no window to put it in
+        }
+      },
+      jbCefBrowser.cefBrowser,
+    )
 
     logger.debug("JCEFUtils.createBrowser completed")
     return Pair(cefClient, jbCefBrowser)
+  }
+
+  /**
+   * Hands a popup target URL to the system browser. Restricted to http(s) so that content rendered
+   * in the webview cannot make the IDE open `file:`, `javascript:` or other local-scheme URLs.
+   */
+  private fun openInExternalBrowser(targetUrl: String?) {
+    val url = targetUrl?.trim().orEmpty()
+    if (
+      !url.startsWith("https://", ignoreCase = true) &&
+        !url.startsWith("http://", ignoreCase = true)
+    ) {
+      logger.warn("JCEFUtils: refusing to open popup URL with unsupported scheme")
+      return
+    }
+    invokeLater { BrowserUtil.browse(url) }
   }
 
   /**
