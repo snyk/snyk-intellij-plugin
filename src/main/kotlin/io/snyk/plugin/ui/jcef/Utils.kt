@@ -31,10 +31,16 @@ object JCEFUtils {
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
   }
 
-  /** Converts a Color to CSS hex format. */
+  /**
+   * Converts a Color to CSS hex format, preserving alpha as #RRGGBBAA when the color is
+   * translucent. IDE overlay colors (e.g. `List.hoverBackground`) are intentionally translucent so
+   * they composite over the surface beneath them; flattening them to #RRGGBB turns a 5% white
+   * overlay into an opaque white block.
+   */
   fun colorToHex(color: Color?): String {
     if (color == null) return ""
-    return String.format("#%02x%02x%02x", color.red, color.green, color.blue)
+    val rgb = String.format("#%02x%02x%02x", color.red, color.green, color.blue)
+    return if (color.alpha == 255) rgb else rgb + String.format("%02x", color.alpha)
   }
 
   /**

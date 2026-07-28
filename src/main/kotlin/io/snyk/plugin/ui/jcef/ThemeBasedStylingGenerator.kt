@@ -59,17 +59,21 @@ class ThemeBasedStylingGenerator {
       }
 
     /**
-     * Lighten or darken a hex color.
+     * Lighten or darken a hex color. An alpha suffix (#RRGGBBAA) is preserved untouched.
      *
-     * @param hex "#RRGGBB"
+     * @param hex "#RRGGBB" or "#RRGGBBAA"
      * @param factor -1.0 .. 1.0
      * > > 0 = lighten, < 0 = darken
      */
     fun adjustHexBrightness(hex: String, factor: Double): String {
       require(factor in -1.0..1.0) { "factor must be between -1.0 and 1.0" }
 
-      val clean = hex.removePrefix("#")
-      require(clean.length == 6) { "Expected 6-char hex like #RRGGBB" }
+      val withoutHash = hex.removePrefix("#")
+      require(withoutHash.length == 6 || withoutHash.length == 8) {
+        "Expected 6- or 8-char hex like #RRGGBB or #RRGGBBAA"
+      }
+      val clean = withoutHash.take(6)
+      val alpha = withoutHash.drop(6)
 
       fun adjust(comp: String): Int {
         val c = comp.toInt(16)
@@ -88,7 +92,7 @@ class ThemeBasedStylingGenerator {
       val g = adjust(clean.substring(2, 4))
       val b = adjust(clean.substring(4, 6))
 
-      return "#%02X%02X%02X".format(r, g, b)
+      return "#%02X%02X%02X".format(r, g, b) + alpha
     }
 
     /**
