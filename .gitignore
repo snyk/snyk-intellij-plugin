@@ -96,3 +96,7 @@ DESIGN.md
 .snyk-code-output.err
 .verification-result.*
 docs/plan.md
+
+# Implementation plan working copies and generated diagrams (session scratchpads — source of truth is Confluence + brain)
+*_implementation_plan.md
+docs/diagrams/

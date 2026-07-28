@@ -152,6 +152,8 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
   return try {
     getService(T::class.java)
   } catch (t: Throwable) {
+    // Without this the real cause is lost and the caller only ever sees a downstream NPE.
+    logger.error("Could not instantiate service ${T::class.java.name}", t)
     null
   }
 }
