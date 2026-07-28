@@ -13,9 +13,9 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.setupDummyCliFile
-import snyk.pluginInfo
 import java.net.URLEncoder
 import java.util.UUID
+import snyk.pluginInfo
 
 @Suppress("HttpUrlsUsage")
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
@@ -169,7 +169,10 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
     assertEquals("test-api-token", generalCommandLine.environment["SNYK_TOKEN"])
     assertEquals("JETBRAINS_IDE", generalCommandLine.environment["SNYK_INTEGRATION_NAME"])
-    assertEquals(pluginInfo.integrationVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
+    assertEquals(
+      pluginInfo.integrationVersion,
+      generalCommandLine.environment["SNYK_INTEGRATION_VERSION"],
+    )
     assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
     assertEquals(
       "2023.1".length,
