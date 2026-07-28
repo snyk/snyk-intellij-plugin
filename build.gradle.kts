@@ -112,9 +112,6 @@ intellijPlatform {
   pluginVerification {
     ides {
       // this is gonna need `create` instead of `ide` in future platform versions
-      ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.1")
-      ide(IntelliJPlatformType.IntellijIdeaCommunity, "2024.2")
-      ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1")
       ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.2")
       // as of 2025.3, there's no community edition anymore
       ide(IntelliJPlatformType.IntellijIdeaUltimate, "2025.3")
