@@ -385,5 +385,4 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     }
     descriptionPanel.removeAll()
   }
-
 }
