@@ -2,8 +2,6 @@ package io.snyk.plugin.cli
 
 import com.intellij.credentialStore.Credentials
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.ide.plugins.PluginManagerCore
-import com.intellij.openapi.extensions.PluginId
 import com.intellij.testFramework.LightPlatformTestCase
 import com.intellij.util.net.ProxyConfiguration
 import com.intellij.util.net.ProxyConfiguration.StaticProxyConfiguration
@@ -15,9 +13,9 @@ import io.snyk.plugin.removeDummyCliFile
 import io.snyk.plugin.resetSettings
 import io.snyk.plugin.services.AuthenticationType
 import io.snyk.plugin.setupDummyCliFile
+import snyk.pluginInfo
 import java.net.URLEncoder
 import java.util.UUID
-import snyk.PLUGIN_ID
 
 @Suppress("HttpUrlsUsage")
 class ConsoleCommandRunnerTest : LightPlatformTestCase() {
@@ -166,14 +164,12 @@ class ConsoleCommandRunnerTest : LightPlatformTestCase() {
 
   fun testSetupCliEnvironmentVariables() {
     val generalCommandLine = GeneralCommandLine("")
-    val snykPluginVersion =
-      PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version ?: "UNKNOWN"
     pluginSettings().authenticationType = AuthenticationType.API_TOKEN
     ConsoleCommandRunner().setupCliEnvironmentVariables(generalCommandLine, "test-api-token")
 
     assertEquals("test-api-token", generalCommandLine.environment["SNYK_TOKEN"])
     assertEquals("JETBRAINS_IDE", generalCommandLine.environment["SNYK_INTEGRATION_NAME"])
-    assertEquals(snykPluginVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
+    assertEquals(pluginInfo.integrationVersion, generalCommandLine.environment["SNYK_INTEGRATION_VERSION"])
     assertEquals("INTELLIJ IDEA IC", generalCommandLine.environment["SNYK_INTEGRATION_ENVIRONMENT"])
     assertEquals(
       "2023.1".length,
