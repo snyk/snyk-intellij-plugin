@@ -110,7 +110,14 @@ intellijPlatform {
   }
 
   pluginVerification {
-    ides { ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.1") }
+    ides {
+      // this is gonna need `create` instead of `ide` in future platform versions
+      ide(IntelliJPlatformType.IntellijIdeaCommunity, "2025.2")
+      // as of 2025.3, there's no community edition anymore
+      ide(IntelliJPlatformType.IntellijIdeaUltimate, "2025.3")
+      ide(IntelliJPlatformType.IntellijIdeaUltimate, "2026.1")
+      ide(IntelliJPlatformType.IntellijIdeaUltimate, "2026.2")
+    }
     freeArgs.set(listOf("-mute", "TemplateWordInPluginId"))
     failureLevel.set(
       listOf(
