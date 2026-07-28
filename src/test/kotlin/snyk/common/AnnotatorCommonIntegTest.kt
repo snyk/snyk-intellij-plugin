@@ -19,6 +19,7 @@ import io.snyk.plugin.refreshAnnotationsForOpenFiles
 import io.snyk.plugin.resetSettings
 import java.nio.file.Paths
 import org.eclipse.lsp4j.WorkspaceFolder
+import org.jetbrains.concurrency.resolvedPromise
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -129,7 +130,7 @@ class AnnotatorCommonIntegTest : BasePlatformTestCase() {
   fun `initRefreshing subscribes so folder config changes refresh annotations`() {
     mockkStatic("io.snyk.plugin.UtilsKt")
     try {
-      justRun { refreshAnnotationsForOpenFiles(project) }
+      every { refreshAnnotationsForOpenFiles(project) } returns resolvedPromise()
       AnnotatorCommon(project).initRefreshing()
       project.messageBus
         .syncPublisher(SnykProductsOrSeverityListener.SNYK_ENABLEMENT_TOPIC)

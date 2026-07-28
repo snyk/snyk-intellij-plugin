@@ -63,6 +63,8 @@ import java.util.SortedSet
 import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
 import org.apache.commons.lang3.SystemUtils
+import org.jetbrains.concurrency.Promise
+import org.jetbrains.concurrency.resolvedPromise
 import org.jetbrains.concurrency.runAsync
 import snyk.common.ProductType
 import snyk.common.SnykCachedResults
@@ -306,11 +308,13 @@ fun findPsiFileIgnoringExceptions(virtualFile: VirtualFile, project: Project): P
   }
 }
 
-fun refreshAnnotationsForFile(project: Project, virtualFile: VirtualFile) {
-  if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return
-  if (!virtualFile.isValid) return
+fun refreshAnnotationsForFile(project: Project, virtualFile: VirtualFile): Promise<Unit> {
+  if (project.isDisposed || ApplicationManager.getApplication().isDisposed) {
+    return resolvedPromise()
+  }
+  if (!virtualFile.isValid) return resolvedPromise()
 
-  runAsync {
+  return runAsync {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
     if (!virtualFile.isValid) return@runAsync
 
@@ -333,8 +337,8 @@ fun refreshAnnotationsForFile(psiFile: PsiFile) {
 
 private const val SINGLE_FILE_DECORATION_UPDATE_THRESHOLD = 5
 
-fun refreshAnnotationsForOpenFiles(project: Project) {
-  runAsync {
+fun refreshAnnotationsForOpenFiles(project: Project): Promise<Unit> {
+  return runAsync {
     if (project.isDisposed || ApplicationManager.getApplication().isDisposed) return@runAsync
     // Note: Avoid VirtualFileManager.asyncRefresh() as it refreshes ALL files including
     // remote/HTTP files, which can cause NPE in RemoteFileInfoImpl when localFile is null.
@@ -357,7 +361,12 @@ fun refreshAnnotationsForOpenFiles(project: Project) {
         }
       }
     } else {
-      openFiles.forEach { refreshAnnotationsForFile(project, it) }
+      // Wait for the per-file refresh promises, so the Promise this function returns reflects
+      // them rather than resolving as soon as they are started. (Each still schedules its EDT work
+      // via invokeLater — see refreshAnnotationsForFile — so this drains the pooled portion; the
+      // EDT portion only completes synchronously when invokeLater is executed inline, e.g. in
+      // tests.)
+      openFiles.map { refreshAnnotationsForFile(project, it) }.forEach { it.blockingGet(10_000) }
     }
   }
 }
@@ -367,8 +376,8 @@ fun navigateToSource(
   virtualFile: VirtualFile,
   selectionStartOffset: Int,
   selectionEndOffset: Int? = null,
-) {
-  runAsync {
+): Promise<Unit> {
+  return runAsync {
     if (project.isDisposed || !virtualFile.isValid) return@runAsync
     // Check that the offset is valid. If not, log it and let PsiNavigationSupport handle it instead
     // of returning early
