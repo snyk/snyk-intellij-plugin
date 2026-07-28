@@ -11,6 +11,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getStandardLayout
 import io.snyk.plugin.ui.jcef.JCEFUtils
+import io.snyk.plugin.ui.jcef.JcefAvailability
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.TreeViewBridgeHandler
 import io.snyk.plugin.ui.toolwindow.panels.PanelHTMLUtils.Companion.getFormattedHtml
@@ -106,9 +107,11 @@ class HtmlTreePanel(project: Project) : JPanel(), Disposable {
         }
       }
     } else {
+      // Reached only when the embedded browser was reported available but could not be created.
       SnykBalloonNotificationHelper.showError(
-        "Snyk results panel requires JCEF (Chromium Embedded Framework), which is not available " +
-          "in this environment. Please use a JetBrains Runtime (JBR) build of your IDE.",
+        JcefAvailability.unavailableReason()
+          ?: ("Snyk could not create the embedded browser needed to display results. " +
+            "Please check the IDE log and report this to Snyk support if it persists."),
         null,
       )
     }

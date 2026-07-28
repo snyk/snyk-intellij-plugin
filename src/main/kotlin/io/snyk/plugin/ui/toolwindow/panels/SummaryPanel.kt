@@ -13,6 +13,7 @@ import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.baseGridConstraints
 import io.snyk.plugin.ui.getStandardLayout
 import io.snyk.plugin.ui.jcef.JCEFUtils
+import io.snyk.plugin.ui.jcef.JcefAvailability
 import io.snyk.plugin.ui.jcef.LoadHandlerGenerator
 import io.snyk.plugin.ui.jcef.ToggleDeltaHandler
 import io.snyk.plugin.ui.toolwindow.panels.PanelHTMLUtils.Companion.getFormattedHtml
@@ -100,8 +101,11 @@ class SummaryPanel(project: Project) : SimpleToolWindowPanel(true, true), Dispos
         )
     } else {
       val ideName = ApplicationNamesInfo.getInstance().fullProductName
+      // Reached only when the embedded browser was reported available but could not be created.
       SnykBalloonNotificationHelper.showError(
-        "Failed to show issue summary. Please make sure you are running the latest version of $ideName.",
+        JcefAvailability.unavailableReason()
+          ?: ("Failed to show the issue summary. Please make sure you are running the latest " +
+            "version of $ideName."),
         null,
       )
     }
