@@ -48,6 +48,7 @@ import org.eclipse.lsp4j.Range
 import org.eclipse.lsp4j.ShowDocumentParams
 import org.eclipse.lsp4j.TextEdit
 import org.eclipse.lsp4j.WorkspaceEdit
+import org.jetbrains.concurrency.resolvedPromise
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -137,7 +138,7 @@ class SnykLanguageClientTest {
     every { encodedUri.toVirtualFile() } returns virtualFile
 
     every { snyk.common.editor.DocumentChanger.applyChange(any()) } returns Unit
-    every { refreshAnnotationsForFile(projectMock, any()) } returns Unit
+    every { refreshAnnotationsForFile(projectMock, any()) } returns resolvedPromise()
 
     val edits = listOf(TextEdit(Range(Position(0, 0), Position(0, 0)), "test"))
     val params = ApplyWorkspaceEditParams(WorkspaceEdit(mapOf(encodedUri to edits)))
@@ -544,7 +545,7 @@ class SnykLanguageClientTest {
   fun `refreshCodeLenses and refreshInlineValues invoke refreshAnnotationsForOpenFiles`() {
     mockkStatic("io.snyk.plugin.UtilsKt")
     every { projectMock.isDisposed } returns false
-    justRun { refreshAnnotationsForOpenFiles(projectMock) }
+    every { refreshAnnotationsForOpenFiles(projectMock) } returns resolvedPromise()
 
     cut.refreshCodeLenses().get()
     cut.refreshInlineValues().get()
@@ -556,7 +557,7 @@ class SnykLanguageClientTest {
   fun `refreshCodeLenses does not call refreshAnnotationsForOpenFiles when project is disposed`() {
     mockkStatic("io.snyk.plugin.UtilsKt")
     every { projectMock.isDisposed } returns true
-    justRun { refreshAnnotationsForOpenFiles(any()) }
+    every { refreshAnnotationsForOpenFiles(any()) } returns resolvedPromise()
 
     cut.refreshCodeLenses().get()
 
@@ -981,7 +982,7 @@ class SnykLanguageClientTest {
     every { virtualFile.getDocument() } returns document
     every { document.lineCount } returns 100
     every { document.getLineStartOffset(any()) } returns 0
-    every { io.snyk.plugin.navigateToSource(any(), any(), any(), any()) } returns Unit
+    every { io.snyk.plugin.navigateToSource(any(), any(), any(), any()) } returns resolvedPromise()
 
     val params =
       ShowDocumentParams(fileUri).apply { selection = Range(Position(5, 0), Position(5, 10)) }

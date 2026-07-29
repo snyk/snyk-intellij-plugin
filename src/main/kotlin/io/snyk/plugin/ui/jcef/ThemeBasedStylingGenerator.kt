@@ -18,7 +18,10 @@ class ThemeBasedStylingGenerator {
     // 1. var(--varName) or var(--varName, fallback) - CSS variable usage
     // 2. --varName: value - CSS variable declaration (to prepend font family)
     // Groups: 1=var usage varName, 2=var fallback, 3=declaration varName
-    private val CSS_PATTERN = Regex("""var\(--([a-zA-Z0-9_-]+)(,[^)]*)?\)|--([a-zA-Z0-9_-]+):\s""")
+    // The fallback allows one level of nested parentheses so a nested var() fallback
+    // (e.g. var(--a, var(--b))) is matched whole and replaced without leaving a dangling ")".
+    private val CSS_PATTERN =
+      Regex("""var\(--([a-zA-Z0-9_-]+)(,(?:[^()]|\([^()]*\))*)?\)|--([a-zA-Z0-9_-]+):\s""")
 
     /**
      * Replace all CSS var() references and variable declarations in a single pass.
@@ -56,17 +59,21 @@ class ThemeBasedStylingGenerator {
       }
 
     /**
-     * Lighten or darken a hex color.
+     * Lighten or darken a hex color. An alpha suffix (#RRGGBBAA) is preserved untouched.
      *
-     * @param hex "#RRGGBB"
+     * @param hex "#RRGGBB" or "#RRGGBBAA"
      * @param factor -1.0 .. 1.0
      * > > 0 = lighten, < 0 = darken
      */
     fun adjustHexBrightness(hex: String, factor: Double): String {
       require(factor in -1.0..1.0) { "factor must be between -1.0 and 1.0" }
 
-      val clean = hex.removePrefix("#")
-      require(clean.length == 6) { "Expected 6-char hex like #RRGGBB" }
+      val withoutHash = hex.removePrefix("#")
+      require(withoutHash.length == 6 || withoutHash.length == 8) {
+        "Expected 6- or 8-char hex like #RRGGBB or #RRGGBBAA"
+      }
+      val clean = withoutHash.take(6)
+      val alpha = withoutHash.drop(6)
 
       fun adjust(comp: String): Int {
         val c = comp.toInt(16)
@@ -85,7 +92,7 @@ class ThemeBasedStylingGenerator {
       val g = adjust(clean.substring(2, 4))
       val b = adjust(clean.substring(4, 6))
 
-      return "#%02X%02X%02X".format(r, g, b)
+      return "#%02X%02X%02X".format(r, g, b) + alpha
     }
 
     /**
@@ -149,6 +156,8 @@ class ThemeBasedStylingGenerator {
       val listHoverBgColor =
         UIManager.getColor("List.hoverBackground")?.toHex()
           ?: adjustHexBrightness(bgColor, 0.1 * darkenOrLightenFactor)
+      val tooltipBgColor = UIManager.getColor("ToolTip.background")?.toHex() ?: bgColor
+      val tooltipFgColor = UIManager.getColor("ToolTip.foreground")?.toHex() ?: fgColor
 
       // Build variable map for single-pass replacement
       val varMap =
@@ -180,6 +189,9 @@ class ThemeBasedStylingGenerator {
           "vscode-list-activeSelectionBackground" to listSelectionBgColor,
           "vscode-list-activeSelectionForeground" to listSelectionFgColor,
           "vscode-list-hoverBackground" to listHoverBgColor,
+          "vscode-editorHoverWidget-background" to tooltipBgColor,
+          "vscode-editorHoverWidget-foreground" to tooltipFgColor,
+          "vscode-editorHoverWidget-border" to borderColor,
           "vscode-editor-inactiveSelectionBackground" to sectionBackground,
           "vscode-inputValidation-infoBackground" to infoBgColor,
           "vscode-inputValidation-infoForeground" to fgColor,

@@ -5,6 +5,17 @@
   <vendor url="https://snyk.io">Snyk Ltd.</vendor>
 
   <depends>com.intellij.modules.platform</depends>
+  <!--
+    Since IntelliJ 2026.2 the embedded browser (com.intellij.ui.jcef.*) is no longer part of the
+    core platform: it ships as the bundled "Web Browser (JCEF)" plugin. Without this declaration
+    our PluginClassLoader cannot see those classes and the tool window fails to open.
+
+    It MUST stay optional: the com.intellij.modules.jcef id does not exist before 2025.3.1, and
+    pluginSinceBuild is 242, so a required depends would disable the plugin on 2024.2-2025.3.0.
+    The bundled plugin is also OS/arch specific, so it can be absent even on 2026.2 — every JCEF
+    call site therefore goes through JcefAvailability rather than trusting this declaration.
+  -->
+  <depends optional="true">com.intellij.modules.jcef</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <codeInsight.lineMarkerProvider
