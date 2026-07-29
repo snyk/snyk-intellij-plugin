@@ -141,7 +141,10 @@ spotless {
 
 // Configure Ktlint: lint only (formatting is handled by Spotless/ktfmt)
 // Formatting rules are disabled in .editorconfig to avoid conflicts
-ktlint { ignoreFailures.set(false) }
+ktlint {
+  version.set("1.8.0")
+  ignoreFailures.set(false)
+}
 
 // Configure Kover for code coverage
 kover {

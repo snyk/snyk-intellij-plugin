@@ -53,6 +53,14 @@ ktlint_standard_type-argument-comment = disabled
 ktlint_standard_type-parameter-comment = disabled
 ktlint_standard_kdoc-wrapping = disabled
 ktlint_standard_block-comment-initial-star-alignment = disabled
+# Rules promoted from experimental to standard in ktlint 1.6.0–1.8.0; disabled to
+# stay consistent with ktfmt (Spotless) formatting, matching the rules above.
+ktlint_standard_blank-line-between-when-conditions = disabled
+ktlint_standard_when-entry-bracing = disabled
+ktlint_standard_square-brackets-spacing = disabled
+ktlint_standard_mixed-condition-operators = disabled
+ktlint_standard_kdoc = disabled
+ktlint_standard_paren-spacing = disabled
 
 [**/test/**/*.kt]
 # Backtick-quoted test names are idiomatic Kotlin
