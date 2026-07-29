@@ -117,3 +117,27 @@ alwaysApply: true
 - create png files from the mermaid diagrams using mmdc with `-w 2048px` for high resolution
 - document the tested scenarios for all testing stages (unit, integration, e2e) in ./docs
 </documenting>
+
+## Cursor Cloud specific instructions
+
+Notes for Cursor Cloud agents (the update script and toolchains are already
+provisioned). Standard commands live above / in `README.md`; only non-obvious
+caveats are captured here.
+
+- Default branch is `master` (not `main`); base PRs on `master`.
+- Use JDK 21: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`. Gradle 8.14.1
+  via the wrapper (`./gradlew`); there is no system `gradle`.
+- Build: `./gradlew buildPlugin` → `build/distributions/snyk-intellij-plugin-*.zip`.
+  Tests: `./gradlew test` (full suite, no flags; ~5 min for ~626 tests).
+- Network / egress caveat (the main historical blocker): `settings.gradle.kts`
+  `pluginManagement` resolves plugins from `oss.sonatype.org` (IntelliJ Platform
+  Gradle plugin snapshots) and `gradlePluginPortal()` (artifacts served from
+  `plugins-artifacts.gradle.org`). The Cursor Cloud firewall is an SNI-based
+  allowlist; if either host is not allowlisted, the build fails during plugin
+  resolution / dependency download with `Connection reset` at the TLS layer.
+  JetBrains SDK hosts (`cache-redirector.jetbrains.com`, `download.jetbrains.com`)
+  and Maven Central via `repo.maven.apache.org` must also be reachable.
+  `repo1.maven.org` is typically blocked but is not required (Central is proxied
+  through `repo.maven.apache.org`).
+- `runIde` / `verifyPlugin` UI launches need a display and are out of scope for a
+  headless cloud VM; rely on `./gradlew test` + `buildPlugin` for validation.
