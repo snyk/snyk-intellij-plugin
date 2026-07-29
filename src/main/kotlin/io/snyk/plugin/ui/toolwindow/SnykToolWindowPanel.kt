@@ -281,6 +281,7 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
       summaryPanel.add(summaryPanelContent)
     } else {
       this.summaryPanelContent = null
+      summaryPanel.add(wrapWithScrollPane(embeddedBrowserUnavailablePanel()))
     }
     revalidate()
   }

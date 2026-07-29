@@ -2,10 +2,12 @@ package io.snyk.plugin
 
 import com.intellij.ide.util.PsiNavigationSupport
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.pom.Navigatable
+import com.intellij.serviceContainer.AlreadyDisposedException
 import com.intellij.util.messages.MessageBus
 import com.intellij.util.messages.Topic
 import io.mockk.every
@@ -14,6 +16,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
+import io.snyk.plugin.services.SnykTaskQueueService
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
@@ -501,6 +504,50 @@ class UtilsKtTest {
       assertTrue(isCliInstalled())
     } finally {
       tempFile.delete()
+    }
+  }
+
+  @Test
+  fun `serviceIfNotDisposed returns null instead of throwing when getService throws AlreadyDisposedException`() {
+    unmockkAll()
+    val project = mockk<Project>()
+    every { project.isDisposed } returns false
+    every { project.getService(SnykTaskQueueService::class.java) } throws
+      AlreadyDisposedException("Already disposed: project")
+    val mockLogger = mockk<Logger>(relaxed = true)
+    val originalLogger = logger
+    logger = mockLogger
+
+    try {
+      val result = getSnykTaskQueueService(project)
+
+      assertEquals(null, result)
+      verify(exactly = 1) { mockLogger.debug(any<String>(), any<Throwable>()) }
+      verify(exactly = 0) { mockLogger.warn(any<String>(), any<Throwable>()) }
+    } finally {
+      logger = originalLogger
+    }
+  }
+
+  @Test
+  fun `serviceIfNotDisposed returns null instead of throwing when getService throws a non-cancellation exception`() {
+    unmockkAll()
+    val project = mockk<Project>()
+    every { project.isDisposed } returns false
+    every { project.getService(SnykTaskQueueService::class.java) } throws
+      RuntimeException("service constructor blew up")
+    val mockLogger = mockk<Logger>(relaxed = true)
+    val originalLogger = logger
+    logger = mockLogger
+
+    try {
+      val result = getSnykTaskQueueService(project)
+
+      assertEquals(null, result)
+      verify(exactly = 1) { mockLogger.warn(any<String>(), any<Throwable>()) }
+      verify(exactly = 0) { mockLogger.debug(any<String>(), any<Throwable>()) }
+    } finally {
+      logger = originalLogger
     }
   }
 
