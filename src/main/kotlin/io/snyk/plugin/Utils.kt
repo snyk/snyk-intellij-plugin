@@ -60,6 +60,7 @@ import java.nio.file.attribute.PosixFilePermission
 import java.security.MessageDigest
 import java.util.Objects.nonNull
 import java.util.SortedSet
+import java.util.concurrent.CancellationException
 import java.util.concurrent.TimeUnit
 import javax.swing.JComponent
 import org.apache.commons.lang3.SystemUtils
@@ -75,7 +76,9 @@ import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.ScanState
 import snyk.common.removeSuffix
 
-private val logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
+// internal var (not private val) so tests can substitute a mock to assert on log level - see
+// UtilsKtTest
+internal var logger = Logger.getInstance("#io.snyk.plugin.UtilsKt")
 
 fun getSnykTaskQueueService(project: Project): SnykTaskQueueService? =
   project.serviceIfNotDisposed()
@@ -153,7 +156,17 @@ private inline fun <reified T : Any> Project.serviceIfNotDisposed(): T? {
     getService(T::class.java)
   } catch (t: Throwable) {
     // Without this the real cause is lost and the caller only ever sees a downstream NPE.
-    logger.error("Could not instantiate service ${T::class.java.name}", t)
+    // logger.error rethrows control-flow/cancellation exceptions instead of logging them, which
+    // would break the null-returning contract - so neither branch below uses error.
+    // Cancellation (e.g. AlreadyDisposedException, a ProcessCanceledException) routinely fires
+    // during normal project disposal: debug is enough. Anything else is a genuine failure (bad
+    // extension point, broken constructor) and must stay visible at warn, or it silently drops
+    // out of the default-level idea.log a user would attach to a report.
+    if (t is CancellationException) {
+      logger.debug("Could not instantiate service ${T::class.java.name}", t)
+    } else {
+      logger.warn("Could not instantiate service ${T::class.java.name}", t)
+    }
     null
   }
 }
