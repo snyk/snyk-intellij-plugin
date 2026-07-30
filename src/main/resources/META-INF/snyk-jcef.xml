@@ -1,0 +1,9 @@
+<!--
+  Optional sub-descriptor for the optional com.intellij.modules.jcef <depends> in plugin.xml.
+  Required by the JetBrains Marketplace upload validator (config-file attribute), not by any
+  registration need — see the comment above that <depends> for why nothing lives here: this
+  plugin must stay fully functional on IDEs without JCEF, so no existing registration may move
+  into a JCEF-only sub-descriptor. Intentionally empty.
+-->
+<idea-plugin>
+</idea-plugin>

@@ -6,7 +6,6 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
-import com.intellij.ui.jcef.JBCefApp
 import com.intellij.ui.jcef.JBCefBrowser
 import com.intellij.ui.jcef.JBCefClient
 import com.intellij.util.ui.UIUtil
@@ -19,6 +18,7 @@ import io.snyk.plugin.settings.handleDeltaFindingsChange
 import io.snyk.plugin.settings.handleReleaseChannelChange
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.jcef.JCEFUtils
+import io.snyk.plugin.ui.jcef.JcefAvailability
 import io.snyk.plugin.ui.jcef.SaveConfigHandler
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -133,16 +133,18 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
 
     registerForProject(project, this)
     Disposer.register(SnykPluginDisposable.getInstance(project), this)
-    initializePanel()
-    subscribeToCliDownloadEvents()
+    // Every method whose body names a com.intellij.ui.jcef type must stay uninvoked when the
+    // embedded browser is unavailable: bytecode verification is per-method and happens on first
+    // invocation, so an early return inside such a method would not save us from a LinkageError.
+    if (JcefAvailability.isAvailable()) {
+      initializePanel()
+      subscribeToCliDownloadEvents()
+    } else {
+      showEmbeddedBrowserUnavailableMessage()
+    }
   }
 
   private fun initializePanel() {
-    if (!JBCefApp.isSupported()) {
-      showJcefNotSupportedMessage()
-      return
-    }
-
     // Show loading state immediately to avoid blocking
     showLoadingMessage()
 
@@ -338,6 +340,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
   }
 
   fun reloadFromLanguageServer() {
+    if (!JcefAvailability.isAvailable()) return
     // Fetch LS HTML in background to avoid blocking EDT
     ApplicationManager.getApplication().executeOnPooledThread {
       if (isDisposed) return@executeOnPooledThread
@@ -371,26 +374,16 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     }
   }
 
-  /**
-   * Returns true when the given raw HTML, after theme injection, differs from what the browser
-   * currently displays. Used to skip needless re-renders when the LS returns identical content.
-   */
-  internal fun themedHtmlDiffersFromCurrent(rawHtml: String): Boolean =
-    themedHtmlDiffers(rawHtml, lastThemedHtml)
-
-  private fun showJcefNotSupportedMessage() {
+  private fun showEmbeddedBrowserUnavailableMessage() {
     removeAll()
+    val reason = JcefAvailability.unavailableReason() ?: ""
     val label =
       JLabel(
-        "<html><center>JCEF is not supported on this platform.<br>" +
-          "The HTML settings panel cannot be displayed.</center></html>",
+        "<html><center>Snyk settings cannot be displayed in this IDE.<br><br>$reason</center></html>",
         SwingConstants.CENTER,
       )
     add(label, BorderLayout.CENTER)
-    SnykBalloonNotificationHelper.showWarn(
-      "JCEF is not supported on this platform. Using legacy settings dialog.",
-      project,
-    )
+    SnykBalloonNotificationHelper.showWarn(reason, project)
   }
 
   private fun showSettingsLoadError() {
@@ -403,6 +396,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
   fun isModified(): Boolean = modified.get()
 
   fun reset() {
+    if (!JcefAvailability.isAvailable()) return
     // Reload HTML from language server to restore form to saved state
     ApplicationManager.getApplication().executeOnPooledThread {
       if (isDisposed) return@executeOnPooledThread
@@ -422,6 +416,15 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
   }
 
   fun apply() {
+    // No browser means no form was ever rendered, so there is nothing to read back and save.
+    if (!JcefAvailability.isAvailable()) {
+      modified.set(false)
+      return
+    }
+    applyViaBrowser()
+  }
+
+  private fun applyViaBrowser() {
     // Capture previous values before save for change detection
     previousReleaseChannel = pluginSettings().cliReleaseChannel
     previousDeltaEnabled = pluginSettings().isDeltaFindingsEnabled()
@@ -506,7 +509,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
   }
 
   fun setAuthToken(token: String, apiUrl: String?) {
-    if (isDisposed) return
+    if (isDisposed || !JcefAvailability.isAvailable()) return
     ApplicationManager.getApplication()
       .invokeLater(
         {
@@ -529,6 +532,7 @@ class HTMLSettingsPanel(private val project: Project) : JPanel(BorderLayout()), 
     isDisposed = true
     lastThemedHtml = null
     unregisterForProject(project, this)
-    disposeCurrentBrowser()
+    // disposeCurrentBrowser() names JCEF types; a browser can only exist if JCEF was available.
+    if (JcefAvailability.isAvailable()) disposeCurrentBrowser()
   }
 }

@@ -2,13 +2,19 @@ package io.snyk.plugin.ui.toolwindow.panels
 
 import com.intellij.ui.jcef.JBCefScrollbarsHelper
 import io.snyk.plugin.ui.jcef.JCEFUtils
+import io.snyk.plugin.ui.jcef.JcefAvailability
 import io.snyk.plugin.ui.jcef.ThemeBasedStylingGenerator
 
 class PanelHTMLUtils {
   companion object {
 
     // Get any custom CSS. At the minimum, include the IDE's native scrollbar style.
+    // Only ever invoked when the embedded browser is available: the body references a
+    // com.intellij.ui.jcef type, so verifying it would raise a LinkageError on IDE builds where
+    // JCEF is not reachable (2026.2+ without the bundled Web Browser plugin).
     private fun getCss() = JBCefScrollbarsHelper.buildScrollbarsStyle()
+
+    private fun getCssIfAvailable() = if (JcefAvailability.isAvailable()) getCss() else ""
 
     // Must not have blank template replacements, as they could be used to skip the "${nonce}"
     // injection check
@@ -16,7 +22,8 @@ class PanelHTMLUtils {
     // "${nonce}" - See IDE-1050.
     fun getFormattedHtml(html: String, ideScript: String = " "): String {
       val nonce = extractLsNonceIfPresent(html) ?: JCEFUtils.generateNonce()
-      var formattedHtml = html.replace("\${ideStyle}", "<style nonce=\${nonce}>${getCss()}</style>")
+      var formattedHtml =
+        html.replace("\${ideStyle}", "<style nonce=\${nonce}>${getCssIfAvailable()}</style>")
       formattedHtml = formattedHtml.replace("\${headerEnd}", " ")
       formattedHtml = formattedHtml.replace("\${ideScript}", ideScript)
       formattedHtml = formattedHtml.replace("\${ideGenerateAIFix}", getGenerateAiFixScript())
@@ -35,7 +42,7 @@ class PanelHTMLUtils {
         // Length of LS nonce
         val startIndex = nonceStartPosition + "nonce-".length
         val endIndex = startIndex + 24
-        return html.substring(startIndex, endIndex).trim()
+        html.substring(startIndex, endIndex).trim()
       } else {
         null
       }

@@ -23,6 +23,7 @@ import io.snyk.plugin.isCliDownloading
 import io.snyk.plugin.isScanRunning
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.refreshAnnotationsForOpenFiles
+import io.snyk.plugin.ui.jcef.JcefAvailability
 import io.snyk.plugin.ui.toolwindow.panels.HtmlTreePanel
 import io.snyk.plugin.ui.toolwindow.panels.IssueDescriptionPanel
 import io.snyk.plugin.ui.toolwindow.panels.SnykAuthPanel
@@ -34,7 +35,6 @@ import io.snyk.plugin.ui.wrapWithScrollPane
 import java.awt.BorderLayout
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import org.jetbrains.annotations.TestOnly
 import org.jetbrains.concurrency.runAsync
 import snyk.common.SnykError
 import snyk.common.lsp.AiFixParams
@@ -237,9 +237,15 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     val treeSplitter = OnePixelSplitter(true, TOOL_TREE_SPLITTER_PROPORTION_KEY, 0.25f)
     treeSplitter.firstComponent = summaryPanel
 
-    htmlTreePanel = HtmlTreePanel(project)
-    Disposer.register(this, htmlTreePanel!!)
-    treeSplitter.secondComponent = htmlTreePanel
+    if (JcefAvailability.isAvailable()) {
+      val treePanel = HtmlTreePanel(project)
+      htmlTreePanel = treePanel
+      Disposer.register(this, treePanel)
+      treeSplitter.secondComponent = treePanel
+    } else {
+      htmlTreePanel = null
+      treeSplitter.secondComponent = wrapWithScrollPane(embeddedBrowserUnavailablePanel())
+    }
 
     vulnerabilitiesSplitter.firstComponent = treeSplitter
     vulnerabilitiesSplitter.secondComponent = descriptionPanel
@@ -267,13 +273,30 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
 
   private fun updateSummaryPanel() {
     this.summaryPanelContent?.let { Disposer.dispose(it) }
-    val summaryPanelContent = SummaryPanel(project)
-    this.summaryPanelContent = summaryPanelContent
     summaryPanel.removeAll()
-    Disposer.register(this, summaryPanelContent)
-    summaryPanel.add(summaryPanelContent)
+    if (JcefAvailability.isAvailable()) {
+      val summaryPanelContent = SummaryPanel(project)
+      this.summaryPanelContent = summaryPanelContent
+      Disposer.register(this, summaryPanelContent)
+      summaryPanel.add(summaryPanelContent)
+    } else {
+      this.summaryPanelContent = null
+      summaryPanel.add(wrapWithScrollPane(embeddedBrowserUnavailablePanel()))
+    }
     revalidate()
   }
+
+  /**
+   * Explains a missing embedded browser in place of the panel that would have rendered here. The
+   * tool window must still open: a missing IDE rendering capability is not a reason to take the
+   * whole window down.
+   */
+  private fun embeddedBrowserUnavailablePanel(): JPanel =
+    StatePanel(
+      "<html><center>Snyk cannot display results in this IDE.<br><br>" +
+        (JcefAvailability.unavailableReason() ?: "") +
+        "</center></html>"
+    )
 
   fun displayAuthPanel() {
     if (isDisposed) return
@@ -342,7 +365,14 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
     invokeLater {
       if (isDisposed || project.isDisposed) return@invokeLater
       clearDescriptionPanel()
-      descriptionPanel.add(SuggestionDescriptionPanel(project, scanIssue), BorderLayout.CENTER)
+      if (JcefAvailability.isAvailable()) {
+        descriptionPanel.add(SuggestionDescriptionPanel(project, scanIssue), BorderLayout.CENTER)
+      } else {
+        descriptionPanel.add(
+          wrapWithScrollPane(embeddedBrowserUnavailablePanel()),
+          BorderLayout.CENTER,
+        )
+      }
       descriptionPanel.revalidate()
       descriptionPanel.repaint()
     }
@@ -355,12 +385,5 @@ class SnykToolWindowPanel(val project: Project) : JPanel(), Disposable {
       }
     }
     descriptionPanel.removeAll()
-  }
-
-  @TestOnly fun getDescriptionPanel() = descriptionPanel
-
-  @TestOnly
-  fun setHtmlTreePanelForTest(panel: HtmlTreePanel?) {
-    htmlTreePanel = panel
   }
 }

@@ -85,6 +85,33 @@ class ThemeBasedStylingGeneratorTest : BasePlatformTestCase() {
     assertTrue(result.contains("dark") || result.contains("light"))
   }
 
+  fun `test replaceWithCustomStyles maps editor hover widget variables for tree tooltips`() {
+    // The tree view's custom .tree-tooltip uses VS Code hover-widget variables. Without a mapping
+    // these fall back to a hardcoded dark background (#252526) and dark label text, rendering as
+    // black text on dark grey in a light IDE theme.
+    val html =
+      """
+            <style>
+                .tree-tooltip {
+                    background-color: var(--vscode-editorHoverWidget-background, #252526);
+                    color: var(--vscode-editorHoverWidget-foreground, var(--text-color));
+                    border: 1px solid var(--vscode-editorHoverWidget-border, var(--panel-border));
+                }
+            </style>
+        """
+        .trimIndent()
+    val result = ThemeBasedStylingGenerator.replaceWithCustomStyles(html)
+
+    // All three variables must be resolved to real IDE theme values, not their fallbacks.
+    assertFalse(result.contains("var(--vscode-editorHoverWidget-background"))
+    assertFalse(result.contains("var(--vscode-editorHoverWidget-foreground"))
+    assertFalse(result.contains("var(--vscode-editorHoverWidget-border"))
+    assertFalse(result.contains("#252526"))
+    // The nested var() fallback must be consumed whole — no dangling close paren.
+    assertFalse(result.contains("var(--text-color)"))
+    assertFalse(result.contains("));"))
+  }
+
   fun `test replaceWithCustomStyles handles multiple variables`() {
     val html =
       """
@@ -225,7 +252,16 @@ class ThemeBasedStylingGeneratorTest : BasePlatformTestCase() {
     val varMap = mapOf("primary" to "#fff")
     val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, varMap, emptyMap())
 
-    // Should replace outer var, inner var remains but parsing stops at first )
-    assertTrue(result.contains("#fff"))
+    // The outer var() — including its nested var() fallback — is matched whole and replaced,
+    // leaving no dangling close paren.
+    assertEquals("color: #fff;", result)
+  }
+
+  fun `test replaceAllCssVars preserves nested fallback when outer var not in map`() {
+    val html = """color: var(--primary, var(--fallback, #000));"""
+    val result = ThemeBasedStylingGenerator.replaceAllCssVars(html, emptyMap(), emptyMap())
+
+    // Nothing mapped: the whole expression is left intact for the browser to resolve.
+    assertEquals("""color: var(--primary, var(--fallback, #000));""", result)
   }
 }

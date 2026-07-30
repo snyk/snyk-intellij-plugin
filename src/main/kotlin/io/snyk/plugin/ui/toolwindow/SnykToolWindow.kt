@@ -11,6 +11,7 @@ import io.snyk.plugin.SnykFile
 import io.snyk.plugin.events.SnykScanListener
 import io.snyk.plugin.events.SnykTaskQueueListener
 import io.snyk.plugin.getSnykToolWindowPanel
+import io.snyk.plugin.ui.toolwindow.panels.StatePanel
 import snyk.common.lsp.LsProduct
 import snyk.common.lsp.ScanIssue
 import snyk.common.lsp.SnykScanParams
@@ -34,7 +35,17 @@ class SnykToolWindow(private val project: Project) :
     initialiseToolbarUpdater()
     toolbar = actionToolbar.component
 
-    setContent(getSnykToolWindowPanel(project)!!)
+    // Never dereference with !!: if the panel service failed to construct, the tool window must
+    // still open and say why, rather than dying with an NPE that hides the real cause.
+    @Suppress("UsePropertyAccessSyntax")
+    setContent(
+      getSnykToolWindowPanel(project)
+        ?: StatePanel(
+          "<html><center>Snyk could not initialise its tool window.<br><br>" +
+            "Please check the IDE log (Help | Show Log in Files) and report the error to Snyk " +
+            "support if it persists.</center></html>"
+        )
+    )
   }
 
   private fun initialiseToolbarUpdater() {
