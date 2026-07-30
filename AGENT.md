@@ -120,24 +120,69 @@ alwaysApply: true
 
 ## Cursor Cloud specific instructions
 
-Notes for Cursor Cloud agents (the update script and toolchains are already
-provisioned). Standard commands live above / in `README.md`; only non-obvious
-caveats are captured here.
+Durable, non-obvious notes for agents running in the Cursor Cloud Linux VM. The
+toolchains are already provisioned and the standard commands are documented above
+and in `README.md`, so only the non-obvious caveats are captured here.
 
-- Default branch is `master` (not `main`); base PRs on `master`.
-- Use JDK 21: `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`. Gradle 8.14.1
-  via the wrapper (`./gradlew`); there is no system `gradle`.
-- Build: `./gradlew buildPlugin` → `build/distributions/snyk-intellij-plugin-*.zip`.
-  Tests: `./gradlew test` (full suite, no flags; ~5 min for ~626 tests).
-- Network / egress caveat (the main historical blocker): `settings.gradle.kts`
-  `pluginManagement` resolves plugins from `oss.sonatype.org` (IntelliJ Platform
-  Gradle plugin snapshots) and `gradlePluginPortal()` (artifacts served from
-  `plugins-artifacts.gradle.org`). The Cursor Cloud firewall is an SNI-based
-  allowlist; if either host is not allowlisted, the build fails during plugin
-  resolution / dependency download with `Connection reset` at the TLS layer.
-  JetBrains SDK hosts (`cache-redirector.jetbrains.com`, `download.jetbrains.com`)
-  and Maven Central via `repo.maven.apache.org` must also be reachable.
-  `repo1.maven.org` is typically blocked but is not required (Central is proxied
-  through `repo.maven.apache.org`).
-- `runIde` / `verifyPlugin` UI launches need a display and are out of scope for a
-  headless cloud VM; rely on `./gradlew test` + `buildPlugin` for validation.
+- **The default branch is `master`, not `main`** — base branches and PRs on it.
+- **JDK 21, via the Gradle wrapper.** `export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`
+  and use `./gradlew` (Gradle 8.14.1, fetched by the wrapper from
+  `services.gradle.org`); there is no system `gradle`.
+- **Build and test both pass here.** `./gradlew buildPlugin` produces
+  `build/distributions/snyk-intellij-plugin-*.zip`, and `./gradlew test` runs the
+  full suite — roughly 626 tests in about 5 minutes, green, with no extra flags.
+  This repo was previously reported as unbuildable in the cloud VM; that was purely
+  an egress gap, not a code or toolchain problem, so do not skip it on that basis.
+- **Dependency resolution is the only thing that has ever blocked this build.**
+  `settings.gradle.kts` resolves plugins from `oss.sonatype.org` and
+  `gradlePluginPortal()` (whose artifacts are served from
+  `plugins-artifacts.gradle.org`), while `build.gradle.kts` needs Maven Central, the
+  IntelliJ Platform default repositories and
+  `cache-redirector.jetbrains.com/intellij-dependencies`. Failures appear as a TLS
+  `Connection reset` during plugin resolution or dependency download rather than a
+  clear 403, which makes them easy to misread as flakiness. Three things are worth
+  knowing before asking for more allowlist entries:
+  - `cache-redirector.jetbrains.com` proxies both the Gradle Plugin Portal m2 and
+    Maven Central, so routing through it avoids `plugins-artifacts.gradle.org`
+    entirely.
+  - The `oss.sonatype.org` entry is effectively vestigial: all seven plugins
+    (`changelog`, `intellij.platform`, `kotlin.jvm`, `kover`, `spotless`, `ktlint`,
+    `axion-release`) are pinned to releases from the Plugin Portal, and the only
+    `SNAPSHOT` in the build is the project's own axion-release version.
+  - `repo1.maven.org` is commonly blocked and is not required — Central resolves
+    via `repo.maven.apache.org`.
+- **`./gradlew verifyPlugin` runs headless but is expensive.** `pluginVerification`
+  in `build.gradle.kts` is configured against four full IDE distributions (IC 2025.2
+  plus IU 2025.3, 2026.1 and 2026.2), so a cold run downloads roughly a gigabyte
+  from the JetBrains hosts. Both `verifyPlugin` and `test` are wired as **pre-push
+  hooks**, so run them before pushing — otherwise the hook can outlast the SSH
+  connection and the push dies with `Connection to github.com closed by remote host`.
+- **`runIde` is usable when the VM has a display.** Cloud VMs here have run XFCE on
+  `DISPLAY=:1`, so `DISPLAY=:1 JAVA_HOME=<jdk21> ./gradlew runIde` launches a
+  sandbox IDE with the plugin loaded and is the strongest available proof — building
+  and unit-testing do not show that the plugin actually works inside a running IDE.
+  Non-fatal Xvfb noise (`CustomTitleBarPeer`, `SEVERE` FUS statistics warnings) can
+  be ignored. In the sandbox IDE, configure Settings › Tools › Snyk: uncheck *Manage
+  binaries automatically*, set the CLI path, choose the API-token auth method, then
+  scan from the Snyk tool window.
+- **Authentication does not come from the environment.** The plugin runs the CLI as
+  its language server and passes the token from **its own settings**, so neither the
+  ambient `SNYK_TOKEN` nor the CLI's `~/.config/configstore` authenticates it —
+  running `snyk auth` in a terminal has no effect on the plugin. Use the **API token
+  ("Token (legacy)") method rather than OAuth2**, whose browser flow times out in a
+  headless-ish VM (`oauth authentication timed out`). The plugin also applies its own
+  folder-trust gate, separate from the IDE's workspace trust, so a scan silently
+  will not run until the project is trusted in the Snyk UI. Only the token lives in
+  encrypted storage; CLI path, auth method and trusted folders are plain settings and
+  can be pre-set to skip clicks.
+- **Probe egress instead of trusting a host list.** The allowlist changes between
+  runs, so treat any reachable/blocked list — including in older revisions of this
+  section — as stale. Matching is per hostname, and a bare entry is apex-exact
+  while `*.example.com` covers subdomains only, so an apex host has to be
+  allowlisted in its own right. Check a host directly rather than inferring from a
+  build failure:
+  `timeout 12 openssl s_client -connect oss.sonatype.org:443 -servername oss.sonatype.org </dev/null`.
+  The hosts worth probing for this repo are `services.gradle.org`,
+  `plugins.gradle.org`, `plugins-artifacts.gradle.org`, `oss.sonatype.org`,
+  `repo.maven.apache.org`, `cache-redirector.jetbrains.com` and
+  `download.jetbrains.com` (which 302s to `download-cdn.jetbrains.com`).
