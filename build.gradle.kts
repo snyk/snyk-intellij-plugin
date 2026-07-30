@@ -54,6 +54,9 @@ configurations.all {
     // jackson-databind resolves to a vulnerable version via the IntelliJ test-framework.
     // 2.21.5 clears CVE-2026-54512/54513/54515 on the 2.21 line (patch-level, no API changes).
     "com.fasterxml.jackson.core:jackson-databind:2.21.5",
+    // logback-core resolves to a vulnerable version via ktlint-cli -> logback-classic.
+    // 1.5.36 fixes the Expression Injection vulnerability (IDE-2384).
+    "ch.qos.logback:logback-core:1.5.36",
   )
 }
 
