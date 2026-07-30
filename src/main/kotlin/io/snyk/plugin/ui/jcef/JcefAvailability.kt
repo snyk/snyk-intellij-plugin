@@ -61,8 +61,8 @@ object JcefAvailability {
         Class.forName(PROBE_CLASS, false, JcefAvailability::class.java.classLoader)
         true
       } catch (t: Throwable) {
-        // The real failure mode is NoClassDefFoundError, which is an Error and not an Exception,
-        // so Throwable is the only catch that actually covers it.
+        // The real failure mode is NoClassDefFoundError, which is an Error not an Exception, so
+        // catching Exception wouldn't cover it — Throwable is used here to catch any failure.
         logger.info("Embedded browser classes are not reachable: ${t.javaClass.name}: ${t.message}")
         false
       }

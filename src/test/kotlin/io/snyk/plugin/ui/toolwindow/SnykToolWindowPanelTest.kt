@@ -6,10 +6,12 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.replaceService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.getSnykCachedResults
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.services.SnykTaskQueueService
+import io.snyk.plugin.ui.jcef.JcefAvailability
 import org.junit.Test
 import snyk.UIComponentFinder
 
@@ -90,5 +92,23 @@ class SnykToolWindowPanelTest : LightPlatform4TestCase() {
     // Description panel must still be present
     val descriptionPanel = UIComponentFinder.getJPanelByName(cut, "descriptionPanel")
     assertNotNull("descriptionPanel must be present", descriptionPanel)
+  }
+
+  @Test
+  fun `summary panel shows unavailable-browser explanation when JCEF is unavailable`() {
+    mockkObject(JcefAvailability)
+    every { JcefAvailability.isAvailable() } returns false
+    every { JcefAvailability.unavailableReason() } returns "test reason"
+    every { settings.token } returns "test-token"
+
+    val cut = SnykToolWindowPanel(project)
+    PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
+    val summaryPanel = UIComponentFinder.getJPanelByName(cut, "summaryPanel")
+    assertNotNull("summaryPanel should always be present", summaryPanel)
+    assertTrue(
+      "summaryPanel should not be left empty when the embedded browser is unavailable",
+      summaryPanel!!.componentCount > 0,
+    )
   }
 }

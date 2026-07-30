@@ -5,19 +5,18 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefJSQuery
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.runInBackground
+import io.snyk.plugin.settings.handleDeltaFindingsChange
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
 import snyk.common.lsp.LanguageServerWrapper
+import snyk.common.lsp.settings.LsFolderSettingsKeys
 
 class ToggleDeltaHandler(val project: Project) {
   fun generate(jbCefBrowser: JBCefBrowserBase): CefLoadHandlerAdapter {
     val toggleDeltaQuery = JBCefJSQuery.create(jbCefBrowser)
     toggleDeltaQuery.addHandler { deltaEnabled ->
-      runInBackground("Snyk: updating configuration") {
-        pluginSettings().setDeltaEnabled(deltaEnabled.toBoolean())
-        LanguageServerWrapper.getInstance(project).updateConfiguration()
-      }
+      runInBackground("Snyk: updating configuration") { toggleDelta(deltaEnabled.toBoolean()) }
       return@addHandler JBCefJSQuery.Response("success")
     }
 
@@ -38,5 +37,12 @@ class ToggleDeltaHandler(val project: Project) {
         }
       }
     }
+  }
+
+  internal fun toggleDelta(deltaEnabled: Boolean) {
+    pluginSettings().setDeltaEnabled(deltaEnabled)
+    pluginSettings().markExplicitlyChanged(LsFolderSettingsKeys.SCAN_NET_NEW)
+    handleDeltaFindingsChange(project)
+    LanguageServerWrapper.getInstance(project).updateConfiguration()
   }
 }
