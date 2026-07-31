@@ -602,12 +602,15 @@ class LanguageServerWrapperTest {
   }
 
   @Test
-  fun `executeCommandWithArgs should return null when not initialized`() {
+  fun `executeCommandWithArgs should throw when not initialized`() {
     cut.isInitialized = false
 
-    val result = cut.executeCommandWithArgs("snyk.testCommand", listOf("arg1"))
-
-    assertEquals(null, result)
+    try {
+      cut.executeCommandWithArgs("snyk.testCommand", listOf("arg1"))
+      fail("Expected IllegalStateException")
+    } catch (e: IllegalStateException) {
+      assertTrue(e.message!!.contains("snyk.testCommand"))
+    }
   }
 
   @Test
