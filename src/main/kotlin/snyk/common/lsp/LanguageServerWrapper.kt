@@ -619,7 +619,15 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     languageServer.workspaceService.executeCommand(param).get(timeoutMillis, TimeUnit.MILLISECONDS)
 
   fun executeCommandWithArgs(command: String, args: List<Any>, timeoutMillis: Long = 5_000): Any? {
-    if (!isInitialized) return null
+    // Fail loud, not silent: both callers (ExecuteCommandBridge, HtmlTreePanel) already wrap this
+    // in a try/catch. A silent null here is indistinguishable from a real null LS result, so a
+    // JCEF bridge command issued while the LS is stuck pre-initialize (e.g. the settings-fallback
+    // page's "Clear credentials") looks like it succeeded when it was never sent. See IDE-2181.
+    if (!isInitialized) {
+      throw IllegalStateException(
+        "Cannot execute command '$command': language server is not initialized"
+      )
+    }
     val param = ExecuteCommandParams()
     param.command = command
     param.arguments = args

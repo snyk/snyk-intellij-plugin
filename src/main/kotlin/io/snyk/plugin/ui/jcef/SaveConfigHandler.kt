@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
 import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.Logger
@@ -58,8 +59,11 @@ class SaveConfigHandler(
       var response: JBCefJSQuery.Response
       try {
         saveConfig(jsonString)
-        // Hide any previous error on success - defer to avoid EDT blocking
-        invokeLater {
+        // Hide any previous error on success - defer to avoid EDT blocking.
+        // ModalityState.any(): this handler runs off-EDT (JBCefJSQuery callback), so the default
+        // modality state resolves to non-modal — if a modal dialog (e.g. Settings) is open, a
+        // non-modal invokeLater is queued and silently never runs until that dialog closes.
+        invokeLater(ModalityState.any()) {
           jbCefBrowser.cefBrowser.executeJavaScript(
             "if (typeof window.hideError === 'function') { window.hideError(); }",
             jbCefBrowser.cefBrowser.url,
@@ -71,7 +75,7 @@ class SaveConfigHandler(
         logger.warn("Error saving config", e)
         // Show error in browser - defer to avoid EDT blocking
         val errorMsg = (e.message ?: "Unknown error").replace("'", "\\'")
-        invokeLater {
+        invokeLater(ModalityState.any()) {
           jbCefBrowser.cefBrowser.executeJavaScript(
             "if (typeof window.showError === 'function') { window.showError('$errorMsg'); }",
             jbCefBrowser.cefBrowser.url,
@@ -115,7 +119,13 @@ class SaveConfigHandler(
 
     executeCommandQuery.addHandler { value ->
       dispatchSettingsCommand(value) { callbackId, escaped ->
-        invokeLater {
+        // dispatch() resolves the command asynchronously on a background thread (runAsync), so this
+        // callback fires off-EDT. ModalityState.any() is required, not just "defer to avoid EDT
+        // blocking": the default modality state resolves to non-modal from a background thread, so
+        // a plain invokeLater is silently queued forever while a modal dialog (e.g. Settings) is
+        // open — the command bridge result (including error feedback, see IDE-2181) would never
+        // reach the page until the user closed and reopened the dialog.
+        invokeLater(ModalityState.any()) {
           jbCefBrowser.cefBrowser.executeJavaScript(
             "if(window.__ideCallbacks__&&window.__ideCallbacks__['$callbackId'])" +
               "{window.__ideCallbacks__['$callbackId']($escaped);}",
