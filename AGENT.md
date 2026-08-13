@@ -130,9 +130,14 @@ and in `README.md`, so only the non-obvious caveats are captured here.
   `services.gradle.org`); there is no system `gradle`.
 - **Build and test both pass here.** `./gradlew buildPlugin` produces
   `build/distributions/snyk-intellij-plugin-*.zip`, and `./gradlew test` runs the
-  full suite — roughly 626 tests in about 5 minutes, green, with no extra flags.
-  This repo was previously reported as unbuildable in the cloud VM; that was purely
-  an egress gap, not a code or toolchain problem, so do not skip it on that basis.
+  full suite green in a few minutes. This repo was previously reported as unbuildable
+  in the cloud VM; that was purely an egress gap, not a code or toolchain problem, so
+  do not skip it on that basis.
+- **A cached `test` task exits 0 without running anything.** On a warm VM Gradle can
+  report `test` as `UP-TO-DATE` and succeed in seconds having executed no tests, which
+  reads as a pass and is not one. When the point is to *prove* the suite is green
+  rather than to iterate, run `./gradlew test --rerun-tasks` and check that the
+  reported test count is non-zero.
 - **Dependency resolution is the only thing that has ever blocked this build.**
   `settings.gradle.kts` resolves plugins from `oss.sonatype.org` and
   `gradlePluginPortal()` (whose artifacts are served from
@@ -175,9 +180,10 @@ and in `README.md`, so only the non-obvious caveats are captured here.
   will not run until the project is trusted in the Snyk UI. Only the token lives in
   encrypted storage; CLI path, auth method and trusted folders are plain settings and
   can be pre-set to skip clicks.
-- **Probe egress instead of trusting a host list.** The allowlist changes between
-  runs, so treat any reachable/blocked list — including in older revisions of this
-  section — as stale. Matching is per hostname, and a bare entry is apex-exact
+- **Probe egress instead of trusting a host list.** The allowlist only changes when
+  someone asks the admins to change it, but a list written into a document drifts from
+  it silently, so treat any reachable/blocked list — including in older revisions of
+  this section — as unverified. Matching is per hostname, and a bare entry is apex-exact
   while `*.example.com` covers subdomains only, so an apex host has to be
   allowlisted in its own right. Check a host directly rather than inferring from a
   build failure:
