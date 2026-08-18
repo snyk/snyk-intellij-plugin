@@ -7,6 +7,7 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.snyk.plugin.fromPathToUriString
 import io.snyk.plugin.fromUriToPath
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.SnykSettingsDialog
 import org.eclipse.lsp4j.WorkspaceFolder
 import org.junit.After
@@ -718,6 +719,43 @@ class SnykProjectSettingsConfigurableTest {
       "additionalParameters should be empty list",
       emptyList<String>(),
       result.settings?.get(LsFolderSettingsKeys.ADDITIONAL_PARAMETERS)?.value,
+    )
+  }
+
+  @Test
+  fun `applyDisplayIssuesSelection stores the new selection and reports changed`() {
+    val settingsStateService = SnykApplicationSettingsStateService()
+    settingsStateService.issuesToDisplay = SnykApplicationSettingsStateService.DISPLAY_ALL_ISSUES
+
+    val changed =
+      applyDisplayIssuesSelection(
+        settingsStateService,
+        SnykApplicationSettingsStateService.DISPLAY_NEW_ISSUES,
+      )
+
+    assertTrue("should report a change", changed)
+    assertEquals(
+      "issuesToDisplay should be set to the selection that was passed in",
+      SnykApplicationSettingsStateService.DISPLAY_NEW_ISSUES,
+      settingsStateService.issuesToDisplay,
+    )
+  }
+
+  @Test
+  fun `applyDisplayIssuesSelection is a no-op and reports unchanged when selection is the same`() {
+    val settingsStateService = SnykApplicationSettingsStateService()
+    settingsStateService.issuesToDisplay = SnykApplicationSettingsStateService.DISPLAY_NEW_ISSUES
+
+    val changed =
+      applyDisplayIssuesSelection(
+        settingsStateService,
+        SnykApplicationSettingsStateService.DISPLAY_NEW_ISSUES,
+      )
+
+    assertFalse("should report no change", changed)
+    assertEquals(
+      SnykApplicationSettingsStateService.DISPLAY_NEW_ISSUES,
+      settingsStateService.issuesToDisplay,
     )
   }
 }

@@ -17,6 +17,7 @@ import io.snyk.plugin.isNewConfigDialogEnabled
 import io.snyk.plugin.isProjectSettingsAvailable
 import io.snyk.plugin.isUrlValid
 import io.snyk.plugin.pluginSettings
+import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.SnykBalloonNotificationHelper
 import io.snyk.plugin.ui.SnykSettingsDialog
 import io.snyk.plugin.ui.settings.HTMLSettingsPanel
@@ -176,8 +177,7 @@ class SnykProjectSettingsConfigurable(val project: Project) : SearchableConfigur
     }
 
     val newDisplayIssuesSelection = snykSettingsDialog.getDisplayIssuesSelection()
-    if (settingsStateService.issuesToDisplay != newDisplayIssuesSelection) {
-      settingsStateService.issuesToDisplay = newCliReleaseChannel
+    if (applyDisplayIssuesSelection(settingsStateService, newDisplayIssuesSelection)) {
       runBackgroundableTask("Processing display issue selection changes", project, true) {
         handleDeltaFindingsChange(project)
       }
@@ -251,6 +251,23 @@ fun applyFolderConfigChanges(
       )
       .withSetting(LsFolderSettingsKeys.ORG_SET_BY_USER, !autoSelectOrgEnabled, changed = true)
   fcs.addFolderConfig(updatedConfig)
+}
+
+/**
+ * Applies a new "issues to display" selection from the settings dialog, returning whether it
+ * actually changed so callers know whether to trigger [handleDeltaFindingsChange]. Extracted as a
+ * standalone function so the comparison and assignment are unit-testable without instantiating the
+ * platform-heavy [SnykProjectSettingsConfigurable].
+ */
+fun applyDisplayIssuesSelection(
+  settingsStateService: SnykApplicationSettingsStateService,
+  newDisplayIssuesSelection: String,
+): Boolean {
+  val changed = settingsStateService.issuesToDisplay != newDisplayIssuesSelection
+  if (changed) {
+    settingsStateService.issuesToDisplay = newDisplayIssuesSelection
+  }
+  return changed
 }
 
 /**
