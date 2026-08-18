@@ -15,6 +15,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -599,6 +600,142 @@ class LanguageServerWrapperTest {
     } finally {
       java.nio.file.Files.deleteIfExists(tempDir)
     }
+  }
+
+  @Test
+  fun `addContentRoots uses precomputed roots instead of recomputing content roots`() {
+    // getContentRootVirtualFiles() resolves via DumbService.runWhenSmart, which only runs
+    // synchronously when already on the EDT in smart mode. Called off the EDT (as addContentRoots
+    // now is, via sendScanCommand's runInBackground), it would defer to a later EDT tick and this
+    // stub would never actually be consulted for the folders sent below — so this assertion catches
+    // a regression where addContentRoots silently starts recomputing roots again instead of using
+    // the ones already resolved on the EDT by its caller.
+    simulateRunningLS()
+    justRun { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
+    justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    every { getSnykTaskQueueService(projectMock) } returns null
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/tmp/snyk-test-precomputed-root"
+    every { virtualFile.name } returns "snyk-test-precomputed-root"
+    every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-precomputed-root")
+
+    cut.addContentRoots(projectMock, setOf(virtualFile))
+
+    verify(exactly = 0) { projectMock.getContentRootVirtualFiles() }
+    verify { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    assertTrue(cut.configuredWorkspaceFolders.any { it.uri.contains("snyk-test-precomputed-root") })
+  }
+
+  @Test
+  fun `sendScanCommand resolves roots on the EDT and reuses them in the backgrounded addContentRoots call`() {
+    // sendScanCommand's runWhenSmart callback and the runInBackground block inside it are never
+    // actually invoked by the other sendScanCommand tests (they stub runWhenSmart as a no-op), so
+    // this is the only test that exercises the real wiring end-to-end: it proves getContentRoots()
+    // is resolved exactly once (on the "EDT" leg, before backgrounding) and that addContentRoots
+    // reuses that same result rather than recomputing it from inside the backgrounded block.
+    simulateRunningLS()
+    justRun { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
+    justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns
+      CompletableFuture.completedFuture(null)
+    every { getSnykTaskQueueService(projectMock) } returns null
+    every { dumbServiceMock.isDumb } returns false
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/tmp/snyk-test-scan-root"
+    every { virtualFile.name } returns "snyk-test-scan-root"
+    every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-scan-root")
+    every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
+
+    // The outer runWhenSmart in sendScanCommand is only ever entered when already EDT+smart, so it
+    // runs its callback synchronously in real usage — match that here.
+    every { dumbServiceMock.runWhenSmart(any()) } answers { firstArg<Runnable>().run() }
+
+    // runInBackground is `inline`, so it is NOT interceptable via mockkStatic(UtilsKt) — the real
+    // call compiles straight to ProgressManager.getInstance().run(Task.Backgroundable).
+    // ProgressManager.getInstance() caches its resolved instance in a static field on first call,
+    // bypassing ApplicationManager.getApplication() on every later call in this JVM fork — so
+    // stubbing applicationMock.getService(...) only works for whichever test happens to run first.
+    // mockkStatic on the class itself intercepts the getInstance() call directly instead, which is
+    // unaffected by that internal caching.
+    mockkStatic(com.intellij.openapi.progress.ProgressManager::class)
+    val progressManagerMock = mockk<com.intellij.openapi.progress.ProgressManager>()
+    every { com.intellij.openapi.progress.ProgressManager.getInstance() } returns
+      progressManagerMock
+    val indicatorMock = mockk<com.intellij.openapi.progress.ProgressIndicator>(relaxed = true)
+    every { progressManagerMock.run(any<com.intellij.openapi.progress.Task>()) } answers
+      {
+        (firstArg<com.intellij.openapi.progress.Task>()
+            as com.intellij.openapi.progress.Task.Backgroundable)
+          .run(indicatorMock)
+      }
+
+    cut.sendScanCommand()
+
+    // Exactly once: the EDT-side getContentRoots() call in sendScanCommand. If addContentRoots
+    // recomputed roots itself instead of reusing the ones resolved on the EDT, this would be
+    // invoked a second time.
+    verify(exactly = 1) { projectMock.getContentRootVirtualFiles() }
+    verify { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    assertTrue(cut.configuredWorkspaceFolders.any { it.uri.contains("snyk-test-scan-root") })
+  }
+
+  @Test
+  fun `sendScanCommand does nothing in the backgrounded block once the project is disposed`() {
+    // Backgrounding this block means the project can be disposed between the EDT-side root
+    // resolution and the background task actually running (e.g. the IDE window closing while the
+    // task is queued) — a sequence that was impossible when this all ran synchronously on the EDT.
+    simulateRunningLS()
+    every { getSnykTaskQueueService(projectMock) } returns null
+    every { dumbServiceMock.isDumb } returns false
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/tmp/snyk-test-disposed-root"
+    every { virtualFile.name } returns "snyk-test-disposed-root"
+    every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-disposed-root")
+    every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
+
+    // sendFolderScanCommand only calls executeCommand for a folder already present in
+    // configuredWorkspaceFolders, and has no disposal check of its own — so without seeding this,
+    // the executeCommand assertion below would pass vacuously (blocked by that unrelated,
+    // pre-existing membership check) regardless of whether the disposal guard under test exists.
+    cut.configuredWorkspaceFolders.add(
+      WorkspaceFolder(
+        Paths.get("/tmp/snyk-test-disposed-root").toUri().toASCIIString(),
+        "snyk-test-disposed-root",
+      )
+    )
+
+    every { dumbServiceMock.runWhenSmart(any()) } answers { firstArg<Runnable>().run() }
+
+    // ProgressManager.getInstance() caches its resolved instance in a static field, so it must be
+    // intercepted via mockkStatic rather than via applicationMock.getService(...), or this test's
+    // stub is silently ignored whenever it doesn't happen to run first in the JVM fork.
+    mockkStatic(com.intellij.openapi.progress.ProgressManager::class)
+    val progressManagerMock = mockk<com.intellij.openapi.progress.ProgressManager>()
+    every { com.intellij.openapi.progress.ProgressManager.getInstance() } returns
+      progressManagerMock
+    val indicatorMock = mockk<com.intellij.openapi.progress.ProgressIndicator>(relaxed = true)
+    every { progressManagerMock.run(any<com.intellij.openapi.progress.Task>()) } answers
+      {
+        // Simulate disposal happening after roots were resolved on the EDT but before the
+        // background task body runs.
+        every { projectMock.isDisposed } returns true
+        (firstArg<com.intellij.openapi.progress.Task>()
+            as com.intellij.openapi.progress.Task.Backgroundable)
+          .run(indicatorMock)
+      }
+
+    cut.sendScanCommand()
+
+    // The real discriminator: sendFolderScanCommand has no disposal check of its own, so with the
+    // pre-seeded folder above it would call executeCommand unconditionally unless the disposal
+    // guard under test short-circuits the whole locked block first.
+    verify(exactly = 0) { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    // Secondary/defense-in-depth: also covered independently by addContentRoots's own
+    // disposed-check, so this alone wouldn't catch a regression in the new guard.
+    verify(exactly = 0) { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
   }
 
   @Test

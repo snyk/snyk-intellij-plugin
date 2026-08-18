@@ -40,6 +40,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Level
 import java.util.logging.Logger.getLogger
+import kotlin.concurrent.withLock
 import org.apache.commons.lang3.SystemUtils
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -159,6 +160,14 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   lateinit var process: Process
 
   var isInitializing: ReentrantLock = ReentrantLock()
+
+  // Before this class backgrounded sendScanCommand's workspace-folder update, the whole call ran
+  // inside DumbService.runWhenSmart, which always executes on the single-threaded EDT — so
+  // concurrent sendScanCommand() calls (e.g. a token refresh and a user-triggered scan landing
+  // close together) were naturally serialized. Running that update in a background task loses that
+  // for free; this lock restores it so two overlapping calls can't interleave their
+  // configuredWorkspaceFolders mutation and didChangeWorkspaceFolders/executeCommand dispatch.
+  private val workspaceFolderUpdateLock = ReentrantLock()
 
   // Written by initialize() / the LS-termination listener on background threads and read
   // cross-thread (e.g. the settings panel poll and the non-forcing getConfigHtml check) outside the
@@ -418,12 +427,20 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
     if (disposed || project.isDisposed) return emptySet()
-    val normalizedRoots = getContentRoots(project)
-    return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
+    return workspaceFoldersFrom(getContentRoots(project))
   }
 
-  private fun getContentRoots(project: Project): MutableSet<VirtualFile> {
-    val contentRoots = project.getContentRootVirtualFiles()
+  private fun workspaceFoldersFrom(roots: Set<VirtualFile>): Set<WorkspaceFolder> =
+    roots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
+
+  private fun getContentRoots(project: Project): MutableSet<VirtualFile> =
+    normalizeContentRoots(project.getContentRootVirtualFiles())
+
+  /**
+   * Drops roots with no resolvable NIO path and folds any root already covered by another
+   * (ancestor) root into it.
+   */
+  private fun normalizeContentRoots(contentRoots: Set<VirtualFile>): MutableSet<VirtualFile> {
     val normalizedRoots = mutableSetOf<VirtualFile>()
 
     for (root in contentRoots) {
@@ -562,8 +579,16 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     if (notAuthenticated()) return
     DumbService.getInstance(project).runWhenSmart {
       val roots = getContentRoots(project)
-      if (roots.isNotEmpty()) addContentRoots(project)
-      roots.forEach { sendFolderScanCommand(it.path, project) }
+      runInBackground("Snyk: syncing workspace folders and starting scan") {
+        workspaceFolderUpdateLock.withLock {
+          // Backgrounding this loop means it no longer runs atomically with respect to the EDT, so
+          // the project can be disposed mid-loop (e.g. the IDE window closing) in a way that was
+          // impossible when this all ran synchronously inside DumbService.runWhenSmart.
+          if (disposed || project.isDisposed) return@withLock
+          if (roots.isNotEmpty()) addContentRoots(project, roots)
+          roots.forEach { sendFolderScanCommand(it.path, project) }
+        }
+      }
     }
   }
 
@@ -1036,7 +1061,16 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun addContentRoots(project: Project) {
+  /**
+   * [roots], when provided, is normalized and used as-is instead of recomputing content roots via
+   * [getWorkspaceFoldersFromRoots]. That recompute goes through
+   * [io.snyk.plugin.getContentRootVirtualFiles], which resolves via `DumbService.runWhenSmart` — a
+   * call that only executes synchronously when already on the EDT in smart mode; off the EDT (e.g.
+   * from a background task) it defers to a later EDT tick, so a caller reading the result
+   * immediately after would see only `project.baseDir`, not the real content roots. Passing
+   * already-resolved [roots] avoids that.
+   */
+  fun addContentRoots(project: Project, roots: Set<VirtualFile>? = null) {
     if (disposed || project.isDisposed) return
     if (!ensureLanguageServerInitialized()) {
       SnykBalloonNotificationHelper.showWarn(
@@ -1047,7 +1081,9 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
     ensureLanguageServerProtocolVersion(project)
     updateConfiguration(false)
-    val added = getWorkspaceFoldersFromRoots(project)
+    val added =
+      roots?.let { workspaceFoldersFrom(normalizeContentRoots(it)) }
+        ?: getWorkspaceFoldersFromRoots(project)
     updateWorkspaceFolders(added, emptySet())
   }
 
