@@ -238,11 +238,6 @@ class LanguageServerWrapperTest {
 
   @Test
   fun `addContentRoots reuses precomputed roots instead of recomputing content roots`() {
-    // getContentRootVirtualFiles() resolves via DumbService.runWhenSmart, which only runs
-    // synchronously when already called from the EDT in smart mode. sendScanCommand now calls
-    // addContentRoots from a background thread, so it must pass the roots it already resolved on
-    // the EDT rather than letting addContentRoots recompute them off-EDT (which would silently
-    // collapse to just project.baseDir).
     simulateRunningLS()
     justRun { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
     justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
@@ -275,15 +270,11 @@ class LanguageServerWrapperTest {
     every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-scan-root")
     every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
 
-    // runWhenSmart is only ever entered when already EDT+smart, so it runs its callback
-    // synchronously in real usage — match that here.
     every { dumbServiceMock.runWhenSmart(any()) } answers { firstArg<Runnable>().run() }
     stubRunInBackgroundToRunSynchronously()
 
     cut.sendScanCommand()
 
-    // Exactly once: the EDT-side getContentRoots() call. If the backgrounded block recomputed
-    // roots itself instead of reusing what was resolved on the EDT, this would be invoked twice.
     verify(exactly = 1) { projectMock.getContentRootVirtualFiles() }
     verify { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
     verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
@@ -292,10 +283,6 @@ class LanguageServerWrapperTest {
 
   @Test
   fun `sendScanCommand does not update workspace folders once the project is disposed before the background task runs`() {
-    // Backgrounding sendScanCommand's workspace-folder update means the project can be disposed
-    // between the EDT-side root resolution and the background task actually running (e.g. the IDE
-    // window closing while the task is queued) — impossible when this all ran synchronously on the
-    // EDT.
     simulateRunningLS()
     every { getSnykTaskQueueService(projectMock) } returns null
 
@@ -1672,13 +1659,10 @@ class LanguageServerWrapperTest {
     every { processMock.isAlive } returns true
   }
 
-  // runInBackground is `inline`, so it can't be intercepted via mockkStatic on its containing
-  // file (the call is compiled straight into the caller) — it has to be caught one level down, at
-  // the real ProgressManager.getInstance().run(Task.Backgroundable) call it compiles to.
-  // ProgressManager.getInstance() also caches its resolved instance in a static field on first
-  // call, so it must be stubbed via mockkStatic on the class itself rather than through
-  // applicationMock.getService(...), or the stub only takes effect for whichever test happens to
-  // run first in this JVM fork.
+  // runInBackground is inline, so it must be stubbed one level down, at the
+  // ProgressManager.getInstance().run(Task.Backgroundable) call it compiles to. getInstance()
+  // caches its result in a static field, so mockkStatic(ProgressManager::class) is required here
+  // instead of the applicationMock.getService(...) pattern used elsewhere in this file.
   private fun stubRunInBackgroundToRunSynchronously(beforeRun: () -> Unit = {}) {
     mockkStatic(ProgressManager::class)
     val progressManagerMock = mockk<ProgressManager>()
