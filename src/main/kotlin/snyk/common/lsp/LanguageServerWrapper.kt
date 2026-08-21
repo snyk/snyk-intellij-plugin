@@ -40,6 +40,7 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import java.util.logging.Level
 import java.util.logging.Logger.getLogger
+import kotlin.concurrent.withLock
 import org.apache.commons.lang3.SystemUtils
 import org.eclipse.lsp4j.ClientCapabilities
 import org.eclipse.lsp4j.ClientInfo
@@ -134,6 +135,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   // internal for test set up
   internal val configuredWorkspaceFolders: MutableSet<WorkspaceFolder> =
     ConcurrentHashMap.newKeySet()
+  @Volatile
   private var disposed = false
     get() {
       return ApplicationManager.getApplication().isDisposed || field
@@ -159,6 +161,8 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
   lateinit var process: Process
 
   var isInitializing: ReentrantLock = ReentrantLock()
+
+  private val workspaceFolderUpdateLock = ReentrantLock()
 
   // Written by initialize() / the LS-termination listener on background threads and read
   // cross-thread (e.g. the settings panel poll and the non-forcing getConfigHtml check) outside the
@@ -418,9 +422,11 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
 
   fun getWorkspaceFoldersFromRoots(project: Project): Set<WorkspaceFolder> {
     if (disposed || project.isDisposed) return emptySet()
-    val normalizedRoots = getContentRoots(project)
-    return normalizedRoots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
+    return workspaceFoldersFrom(getContentRoots(project))
   }
+
+  private fun workspaceFoldersFrom(roots: Set<VirtualFile>): Set<WorkspaceFolder> =
+    roots.map { WorkspaceFolder(it.toLanguageServerURI(), it.name) }.toSet()
 
   private fun getContentRoots(project: Project): MutableSet<VirtualFile> {
     val contentRoots = project.getContentRootVirtualFiles()
@@ -562,8 +568,13 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     if (notAuthenticated()) return
     DumbService.getInstance(project).runWhenSmart {
       val roots = getContentRoots(project)
-      if (roots.isNotEmpty()) addContentRoots(project)
-      roots.forEach { sendFolderScanCommand(it.path, project) }
+      runInBackground("Snyk: syncing workspace folders and starting scan") {
+        workspaceFolderUpdateLock.withLock {
+          if (disposed || project.isDisposed) return@withLock
+          if (roots.isNotEmpty()) addContentRoots(project, roots)
+          roots.forEach { sendFolderScanCommand(it.path, project) }
+        }
+      }
     }
   }
 
@@ -1036,7 +1047,11 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
   }
 
-  fun addContentRoots(project: Project) {
+  /**
+   * Pass [roots] when calling this off the EDT: recomputing them via [getWorkspaceFoldersFromRoots]
+   * only resolves synchronously on the EDT and otherwise silently collapses to `project.baseDir`.
+   */
+  fun addContentRoots(project: Project, roots: Set<VirtualFile>? = null) {
     if (disposed || project.isDisposed) return
     if (!ensureLanguageServerInitialized()) {
       SnykBalloonNotificationHelper.showWarn(
@@ -1047,7 +1062,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     }
     ensureLanguageServerProtocolVersion(project)
     updateConfiguration(false)
-    val added = getWorkspaceFoldersFromRoots(project)
+    val added = roots?.let { workspaceFoldersFrom(it) } ?: getWorkspaceFoldersFromRoots(project)
     updateWorkspaceFolders(added, emptySet())
   }
 
