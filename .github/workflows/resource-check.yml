@@ -12,17 +12,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check Static Resources
-        run: |
-          declare -A resources
-          # Add each resource as a key, value pair, mapping the local resource to the reference file (which should be stored in the language server repository). For example:
-          # resources["<path_to_local_file>"]="<url_of_reference_file>"
-          resources["src/main/resources/html/ScanSummaryInit.html"]="https://raw.githubusercontent.com/snyk/snyk-ls/refs/heads/main/shared_ide_resources/ui/html/ScanSummaryInit.html"
-          resources["src/main/resources/html/settings-fallback.html"]="https://raw.githubusercontent.com/snyk/snyk-ls/refs/heads/main/shared_ide_resources/ui/html/settings-fallback.html"
-          for key in ${!resources[@]}; do
-            candidate=$(sha512sum $key | awk {'print $1'})
-            candidate=${candidate:="null"}
-            reference=$(curl -s ${resources[$key]} | sha512sum | awk {'print $1'})
-            echo "Candidate file $key has sha512sum $candidate"
-            echo "Reference file ${resources[$key]} has sha512sum $reference"
-            [[ $candidate == $reference ]]
-          done
+        # The resource map lives in scripts/update-shared-resources.sh (the single
+        # source of truth). Run that script with --check to update the resources locally.
+        run: scripts/update-shared-resources.sh --check
