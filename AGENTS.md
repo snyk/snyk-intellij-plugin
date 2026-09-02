@@ -43,6 +43,7 @@ Tests use JUnit4 with IntelliJ's `BasePlatformTestCase`/testFramework fixtures a
 - Use MockK for mocking and reuse existing mocks.
 - This is not a library: delete unused files instead of deprecating them.
 - After changing `.kt`/`.java` files, run `./gradlew spotlessCheck ktlintCheck`; run the full test suite (`./gradlew test`) and check coverage (`./gradlew koverXmlReport`, target 80%+ on changed code) before committing.
+- Gradle will report `UP-TO-DATE` and exit 0 without running anything if the test task is cached, which is indistinguishable from a genuine pass. Use `./gradlew test --rerun-tasks` when you need to confirm a real, non-cached green.
 - Run Snyk SCA/Code scans against the project's absolute path before committing and after `build.gradle.kts` changes; fix real findings, don't touch test fixtures.
 - Before pushing, run `./gradlew verifyPlugin`.
 - Before each commit, check for and address feedback from the PR review bot (snyk-pr-review-bot) on any open PR.
