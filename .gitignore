@@ -49,7 +49,6 @@ docs/performance-analysis.md
 IDE-*
 
 # Claude Code (machine-specific, not shared)
-CLAUDE.md
 .claude/
 
 # Local test output artifacts
