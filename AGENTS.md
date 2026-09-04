@@ -109,10 +109,13 @@ and in `README.md`, so only the non-obvious caveats are captured here.
   running `snyk auth` in a terminal has no effect on the plugin. Use the **API token
   ("Token (legacy)") method rather than OAuth2**, whose browser flow times out in a
   headless-ish VM (`oauth authentication timed out`). The plugin also applies its own
-  folder-trust gate, separate from the IDE's workspace trust, so a scan silently
-  will not run until the project is trusted in the Snyk UI. Only the token lives in
-  encrypted storage; CLI path, auth method and trusted folders are plain settings and
-  can be pre-set to skip clicks.
+  folder-trust gate, separate from the IDE's workspace trust, so a scan will not run
+  silently until the project is trusted in the Snyk UI. The token, CLI path, auth
+  method and trusted folders are all plain settings serialized to `snyk.settings.xml`
+  today (`SnykApplicationSettingsStateService.kt` has an open TODO to migrate the
+  token to IntelliJ's secure-storage API) — none of it is encrypted at rest yet, so
+  treat that XML file (and any full settings export) as sensitive. All can be
+  pre-set to skip clicks.
 - **Probe egress instead of trusting a host list.** The allowlist only changes when
   someone asks the admins to change it, but a list written into a document drifts from
   it silently, so treat any reachable/blocked list — including in older revisions of
