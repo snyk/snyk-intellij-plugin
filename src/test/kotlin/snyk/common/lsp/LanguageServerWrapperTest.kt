@@ -2,6 +2,9 @@ package snyk.common.lsp
 
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -15,6 +18,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.getCliFile
 import io.snyk.plugin.getContentRootVirtualFiles
+import io.snyk.plugin.getSnykTaskQueueService
 import io.snyk.plugin.pluginSettings
 import io.snyk.plugin.services.SnykApplicationSettingsStateService
 import io.snyk.plugin.ui.toolwindow.SnykPluginDisposable
@@ -230,6 +234,78 @@ class LanguageServerWrapperTest {
     cut.sendScanCommand()
 
     verify(exactly = 0) { dumbServiceMock.runWhenSmart(any()) }
+  }
+
+  @Test
+  fun `addContentRoots reuses precomputed roots instead of recomputing content roots`() {
+    simulateRunningLS()
+    justRun { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
+    justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    every { getSnykTaskQueueService(projectMock) } returns null
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/tmp/snyk-test-precomputed-root"
+    every { virtualFile.name } returns "snyk-test-precomputed-root"
+    every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-precomputed-root")
+
+    cut.addContentRoots(projectMock, setOf(virtualFile))
+
+    verify(exactly = 0) { projectMock.getContentRootVirtualFiles() }
+    verify { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    assertTrue(cut.configuredWorkspaceFolders.any { it.uri.contains("snyk-test-precomputed-root") })
+  }
+
+  @Test
+  fun `sendScanCommand resolves roots on the EDT and runs the workspace-folder update off the EDT`() {
+    simulateRunningLS()
+    justRun { lsMock.workspaceService.didChangeConfiguration(any<DidChangeConfigurationParams>()) }
+    justRun { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    every { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) } returns
+      CompletableFuture.completedFuture(null)
+    every { getSnykTaskQueueService(projectMock) } returns null
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/tmp/snyk-test-scan-root"
+    every { virtualFile.name } returns "snyk-test-scan-root"
+    every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-scan-root")
+    every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
+
+    every { dumbServiceMock.runWhenSmart(any()) } answers { firstArg<Runnable>().run() }
+    stubRunInBackgroundToRunSynchronously()
+
+    cut.sendScanCommand()
+
+    verify(exactly = 1) { projectMock.getContentRootVirtualFiles() }
+    verify { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
+    verify { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    assertTrue(cut.configuredWorkspaceFolders.any { it.uri.contains("snyk-test-scan-root") })
+  }
+
+  @Test
+  fun `sendScanCommand does not update workspace folders once the project is disposed before the background task runs`() {
+    simulateRunningLS()
+    every { getSnykTaskQueueService(projectMock) } returns null
+
+    val virtualFile = mockk<VirtualFile>()
+    every { virtualFile.path } returns "/tmp/snyk-test-disposed-root"
+    every { virtualFile.name } returns "snyk-test-disposed-root"
+    every { virtualFile.toNioPath() } returns Paths.get("/tmp/snyk-test-disposed-root")
+    every { projectMock.getContentRootVirtualFiles() } returns setOf(virtualFile)
+
+    cut.configuredWorkspaceFolders.add(
+      WorkspaceFolder(
+        Paths.get("/tmp/snyk-test-disposed-root").toUri().toASCIIString(),
+        "snyk-test-disposed-root",
+      )
+    )
+
+    every { dumbServiceMock.runWhenSmart(any()) } answers { firstArg<Runnable>().run() }
+    stubRunInBackgroundToRunSynchronously { every { projectMock.isDisposed } returns true }
+
+    cut.sendScanCommand()
+
+    verify(exactly = 0) { lsMock.workspaceService.executeCommand(any<ExecuteCommandParams>()) }
+    verify(exactly = 0) { lsMock.workspaceService.didChangeWorkspaceFolders(any()) }
   }
 
   @Test
@@ -1581,5 +1657,21 @@ class LanguageServerWrapperTest {
     cut.process = processMock
     every { processMock.info().startInstant().isPresent } returns true
     every { processMock.isAlive } returns true
+  }
+
+  // runInBackground is inline, so it must be stubbed one level down, at the
+  // ProgressManager.getInstance().run(Task.Backgroundable) call it compiles to. getInstance()
+  // caches its result in a static field, so mockkStatic(ProgressManager::class) is required here
+  // instead of the applicationMock.getService(...) pattern used elsewhere in this file.
+  private fun stubRunInBackgroundToRunSynchronously(beforeRun: () -> Unit = {}) {
+    mockkStatic(ProgressManager::class)
+    val progressManagerMock = mockk<ProgressManager>()
+    every { ProgressManager.getInstance() } returns progressManagerMock
+    val indicatorMock = mockk<ProgressIndicator>(relaxed = true)
+    every { progressManagerMock.run(any<Task>()) } answers
+      {
+        beforeRun()
+        (firstArg<Task>() as Task.Backgroundable).run(indicatorMock)
+      }
   }
 }

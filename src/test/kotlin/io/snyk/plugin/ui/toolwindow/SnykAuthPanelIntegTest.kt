@@ -72,7 +72,7 @@ class SnykAuthPanelIntegTest : LightPlatform4TestCase() {
         |  <li align="left">Improve your code and upgrade dependencies</li>
         |</ol>
         |<br>
-        |When scanning project files, Snyk may automatically execute code<br>such as invoking the package manager to get dependency information.<br>You should only scan projects you trust. <a href="https://docs.snyk.io/ide-tools/jetbrains-plugins/folder-trust">More info</a>
+        |When scanning project files, Snyk may automatically execute code and configuration,<br>such as invoking the package manager to get dependency information.<br>You should only scan projects you trust. <a href="https://docs.snyk.io/ide-tools/jetbrains-plugins/folder-trust">More info</a>
         |<br>
         |<br>
         |</html>
