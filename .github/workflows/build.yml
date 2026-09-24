@@ -24,6 +24,7 @@ jobs:
     # step limit could fire before that task timeout and mask the precise failure.
     timeout-minutes: 40
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
