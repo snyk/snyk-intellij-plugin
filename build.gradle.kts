@@ -50,10 +50,16 @@ repositories {
 
 configurations.all {
   resolutionStrategy.force(
-    "com.fasterxml.jackson.core:jackson-core:2.21.5",
-    // jackson-databind resolves to a vulnerable version via the IntelliJ test-framework.
-    // 2.21.5 clears CVE-2026-54512/54513/54515 on the 2.21 line (patch-level, no API changes).
-    "com.fasterxml.jackson.core:jackson-databind:2.21.5",
+    // Test-only: overrides the older jackson requested by the IntelliJ test-framework. The
+    // jackson-bom platform does not reach the IntelliJ platform test configurations.
+    // jackson-databind before 2.21.8 and jackson-core before 2.21.7 have known vulnerabilities;
+    // both are pinned to 2.21.8 to match the bom. Remove once test-framework requests 2.21.8 or
+    // later.
+    "com.fasterxml.jackson.core:jackson-core:2.21.8",
+    "com.fasterxml.jackson.core:jackson-databind:2.21.8",
+    // Test-only: overrides the older guava requested by jimfs. Versions before 33.7.2-jre have a
+    // known vulnerability. Remove once jimfs requests 33.7.2-jre or later.
+    "com.google.guava:guava:33.7.2-jre",
     // logback-core resolves to a vulnerable version via ktlint-cli -> logback-classic.
     // 1.5.36 fixes the Expression Injection vulnerability (IDE-2384).
     "ch.qos.logback:logback-core:1.5.36",
@@ -69,7 +75,7 @@ dependencies {
     testFramework(TestFrameworkType.Platform)
   }
 
-  implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.5"))
+  implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.8"))
   implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
   implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
   implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.23.1")
