@@ -60,9 +60,16 @@ configurations.all {
     // Test-only: overrides the older guava requested by jimfs. Versions before 33.7.2-jre have a
     // known vulnerability. Remove once jimfs requests 33.7.2-jre or later.
     "com.google.guava:guava:33.7.2-jre",
-    // logback-core resolves to a vulnerable version via ktlint-cli -> logback-classic.
-    // 1.5.36 fixes the Expression Injection vulnerability (IDE-2384).
-    "ch.qos.logback:logback-core:1.5.36",
+    // Lint-only: overrides the older logback requested by ktlint-cli (IDE-2384). logback-classic
+    // before 1.6.5 has known vulnerabilities; logback-core is kept at the same version. Remove once
+    // ktlint-cli requests 1.6.5 or later.
+    "ch.qos.logback:logback-classic:1.6.5",
+    "ch.qos.logback:logback-core:1.6.5",
+    // Coverage-only: overrides the older asm requested by jacoco. Versions before 9.11 have known
+    // vulnerabilities. Remove once jacoco requests 9.11 or later.
+    "org.ow2.asm:asm:9.11.1",
+    "org.ow2.asm:asm-commons:9.11.1",
+    "org.ow2.asm:asm-tree:9.11.1",
   )
 }
 
@@ -77,6 +84,8 @@ dependencies {
 
   implementation(platform("com.fasterxml.jackson:jackson-bom:2.21.8"))
   implementation(platform("com.squareup.okhttp3:okhttp-bom:4.12.0"))
+  // okio 3.6.0 (via okhttp) resolves kotlin-stdlib to 1.9.10; 3.10.2 resolves it to 2.1.0.
+  implementation(platform("com.squareup.okio:okio-bom:3.10.2"))
   implementation(platform("com.squareup.retrofit2:retrofit-bom:2.11.0"))
   implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.23.1")
 
