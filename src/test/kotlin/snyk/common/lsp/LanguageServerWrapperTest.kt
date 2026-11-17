@@ -842,6 +842,7 @@ class LanguageServerWrapperTest {
 
     assertEquals("test-token-value", s[LsSettingsKeys.TOKEN]?.value)
     assertEquals(true, s[LsSettingsKeys.SEND_ERROR_REPORTS]?.value)
+    assertEquals(false, s[LsSettingsKeys.ENABLE_SNYK_LEARN_CODE_ACTIONS]?.value)
     assertEquals(true, s[LsSettingsKeys.ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS]?.value)
     assertEquals(true, s[LsSettingsKeys.ENABLE_SNYK_OPEN_BROWSER_ACTIONS]?.value)
   }

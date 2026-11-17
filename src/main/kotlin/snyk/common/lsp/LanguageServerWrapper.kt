@@ -787,6 +787,8 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       settingsMap[LsSettingsKeys.TOKEN] = ConfigSetting(value = ps.token!!, changed = true)
     }
     settingsMap[LsSettingsKeys.SEND_ERROR_REPORTS] = ConfigSetting(value = true, changed = false)
+    settingsMap[LsSettingsKeys.ENABLE_SNYK_LEARN_CODE_ACTIONS] =
+      ConfigSetting(value = false, changed = false)
     settingsMap[LsSettingsKeys.ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS] =
       ConfigSetting(value = true, changed = false)
     settingsMap[LsSettingsKeys.ENABLE_SNYK_OPEN_BROWSER_ACTIONS] =

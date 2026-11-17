@@ -20,6 +20,9 @@ class PanelHTMLUtils {
     // injection check
     // and still end up with the nonce injected, e.g. "${nonce${resolvesToEmpty}}" becomes
     // "${nonce}" - See IDE-1050.
+    fun getFormattedIssueHtml(html: String): String =
+      getFormattedHtml(SnykLearnHtmlFilter.removeLearnContent(html))
+
     fun getFormattedHtml(html: String, ideScript: String = " "): String {
       val nonce = extractLsNonceIfPresent(html) ?: JCEFUtils.generateNonce()
       var formattedHtml =

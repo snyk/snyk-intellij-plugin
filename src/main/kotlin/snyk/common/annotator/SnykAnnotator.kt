@@ -192,6 +192,7 @@ abstract class SnykAnnotator(private val product: ProductType) :
     val addedIntentionActions = mutableListOf<IntentionAction>()
 
     codeActions
+      .filterNot { action -> action.isSnykLearnAction() }
       .filter { action ->
         val diagnosticCode = action.diagnostics?.get(0)?.code?.left
         val ruleId = issue.ruleId()

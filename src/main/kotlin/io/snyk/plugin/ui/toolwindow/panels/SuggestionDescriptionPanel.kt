@@ -45,7 +45,7 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
    */
   fun getCustomCssAndScript(): String {
     val issueDetails = issue.details(project)
-    return PanelHTMLUtils.getFormattedHtml(issueDetails)
+    return PanelHTMLUtils.getFormattedIssueHtml(issueDetails)
   }
 
   init {
@@ -121,7 +121,7 @@ class SuggestionDescriptionPanel(val project: Project, private val issue: ScanIs
 
     // getFormattedHtml accesses Swing components, must be called on EDT
     logger.debug("SuggestionDescriptionPanel: getting formatted HTML")
-    val html = PanelHTMLUtils.getFormattedHtml(issueDetails)
+    val html = PanelHTMLUtils.getFormattedIssueHtml(issueDetails)
     logger.debug("SuggestionDescriptionPanel: creating JCEF browser")
     jbCefBrowser = JCEFUtils.getJBCefBrowserIfSupported(html, loadHandlerGenerators)
     val jbCefBrowser = jbCefBrowser

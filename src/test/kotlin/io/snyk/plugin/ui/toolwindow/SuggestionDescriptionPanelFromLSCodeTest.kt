@@ -11,6 +11,7 @@ import com.intellij.ui.jcef.JBCefBrowser
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.snyk.plugin.Severity
@@ -108,6 +109,34 @@ class SuggestionDescriptionPanelFromLSCodeTest : BasePlatformTestCase() {
 
     val actualBrowser = getJLabelByText(cut, "<html>HTML message</html>")
     assertNotNull(actualBrowser)
+  }
+
+  fun `test createUI should remove Snyk Learn content and preserve other links`() {
+    val issueHtml =
+      """
+      <html><body>
+        <div class="sn-learn">
+          <a href="https://learn.snyk.io/lesson/sql-injection/">Learn about this issue type</a>
+        </div>
+        <p>Issue details <a href="https://owasp.org/">OWASP</a></p>
+      </body></html>
+      """
+        .trimIndent()
+    val mockJBCefBrowser: JBCefBrowser = mockk()
+    every { mockJBCefBrowser.component } returns JLabel("filtered HTML")
+    val renderedHtml = slot<String>()
+    mockkObject(JCEFUtils)
+    every { JCEFUtils.getJBCefBrowserIfSupported(capture(renderedHtml), any()) } returns
+      mockJBCefBrowser
+    every { issue.details(project) } returns issueHtml
+
+    cut = SuggestionDescriptionPanel(project, issue)
+    waitForPanelInit(cut)
+
+    assertFalse(renderedHtml.captured.contains("learn.snyk.io"))
+    assertFalse(renderedHtml.captured.contains("Learn about this issue type"))
+    assertTrue(renderedHtml.captured.contains("Issue details"))
+    assertTrue(renderedHtml.captured.contains("""href="https://owasp.org/""""))
   }
 
   fun `test getStyledHTML should inject CSS into the HTML if allowed`() {

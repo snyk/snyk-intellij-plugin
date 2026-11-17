@@ -20,6 +20,10 @@ import snyk.common.intentionactions.SnykIntentionActionBase
 import snyk.common.lsp.LanguageServerWrapper
 import snyk.common.lsp.ScanIssue
 
+internal fun CodeAction.isSnykLearnAction(): Boolean =
+  title.startsWith("Learn more about ", ignoreCase = true) ||
+    title.startsWith("Learn about ", ignoreCase = true)
+
 class CodeActionIntention(
   private val issue: ScanIssue,
   private val codeAction: CodeAction,
@@ -89,7 +93,6 @@ class CodeActionIntention(
     when {
       codeAction.title.contains("fix", ignoreCase = true) -> PriorityAction.Priority.TOP
       codeAction.title.contains("Upgrade to", ignoreCase = true) -> PriorityAction.Priority.TOP
-      codeAction.title.contains("Learn", ignoreCase = true) -> PriorityAction.Priority.BOTTOM
       else -> issue.getSeverityAsEnum().getQuickFixPriority()
     }
 
