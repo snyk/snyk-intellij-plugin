@@ -185,7 +185,6 @@ class ScanIssueTest {
           projectName = "",
           displayTargetFile = null,
           matchingIssues = listOf(),
-          lesson = null,
           details = details,
           ruleId = ruleId,
           publicId = "",

@@ -30,7 +30,6 @@ object LsSettingsKeys {
   // Write-only (IDE → LS only, never sent back)
   const val TOKEN = "token"
   const val SEND_ERROR_REPORTS = "send_error_reports"
-  const val ENABLE_SNYK_LEARN_CODE_ACTIONS = "enable_snyk_learn_code_actions"
   const val ENABLE_SNYK_OSS_QUICK_FIX_CODE_ACTIONS = "enable_snyk_oss_quick_fix_code_actions"
   const val ENABLE_SNYK_OPEN_BROWSER_ACTIONS = "enable_snyk_open_browser_actions"
 }

@@ -443,7 +443,6 @@ data class IssueData(
   @SerializedName("projectName") val projectName: String,
   @SerializedName("displayTargetFile") val displayTargetFile: String?,
   @SerializedName("matchingIssues") val matchingIssues: List<IssueData>,
-  @SerializedName("lesson") val lesson: String?,
   // IAC
   @SerializedName("publicId") val publicId: String,
   @SerializedName("documentation") val documentation: String,
