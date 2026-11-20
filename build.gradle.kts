@@ -136,6 +136,7 @@ intellijPlatform {
       ide(IntelliJPlatformType.IntellijIdeaUltimate, "2025.3")
       ide(IntelliJPlatformType.IntellijIdeaUltimate, "2026.1")
       ide(IntelliJPlatformType.IntellijIdeaUltimate, "2026.2")
+      ide(IntelliJPlatformType.IntellijIdeaUltimate, "2026.3")
     }
     freeArgs.set(listOf("-mute", "TemplateWordInPluginId"))
     failureLevel.set(
