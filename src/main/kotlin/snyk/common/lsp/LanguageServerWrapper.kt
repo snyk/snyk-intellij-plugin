@@ -217,6 +217,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       return
     }
 
+    var serverInput: NonBlockingOutputStream? = null
     try {
       val snykLanguageClient = SnykLanguageClient(project, progressManager)
       languageClient = snykLanguageClient
@@ -252,11 +253,13 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
           wrapped.consume(message)
         }
 
+      val input = NonBlockingOutputStream(process.outputStream, executorService)
+      serverInput = input
       launcher =
         LSPLauncher.createClientLauncher(
           snykLanguageClient,
           process.inputStream,
-          process.outputStream,
+          input,
           executorService,
           wrapper,
         )
@@ -266,7 +269,11 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
       val listenerFuture = launcher.startListening()
 
       runAsync {
-        listenerFuture.get()
+        try {
+          listenerFuture.get()
+        } finally {
+          input.close()
+        }
         logger.info("Snyk Language Server was terminated, listener has ended.")
         isInitialized = false
       }
@@ -284,6 +291,7 @@ class LanguageServerWrapper(private val project: Project) : Disposable {
     } catch (e: Exception) {
       logger.error("Initialization of Snyk Language Server for ${project.name} failed", e)
       isInitialized = false
+      serverInput?.close()
       if (processIsAlive()) process.destroyForcibly()
     }
   }
